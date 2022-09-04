@@ -200,7 +200,7 @@ export const JobTable: React.FC = () => {
         updateJob();
         setTimeout(() => {
           setQueue((q) => q.filter((j) => j.id !== event.job.id));
-        }, 10000);
+        }, 3000);
         break;
       case GQL.JobStatusUpdateType.Update:
         updateJob();

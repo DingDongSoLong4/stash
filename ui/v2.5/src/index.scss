@@ -93,6 +93,7 @@ dd {
 .text-input[readonly],
 .text-input:disabled {
   background-color: $textfield-bg;
+  scrollbar-color: #959595 $textfield-bg;
 }
 
 textarea.text-input {
@@ -352,8 +353,10 @@ div.dropdown-menu {
 }
 
 .tag-item {
+  align-items: center;
   background-color: $muted-gray;
   color: $dark-text;
+  display: inline-flex;
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
@@ -367,14 +370,12 @@ div.dropdown-menu {
   .btn {
     background: none;
     border: none;
-    bottom: 2px;
     color: $dark-text;
-    font-size: 12px;
-    line-height: 1rem;
+    font-size: inherit;
+    line-height: 1em;
     margin-left: 0.5rem;
     opacity: 0.5;
     padding: 0;
-    position: relative;
 
     &:active,
     &:hover {
@@ -907,6 +908,10 @@ select {
   appearance: none;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4.95 10' fill='%23fff'><polygon points='1.41 4.67 2.48 3.18 3.54 4.67 1.41 4.67'/><polygon points='3.54 5.33 2.48 6.82 1.41 5.33 3.54 5.33'/></svg>")
     no-repeat right 2px center;
+
+  &.form-control {
+    padding-right: 1.75rem;
+  }
 }
 
 .left-spacing {

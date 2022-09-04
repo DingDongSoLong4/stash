@@ -257,9 +257,9 @@
 
 .job-table.card {
   background-color: $card-bg;
-  height: 10em;
+  height: 12em;
   margin-bottom: 30px;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 0.5rem 15px;
 
   ul {

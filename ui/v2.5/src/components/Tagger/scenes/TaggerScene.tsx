@@ -189,9 +189,9 @@ export const TaggerScene: React.FC<PropsWithChildren<ITaggerScene>> = ({
   }
 
   return (
-    <div key={scene.id} className="mt-3 search-item">
+    <div key={scene.id} className="mt-3 px-3 py-2 search-item">
       <div className="row">
-        <div className="col col-lg-6 overflow-hidden align-items-center d-flex flex-column flex-sm-row">
+        <div className="col col-lg-6 py-2 overflow-hidden align-items-center d-flex flex-column flex-sm-row">
           <div className="scene-card mr-3">
             <Link to={url}>
               <ScenePreview
@@ -206,7 +206,7 @@ export const TaggerScene: React.FC<PropsWithChildren<ITaggerScene>> = ({
             <TruncatedText text={objectTitle(scene)} lineCount={2} />
           </Link>
         </div>
-        <div className="col-md-6 my-1">
+        <div className="col-md-6 py-2 align-self-center">
           <div>
             {renderQueryForm()}
             {scrapeSceneFragment ? (

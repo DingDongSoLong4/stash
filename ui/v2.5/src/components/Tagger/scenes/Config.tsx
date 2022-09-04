@@ -55,7 +55,7 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
           </h4>
           <hr className="w-100" />
           <Form className="col-md-6">
-            <Form.Group controlId="tag-males" className="align-items-center">
+            <Form.Group controlId="tag-males">
               <Form.Check
                 label={
                   <FormattedMessage id="component_tagger.config.show_male_label" />
@@ -69,7 +69,7 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
                 <FormattedMessage id="component_tagger.config.show_male_desc" />
               </Form.Text>
             </Form.Group>
-            <Form.Group controlId="set-cover" className="align-items-center">
+            <Form.Group controlId="set-cover">
               <Form.Check
                 label={
                   <FormattedMessage id="component_tagger.config.set_cover_label" />
@@ -86,7 +86,7 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
                 <FormattedMessage id="component_tagger.config.set_cover_desc" />
               </Form.Text>
             </Form.Group>
-            <Form.Group className="align-items-center">
+            <Form.Group>
               <div className="d-flex align-items-center">
                 <Form.Check
                   id="tag-mode"
@@ -101,7 +101,7 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
                 />
                 <Form.Control
                   id="tag-operation"
-                  className="col-md-2 col-3 input-control"
+                  className="w-auto input-control"
                   as="select"
                   value={config.tagOperation}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -126,14 +126,14 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
             </Form.Group>
 
             <Form.Group controlId="mode-select">
-              <div className="row no-gutters">
-                <Form.Label className="mr-4 mt-1">
+              <div className="d-flex align-items-center">
+                <Form.Label className="mr-4 m-0">
                   <FormattedMessage id="component_tagger.config.query_mode_label" />
                   :
                 </Form.Label>
                 <Form.Control
                   as="select"
-                  className="col-md-2 col-3 input-control"
+                  className="w-auto input-control"
                   value={config.mode}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setConfig({
@@ -181,7 +181,7 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
             <h5>
               <FormattedMessage id="component_tagger.config.blacklist_label" />
             </h5>
-            <InputGroup>
+            <InputGroup className="mb-1">
               <Form.Control className="text-input" ref={blacklistRef} />
               <InputGroup.Append>
                 <Button onClick={handleBlacklistAddition}>
@@ -196,14 +196,10 @@ const Config: React.FC<IConfigProps> = ({ show }) => {
               )}
             </div>
             {config.blacklist.map((item, index) => (
-              <Badge
-                className="tag-item d-inline-block"
-                variant="secondary"
-                key={item}
-              >
+              <Badge className="tag-item" variant="secondary" key={item}>
                 {item.toString()}
                 <Button
-                  className="minimal ml-2"
+                  className="minimal"
                   onClick={() => removeBlacklist(index)}
                 >
                   <Icon icon={faTimes} />

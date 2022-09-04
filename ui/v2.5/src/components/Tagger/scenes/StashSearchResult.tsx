@@ -436,7 +436,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   const maybeRenderCoverImage = () => {
     if (scene.image) {
       return (
-        <div className="scene-image-container">
+        <div className="pt-1 mr-3 align-self-center scene-image-container">
           <OptionalField
             disabled={!config.setCoverImage}
             exclude={
@@ -611,7 +611,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   const maybeRenderStudioField = () => {
     if (scene.studio) {
       return (
-        <div className="mt-2">
+        <div>
           <StudioResult
             studio={scene.studio}
             selectedID={studioID}
@@ -634,7 +634,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   }
 
   const renderPerformerField = () => (
-    <div className="mt-2">
+    <div>
       <div>
         <Form.Group controlId="performers">
           {performers.map((performer, performerIndex) => (
@@ -663,7 +663,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   }
 
   const renderTagsField = () => (
-    <div className="mt-2">
+    <div>
       <div>
         <Form.Group controlId="tags" as={Row}>
           {FormUtils.renderLabel({
@@ -709,10 +709,10 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
 
   return (
     <>
-      <div className={isActive ? "col-lg-6" : ""}>
-        <div className="row mx-0">
+      <div className={isActive ? "col-lg-6 py-2" : "py-2"}>
+        <div className="row mt-n1 no-gutters">
           {maybeRenderCoverImage()}
-          <div className="d-flex flex-column justify-content-center scene-metadata">
+          <div className="pt-1 d-flex flex-column justify-content-center scene-metadata">
             {renderTitle()}
 
             {!isActive && (
@@ -738,7 +738,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
         )}
       </div>
       {isActive && (
-        <div className="col-lg-6">
+        <div className="col-lg-6 py-2">
           {maybeRenderStudioField()}
           {renderPerformerField()}
           {renderTagsField()}
@@ -774,13 +774,13 @@ export const SceneSearchResults: React.FC<ISceneSearchResults> = ({
   }, [scenes]);
 
   function getClassName(i: number) {
-    return cx("row mx-0 mt-2 search-result", {
+    return cx("row m-0 mt-2 py-2 search-result", {
       "selected-result active": i === selectedResult,
     });
   }
 
   return (
-    <ul className="pl-0 mt-3 mb-0">
+    <ul className="pl-0 mt-3 mb-2">
       {scenes.map((s, i) => (
         // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions, react/no-array-index-key
         <li

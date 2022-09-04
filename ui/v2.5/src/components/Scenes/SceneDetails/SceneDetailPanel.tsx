@@ -78,13 +78,21 @@ export const SceneDetailPanel: React.FC<ISceneDetailProps> = (props) => {
     );
   }
 
-  // filename should use entire row if there is no studio
-  const sceneDetailsWidth = props.scene.studio ? "col-9" : "col-12";
-
   return (
     <>
-      <div className="row">
-        <div className={`${sceneDetailsWidth} col-xl-12 scene-details`}>
+      <div className="d-flex flex-md-row flex-column">
+        {props.scene.studio && (
+          <div className="d-xl-none order-md-1 text-center">
+            <Link to={`/studios/${props.scene.studio.id}`}>
+              <img
+                src={props.scene.studio.image_path ?? ""}
+                alt={`${props.scene.studio.name} logo`}
+                className="studio-logo"
+              />
+            </Link>
+          </div>
+        )}
+        <div className="scene-details">
           <div className="scene-header d-xl-none">
             <h3>
               <TruncatedText text={objectTitle(props.scene)} />
@@ -132,17 +140,6 @@ export const SceneDetailPanel: React.FC<ISceneDetailProps> = (props) => {
             </h6>
           )}
         </div>
-        {props.scene.studio && (
-          <div className="col-3 d-xl-none">
-            <Link to={`/studios/${props.scene.studio.id}`}>
-              <img
-                src={props.scene.studio.image_path ?? ""}
-                alt={`${props.scene.studio.name} logo`}
-                className="studio-logo float-right"
-              />
-            </Link>
-          </div>
-        )}
       </div>
       <div className="row">
         <div className="col-12">

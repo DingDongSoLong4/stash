@@ -59,7 +59,7 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
 
   if (matchedPerformer && matchedStashID) {
     return (
-      <div className="row no-gutters my-2">
+      <div className="row no-gutters align-items-center my-2">
         <div className="entity-name">
           <FormattedMessage id="countables.performers" values={{ count: 1 }} />:
           <b className="ml-2">{performer.name}</b>
@@ -75,7 +75,7 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
               <span className="mr-2">
                 <FormattedMessage id="component_tagger.verb_matched" />:
               </span>
-              <b className="col-3 text-right">{matchedPerformer.name}</b>
+              <b className="mx-2 text-right">{matchedPerformer.name}</b>
             </div>
           </OptionalField>
         </span>
@@ -101,7 +101,7 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
   const selectedSource = !selectedID ? "skip" : "existing";
 
   return (
-    <div className="row no-gutters align-items-center mt-2">
+    <div className="row no-gutters align-items-center my-2">
       <div className="entity-name">
         <FormattedMessage id="countables.performers" values={{ count: 1 }} />:
         <b className="ml-2">{performer.name}</b>

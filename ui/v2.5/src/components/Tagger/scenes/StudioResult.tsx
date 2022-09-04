@@ -57,7 +57,7 @@ const StudioResult: React.FC<IStudioResultProps> = ({
 
   if (matchedStudio && matchedStashID) {
     return (
-      <div className="row no-gutters my-2">
+      <div className="row no-gutters align-items-center my-2">
         <div className="entity-name">
           <FormattedMessage id="countables.studios" values={{ count: 1 }} />:
           <b className="ml-2">{studio.name}</b>
@@ -73,7 +73,7 @@ const StudioResult: React.FC<IStudioResultProps> = ({
               <span className="mr-2">
                 <FormattedMessage id="component_tagger.verb_matched" />:
               </span>
-              <b className="col-3 text-right">{matchedStudio.name}</b>
+              <b className="mx-2 text-right">{matchedStudio.name}</b>
             </div>
           </OptionalField>
         </span>
@@ -99,7 +99,7 @@ const StudioResult: React.FC<IStudioResultProps> = ({
   const selectedSource = !selectedID ? "skip" : "existing";
 
   return (
-    <div className="row no-gutters align-items-center mt-2">
+    <div className="row no-gutters align-items-center my-2">
       <div className="entity-name">
         <FormattedMessage id="countables.studios" values={{ count: 1 }} />:
         <b className="ml-2">{studio.name}</b>

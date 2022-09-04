@@ -43,12 +43,14 @@ input[type="range"].zoom-slider {
 
 .query-text-field-clear {
   background-color: $secondary;
+  bottom: 0;
   color: $text-muted;
   font-size: $btn-font-size-sm;
   margin: $btn-padding-y $btn-padding-x;
   padding: 0;
   position: absolute;
   right: 0;
+  top: 0;
   z-index: 4;
 
   &:hover,
