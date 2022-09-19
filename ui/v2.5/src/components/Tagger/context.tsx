@@ -64,32 +64,35 @@ export interface ITaggerContextState {
 }
 
 const dummyFn = () => {
+  return;
+};
+const dummyAsyncFn = () => {
   return Promise.resolve();
 };
-const dummyValFn = () => {
+const dummyAsyncValFn = () => {
   return Promise.resolve(undefined);
 };
 
 export const TaggerStateContext = React.createContext<ITaggerContextState>({
   config: initialConfig,
-  setConfig: () => {},
+  setConfig: dummyFn,
   loading: false,
   sources: [],
   searchResults: {},
-  setCurrentSource: () => {},
-  doSceneQuery: dummyFn,
-  doSceneFragmentScrape: dummyFn,
-  doMultiSceneFragmentScrape: dummyFn,
-  stopMultiScrape: () => {},
-  createNewTag: dummyValFn,
-  createNewPerformer: dummyValFn,
-  linkPerformer: dummyFn,
-  createNewStudio: dummyValFn,
-  linkStudio: dummyFn,
-  resolveScene: dummyFn,
-  submitFingerprints: dummyFn,
+  setCurrentSource: dummyFn,
+  doSceneQuery: dummyAsyncFn,
+  doSceneFragmentScrape: dummyAsyncFn,
+  doMultiSceneFragmentScrape: dummyAsyncFn,
+  stopMultiScrape: dummyFn,
+  createNewTag: dummyAsyncValFn,
+  createNewPerformer: dummyAsyncValFn,
+  linkPerformer: dummyAsyncFn,
+  createNewStudio: dummyAsyncValFn,
+  linkStudio: dummyAsyncFn,
+  resolveScene: dummyAsyncFn,
+  submitFingerprints: dummyAsyncFn,
   pendingFingerprints: [],
-  saveScene: dummyFn,
+  saveScene: dummyAsyncFn,
 });
 
 export type IScrapedScene = GQL.ScrapedScene & { resolved?: boolean };

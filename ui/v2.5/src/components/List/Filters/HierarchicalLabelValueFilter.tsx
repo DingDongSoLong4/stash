@@ -62,15 +62,13 @@ export const HierarchicalLabelValueFilter: React.FC<IHierarchicalLabelValueFilte
   }
 
   function criterionOptionTypeToIncludeUIString(): MessageDescriptor {
-    const optionType =
-      criterion.criterionOption.type === "studios"
-        ? "include_sub_studios"
-        : criterion.criterionOption.type === "childTags"
-        ? "include_parent_tags"
-        : "include_sub_tags";
-    return {
-      id: optionType,
-    };
+    if (criterion.criterionOption.type === "studios") {
+      return { id: "include_sub_studios" };
+    } else if (criterion.criterionOption.type === "childTags") {
+      return { id: "include_parent_tags" };
+    } else {
+      return { id: "include_sub_tags" };
+    }
   }
 
   return (

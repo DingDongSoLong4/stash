@@ -479,17 +479,23 @@ export class DurationCriterion extends Criterion<INumberValue> {
   }
 
   public getLabelValue() {
-    return this.modifier === CriterionModifier.Between ||
+    if (
+      this.modifier === CriterionModifier.Between ||
       this.modifier === CriterionModifier.NotBetween
-      ? `${DurationUtils.secondsToString(
-          this.value.value
-        )} ${DurationUtils.secondsToString(this.value.value2 ?? 0)}`
-      : this.modifier === CriterionModifier.GreaterThan ||
-        this.modifier === CriterionModifier.LessThan ||
-        this.modifier === CriterionModifier.Equals ||
-        this.modifier === CriterionModifier.NotEquals
-      ? DurationUtils.secondsToString(this.value.value)
-      : "?";
+    ) {
+      const seconds1 = DurationUtils.secondsToString(this.value.value);
+      const seconds2 = DurationUtils.secondsToString(this.value.value2 ?? 0);
+      return `${seconds1} ${seconds2}`;
+    }
+    if (
+      this.modifier === CriterionModifier.GreaterThan ||
+      this.modifier === CriterionModifier.LessThan ||
+      this.modifier === CriterionModifier.Equals ||
+      this.modifier === CriterionModifier.NotEquals
+    ) {
+      return DurationUtils.secondsToString(this.value.value);
+    }
+    return "?";
   }
 }
 

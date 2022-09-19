@@ -168,21 +168,21 @@ export const TaggerScene: React.FC<PropsWithChildren<ITaggerScene>> = ({
     if (scene.stash_ids.length > 0) {
       const stashLinks = scene.stash_ids.map((stashID) => {
         const base = stashID.endpoint.match(/https?:\/\/.*?\//)?.[0];
-        const link = base ? (
-          <a
-            key={`${stashID.endpoint}${stashID.stash_id}`}
-            className="small d-block"
-            href={`${base}scenes/${stashID.stash_id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {stashID.stash_id}
-          </a>
-        ) : (
-          <div className="small">{stashID.stash_id}</div>
-        );
-
-        return link;
+        if (base) {
+          return (
+            <a
+              key={`${stashID.endpoint}${stashID.stash_id}`}
+              className="small d-block"
+              href={`${base}scenes/${stashID.stash_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {stashID.stash_id}
+            </a>
+          );
+        } else {
+          return <div className="small">{stashID.stash_id}</div>;
+        }
       });
       return <div className="mt-2 sub-content text-right">{stashLinks}</div>;
     }
