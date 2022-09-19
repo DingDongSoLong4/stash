@@ -660,7 +660,7 @@ const SceneLoader: React.FC = () => {
       filterCopy.currentPage = page;
       const queryResults = await queryFindScenes(filterCopy);
       if (queryResults.data.findScenes.scenes.length > index) {
-        const { id: sceneID } = queryResults!.data!.findScenes!.scenes[index];
+        const { id: sceneID } = queryResults.data.findScenes.scenes[index];
         // navigate to the image player page
         playScene(sceneID, page);
       }

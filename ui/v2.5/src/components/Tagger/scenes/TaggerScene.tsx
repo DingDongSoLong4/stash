@@ -83,8 +83,8 @@ interface ITaggerScene {
   scene: GQL.SlimSceneDataFragment;
   url: string;
   errorMessage?: string;
-  doSceneQuery?: (queryString: string) => void;
-  scrapeSceneFragment?: (scene: GQL.SlimSceneDataFragment) => void;
+  doSceneQuery?: (queryString: string) => Promise<void>;
+  scrapeSceneFragment?: (scene: GQL.SlimSceneDataFragment) => Promise<void>;
   loading?: boolean;
 }
 

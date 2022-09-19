@@ -2,7 +2,7 @@ import * as GQL from "src/core/generated-graphql";
 import isEqual from "lodash-es/isEqual";
 
 interface IHasRating {
-  rating?: GQL.Maybe<number> | undefined;
+  rating?: GQL.Maybe<number>;
 }
 
 export function getAggregateRating(state: IHasRating[]) {
@@ -26,7 +26,7 @@ interface IHasID {
 }
 
 interface IHasStudio {
-  studio?: GQL.Maybe<IHasID> | undefined;
+  studio?: GQL.Maybe<IHasID>;
 }
 
 export function getAggregateStudioId(state: IHasStudio[]) {

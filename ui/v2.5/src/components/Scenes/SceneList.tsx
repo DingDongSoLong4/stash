@@ -142,7 +142,7 @@ export const SceneList: React.FC<ISceneList> = ({
       filterCopy.sortBy = "random";
       const queryResults = await queryFindScenes(filterCopy);
       if (queryResults.data.findScenes.scenes.length > index) {
-        const { id } = queryResults!.data!.findScenes!.scenes[index];
+        const { id } = queryResults.data.findScenes.scenes[index];
         // navigate to the image player page
         const queue = SceneQueue.fromListFilterModel(filterCopy);
         const autoPlay =

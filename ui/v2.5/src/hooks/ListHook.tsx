@@ -94,7 +94,7 @@ export interface IListHookOperation<T> {
     result: T,
     filter: ListFilterModel,
     selectedIds: Set<string>
-  ) => void;
+  ) => Promise<void>;
   isDisplayed?: (
     result: T,
     filter: ListFilterModel,
@@ -346,8 +346,8 @@ const RenderList = <
     updateFilter(newFilter);
   }
 
-  function onOperationClicked(o: IListHookOperation<QueryResult>) {
-    o.onClick(result, filter, selectedIds);
+  async function onOperationClicked(o: IListHookOperation<QueryResult>) {
+    await o.onClick(result, filter, selectedIds);
     if (o.postRefetch) {
       result.refetch();
     }
