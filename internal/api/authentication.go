@@ -16,7 +16,10 @@ import (
 const loginEndPoint = "/login"
 
 const (
-	tripwireActivatedErrMsg = "Stash is exposed to the public internet without authentication, and is not serving any more content to protect your privacy. " +
+	tripwireActivatedErrResponse = "Stash is exposed to the public internet without authentication, and is not serving any more content to protect your privacy. " +
+		"More information and fixes are available at https://github.com/stashapp/stash/wiki/Authentication-Required-When-Accessing-Stash-From-the-Internet"
+
+	tripwireActivatedErrMsg = "Blocked incoming request - Stash is exposed to the public internet without authentication. " +
 		"More information and fixes are available at https://github.com/stashapp/stash/wiki/Authentication-Required-When-Accessing-Stash-From-the-Internet"
 
 	externalAccessErrMsg = "You have attempted to access Stash over the internet, and authentication is not enabled. " +
@@ -35,18 +38,18 @@ func authenticateHandler() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			c := config.GetInstance()
 
-			if !checkSecurityTripwireActivated(c, w) {
+			if checkSecurityTripwireActivated(c) {
+				logger.Warn(tripwireActivatedErrMsg)
+				w.WriteHeader(http.StatusForbidden)
+				_, _ = w.Write([]byte(tripwireActivatedErrResponse))
 				return
 			}
 
 			userID, err := manager.GetInstance().SessionStore.Authenticate(w, r)
 			if err != nil {
-				if errors.Is(err, session.ErrUnauthorized) {
-					w.WriteHeader(http.StatusInternalServerError)
-					_, err = w.Write([]byte(err.Error()))
-					if err != nil {
-						logger.Error(err)
-					}
+				if errors.Is(err, session.ErrInvalidApiKey) {
+					w.WriteHeader(http.StatusUnauthorized)
+					_, _ = w.Write([]byte(err.Error()))
 					return
 				}
 
@@ -60,7 +63,9 @@ func authenticateHandler() func(http.Handler) http.Handler {
 				var externalAccess session.ExternalAccessError
 				switch {
 				case errors.As(err, &externalAccess):
-					securityActivateTripwireAccessedFromInternetWithoutAuth(c, externalAccess, w)
+					activateSecurityTripwire(c, externalAccess)
+					w.WriteHeader(http.StatusForbidden)
+					_, _ = w.Write([]byte(externalAccessErrMsg))
 					return
 				default:
 					logger.Errorf("Error checking external access security: %v", err)
@@ -105,30 +110,16 @@ func authenticateHandler() func(http.Handler) http.Handler {
 	}
 }
 
-func checkSecurityTripwireActivated(c *config.Instance, w http.ResponseWriter) bool {
-	if accessErr := session.CheckExternalAccessTripwire(c); accessErr != nil {
-		w.WriteHeader(http.StatusForbidden)
-		_, err := w.Write([]byte(tripwireActivatedErrMsg))
-		if err != nil {
-			logger.Error(err)
-		}
-		return false
-	}
-
-	return true
+func checkSecurityTripwireActivated(c *config.Instance) bool {
+	accessErr := session.CheckExternalAccessTripwire(c)
+	return accessErr != nil
 }
 
-func securityActivateTripwireAccessedFromInternetWithoutAuth(c *config.Instance, accessErr session.ExternalAccessError, w http.ResponseWriter) {
+func activateSecurityTripwire(c *config.Instance, accessErr session.ExternalAccessError) {
 	session.LogExternalAccessError(accessErr)
 
 	err := c.ActivatePublicAccessTripwire(net.IP(accessErr).String())
 	if err != nil {
-		logger.Error(err)
-	}
-
-	w.WriteHeader(http.StatusForbidden)
-	_, err = w.Write([]byte(externalAccessErrMsg))
-	if err != nil {
-		logger.Error(err)
+		logger.Errorf("Error activating public access tripwire: %v", err)
 	}
 }

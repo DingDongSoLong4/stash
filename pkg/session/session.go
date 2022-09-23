@@ -35,7 +35,7 @@ const (
 )
 
 var ErrInvalidCredentials = errors.New("invalid username or password")
-var ErrUnauthorized = errors.New("unauthorized")
+var ErrInvalidApiKey = errors.New("invalid API Key")
 
 type Store struct {
 	sessionStore *sessions.CookieStore
@@ -210,7 +210,7 @@ func (s *Store) Authenticate(w http.ResponseWriter, r *http.Request) (userID str
 		// configured username. In future, we'll want to
 		// get the username from the key.
 		if c.GetAPIKey() != apiKey {
-			return "", ErrUnauthorized
+			return "", ErrInvalidApiKey
 		}
 
 		userID = c.GetUsername()
