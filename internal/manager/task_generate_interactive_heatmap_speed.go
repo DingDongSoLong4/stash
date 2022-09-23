@@ -35,7 +35,7 @@ func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
 	err := generator.Generate()
 
 	if err != nil {
-		logger.Errorf("error generating heatmap: %s", err.Error())
+		logger.Errorf("error generating heatmap: %v", err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
 		qb := t.TxnManager.File
 		return qb.Update(ctx, primaryFile)
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 
 }

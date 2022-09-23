@@ -102,7 +102,7 @@ func TestToJSON(t *testing.T) {
 
 		switch {
 		case !s.err && err != nil:
-			t.Errorf("[%d] unexpected error: %s", i, err.Error())
+			t.Errorf("[%d] unexpected error: %v", i, err)
 		case s.err && err == nil:
 			t.Errorf("[%d] expected error not returned", i)
 		default:
@@ -158,7 +158,7 @@ func TestGetStudioName(t *testing.T) {
 
 		switch {
 		case !s.err && err != nil:
-			t.Errorf("[%d] unexpected error: %s", i, err.Error())
+			t.Errorf("[%d] unexpected error: %v", i, err)
 		case s.err && err == nil:
 			t.Errorf("[%d] expected error not returned", i)
 		default:

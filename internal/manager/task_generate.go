@@ -94,11 +94,11 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 		var totals totalsGenerate
 		sceneIDs, err := stringslice.StringSliceToIntSlice(j.input.SceneIDs)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 		}
 		markerIDs, err := stringslice.StringSliceToIntSlice(j.input.MarkerIDs)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 		}
 
 		g := &generate.Generator{
@@ -138,7 +138,7 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 
 			return nil
 		}); err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			return
 		}
 
@@ -202,7 +202,7 @@ func (j *GenerateJob) queueTasks(ctx context.Context, g *generate.Generator, que
 
 		scenes, err := scene.Query(ctx, j.txnManager.Scene, nil, findFilter)
 		if err != nil {
-			logger.Errorf("Error encountered queuing files to scan: %s", err.Error())
+			logger.Errorf("Error encountered queuing files to scan: %v", err)
 			return totals
 		}
 
@@ -212,7 +212,7 @@ func (j *GenerateJob) queueTasks(ctx context.Context, g *generate.Generator, que
 			}
 
 			if err := ss.LoadFiles(ctx, j.txnManager.Scene); err != nil {
-				logger.Errorf("Error encountered queuing files to scan: %s", err.Error())
+				logger.Errorf("Error encountered queuing files to scan: %v", err)
 				return totals
 			}
 

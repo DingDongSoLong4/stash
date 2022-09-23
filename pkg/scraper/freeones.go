@@ -127,7 +127,7 @@ func getFreeonesScraper(globalConfig GlobalConfig) scraper {
 
 	c, err := loadConfigFromYAML(FreeonesScraperID, strings.NewReader(yml))
 	if err != nil {
-		logger.Fatalf("Error loading builtin freeones scraper: %s", err.Error())
+		logger.Fatalf("Error loading builtin freeones scraper: %v", err)
 	}
 
 	return newGroupScraper(*c, globalConfig)

@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -46,7 +46,7 @@ func LoadStudioFile(filePath string) (*Studio, error) {
 
 func SaveStudioFile(filePath string, studio *Studio) error {
 	if studio == nil {
-		return fmt.Errorf("studio must not be nil")
+		return errors.New("studio must not be nil")
 	}
 	return marshalToFile(filePath, studio)
 }

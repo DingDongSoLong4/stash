@@ -77,14 +77,14 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File) error {
 	// try to match the file to an image
 	existing, err := h.CreatorUpdater.FindByFileID(ctx, imageFile.ID)
 	if err != nil {
-		return fmt.Errorf("finding existing image: %w", err)
+		return fmt.Errorf("error finding existing image: %w", err)
 	}
 
 	if len(existing) == 0 {
 		// try also to match file by fingerprints
 		existing, err = h.CreatorUpdater.FindByFingerprints(ctx, imageFile.Fingerprints)
 		if err != nil {
-			return fmt.Errorf("finding existing image by fingerprints: %w", err)
+			return fmt.Errorf("error finding existing image by fingerprints: %w", err)
 		}
 	}
 
@@ -105,7 +105,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File) error {
 		if imageFile.ZipFileID != nil {
 			g, err := h.GalleryFinder.FindByFileID(ctx, *imageFile.ZipFileID)
 			if err != nil {
-				return fmt.Errorf("finding gallery for zip file id %d: %w", *imageFile.ZipFileID, err)
+				return fmt.Errorf("error finding gallery for zip file id %d: %w", *imageFile.ZipFileID, err)
 			}
 
 			for _, gg := range g {
@@ -123,7 +123,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File) error {
 			Image:   newImage,
 			FileIDs: []file.ID{imageFile.ID},
 		}); err != nil {
-			return fmt.Errorf("creating new image: %w", err)
+			return fmt.Errorf("error creating new image: %w", err)
 		}
 
 		h.PluginCache.RegisterPostHooks(ctx, newImage.ID, plugin.ImageCreatePost, nil, nil)
@@ -135,7 +135,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File) error {
 		for _, s := range existing {
 			if err := h.ThumbnailGenerator.GenerateThumbnail(ctx, s, imageFile); err != nil {
 				// just log if cover generation fails. We can try again on rescan
-				logger.Errorf("Error generating thumbnail for %s: %v", imageFile.Path, err)
+				logger.Errorf("error generating thumbnail for %s: %v", imageFile.Path, err)
 			}
 		}
 	}
@@ -168,7 +168,7 @@ func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.
 			}
 
 			if err := h.CreatorUpdater.AddFileID(ctx, i.ID, f.ID); err != nil {
-				return fmt.Errorf("adding file to image: %w", err)
+				return fmt.Errorf("error adding file to image: %w", err)
 			}
 			// update updated_at time
 			if _, err := h.CreatorUpdater.UpdatePartial(ctx, i.ID, models.NewImagePartial()); err != nil {
@@ -189,7 +189,7 @@ func (h *ScanHandler) getOrCreateFolderBasedGallery(ctx context.Context, f file.
 	folderID := f.Base().ParentFolderID
 	g, err := h.GalleryFinder.FindByFolderID(ctx, folderID)
 	if err != nil {
-		return nil, fmt.Errorf("finding folder based gallery: %w", err)
+		return nil, fmt.Errorf("error finding folder based gallery: %w", err)
 	}
 
 	if len(g) > 0 {
@@ -207,7 +207,7 @@ func (h *ScanHandler) getOrCreateFolderBasedGallery(ctx context.Context, f file.
 
 	logger.Infof("Creating folder-based gallery for %s", filepath.Dir(f.Base().Path))
 	if err := h.GalleryFinder.Create(ctx, newGallery, nil); err != nil {
-		return nil, fmt.Errorf("creating folder based gallery: %w", err)
+		return nil, fmt.Errorf("error creating folder based gallery: %w", err)
 	}
 
 	return newGallery, nil

@@ -79,7 +79,7 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 
 		ext := filepath.Ext(*input.DatabasePath)
 		if ext != ".db" && ext != ".sqlite" && ext != ".sqlite3" {
-			return makeConfigGeneralResult(), fmt.Errorf("invalid database path, use extension db, sqlite, or sqlite3")
+			return makeConfigGeneralResult(), errors.New("invalid database path, use extension db, sqlite, or sqlite3")
 		}
 		c.Set(config.Database, input.DatabasePath)
 	}

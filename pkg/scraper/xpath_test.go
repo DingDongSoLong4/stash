@@ -299,7 +299,7 @@ func TestScrapePerformerXPath(t *testing.T) {
 	doc, err := htmlquery.Parse(reader)
 
 	if err != nil {
-		t.Errorf("Error loading document: %s", err.Error())
+		t.Errorf("error loading document: %v", err)
 		return
 	}
 
@@ -316,7 +316,7 @@ func TestScrapePerformerXPath(t *testing.T) {
 	performer, err := scraper.scrapePerformer(context.Background(), q)
 
 	if err != nil {
-		t.Errorf("Error scraping performer: %s", err.Error())
+		t.Errorf("error scraping performer: %v", err)
 		return
 	}
 
@@ -386,7 +386,7 @@ func TestConcatXPath(t *testing.T) {
 	doc, err := htmlquery.Parse(reader)
 
 	if err != nil {
-		t.Errorf("Error loading document: %s", err.Error())
+		t.Errorf("error loading document: %v", err)
 		return
 	}
 
@@ -411,7 +411,7 @@ func TestConcatXPath(t *testing.T) {
 	performer, err := scraper.scrapePerformer(context.Background(), q)
 
 	if err != nil {
-		t.Errorf("Error scraping performer: %s", err.Error())
+		t.Errorf("error scraping performer: %v", err)
 		return
 	}
 
@@ -673,7 +673,7 @@ func TestApplySceneXPathConfig(t *testing.T) {
 	doc, err := htmlquery.Parse(reader)
 
 	if err != nil {
-		t.Errorf("Error loading document: %s", err.Error())
+		t.Errorf("error loading document: %v", err)
 		return
 	}
 
@@ -685,7 +685,7 @@ func TestApplySceneXPathConfig(t *testing.T) {
 	scene, err := scraper.scrapeScene(context.Background(), q)
 
 	if err != nil {
-		t.Errorf("Error scraping scene: %s", err.Error())
+		t.Errorf("error scraping scene: %v", err)
 		return
 	}
 
@@ -769,7 +769,7 @@ xPathScrapers:
 	err := yaml.Unmarshal([]byte(yamlStr), &c)
 
 	if err != nil {
-		t.Errorf("Error loading yaml: %s", err.Error())
+		t.Errorf("error loading yaml: %v", err)
 		return
 	}
 
@@ -797,7 +797,7 @@ func TestLoadInvalidXPath(t *testing.T) {
 	doc, err := htmlquery.Parse(reader)
 
 	if err != nil {
-		t.Errorf("Error loading document: %s", err.Error())
+		t.Errorf("error loading document: %v", err)
 		return
 	}
 
@@ -877,7 +877,7 @@ xPathScrapers:
 	err := yaml.Unmarshal([]byte(yamlStr), &c)
 
 	if err != nil {
-		t.Errorf("Error loading yaml: %s", err.Error())
+		t.Errorf("error loading yaml: %v", err)
 		return
 	}
 
@@ -893,7 +893,7 @@ xPathScrapers:
 	content, err := us.viaURL(ctx, client, ts.URL, ScrapeContentTypePerformer)
 
 	if err != nil {
-		t.Errorf("Error scraping performer: %s", err.Error())
+		t.Errorf("error scraping performer: %v", err)
 		return
 	}
 

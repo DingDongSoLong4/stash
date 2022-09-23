@@ -57,7 +57,7 @@ func (e ScrapeContentType) String() string {
 func (e *ScrapeContentType) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = ScrapeContentType(str)
@@ -122,7 +122,7 @@ func (e ScrapeType) String() string {
 func (e *ScrapeType) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = ScrapeType(str)

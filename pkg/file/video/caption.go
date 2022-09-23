@@ -2,7 +2,6 @@ package video
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,41 +109,40 @@ type CaptionUpdater interface {
 // associates captions to scene/s with the same basename
 func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manager, fqb file.Getter, w CaptionUpdater) {
 	captionLang := getCaptionsLangFromPath(captionPath)
-
 	captionPrefix := getCaptionPrefix(captionPath)
+
+	var f file.File
 	if err := txn.WithTxn(ctx, txnMgr, func(ctx context.Context) error {
 		var err error
-		f, er := fqb.FindByPath(ctx, captionPrefix+"*")
-
-		if er != nil {
-			return fmt.Errorf("searching for scene %s: %w", captionPrefix, er)
-		}
-
-		if f != nil { // found related Scene
-			fileID := f.Base().ID
-			path := f.Base().Path
-
-			logger.Debugf("Matched captions to file %s", path)
-			captions, er := w.GetCaptions(ctx, fileID)
-			if er == nil {
-				fileExt := filepath.Ext(captionPath)
-				ext := fileExt[1:]
-				if !IsLangInCaptions(captionLang, ext, captions) { // only update captions if language code is not present
-					newCaption := &models.VideoCaption{
-						LanguageCode: captionLang,
-						Filename:     filepath.Base(captionPath),
-						CaptionType:  ext,
-					}
-					captions = append(captions, newCaption)
-					er = w.UpdateCaptions(ctx, fileID, captions)
-					if er == nil {
-						logger.Debugf("Updated captions for file %s. Added %s", path, captionLang)
-					}
-				}
-			}
-		}
+		f, err = fqb.FindByPath(ctx, captionPrefix+"*")
 		return err
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Errorf("error searching for scene %s: %w", captionPrefix, err)
+	}
+
+	if f != nil { // found related Scene
+		fileID := f.Base().ID
+		path := f.Base().Path
+
+		logger.Debugf("Matched captions to file %s", path)
+		captions, err := w.GetCaptions(ctx, fileID)
+		if err != nil {
+			return
+		}
+
+		fileExt := filepath.Ext(captionPath)
+		ext := fileExt[1:]
+		if !IsLangInCaptions(captionLang, ext, captions) { // only update captions if language code is not present
+			newCaption := &models.VideoCaption{
+				LanguageCode: captionLang,
+				Filename:     filepath.Base(captionPath),
+				CaptionType:  ext,
+			}
+			captions = append(captions, newCaption)
+			err = w.UpdateCaptions(ctx, fileID, captions)
+			if err == nil {
+				logger.Debugf("Updated captions for file %s. Added %s", path, captionLang)
+			}
+		}
 	}
 }

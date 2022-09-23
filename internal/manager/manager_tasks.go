@@ -177,7 +177,7 @@ func (s *Manager) generateScreenshot(ctx context.Context, sceneId string, at *fl
 	j := job.MakeJobExec(func(ctx context.Context, progress *job.Progress) {
 		sceneIdInt, err := strconv.Atoi(sceneId)
 		if err != nil {
-			logger.Errorf("Error parsing scene id %s: %s", sceneId, err.Error())
+			logger.Errorf("error parsing scene id %s: %v", sceneId, err)
 			return
 		}
 
@@ -190,7 +190,7 @@ func (s *Manager) generateScreenshot(ctx context.Context, sceneId string, at *fl
 			}
 			return err
 		}); err != nil || scene == nil {
-			logger.Errorf("failed to get scene for generate: %s", err.Error())
+			logger.Errorf("failed to get scene for generate: %v", err)
 			return
 		}
 
@@ -259,7 +259,7 @@ func (s *Manager) MigrateHash(ctx context.Context) int {
 			scenes, err = s.Repository.Scene.All(ctx)
 			return err
 		}); err != nil {
-			logger.Errorf("failed to fetch list of scenes for migration: %s", err.Error())
+			logger.Errorf("failed to fetch list of scenes for migration: %v", err)
 			return
 		}
 
@@ -275,7 +275,7 @@ func (s *Manager) MigrateHash(ctx context.Context) int {
 			}
 
 			if scene == nil {
-				logger.Errorf("nil scene, skipping migrate")
+				logger.Error("nil scene, skipping migrate")
 				continue
 			}
 
@@ -312,11 +312,11 @@ type StashBoxBatchPerformerTagInput struct {
 
 func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input StashBoxBatchPerformerTagInput) int {
 	j := job.MakeJobExec(func(ctx context.Context, progress *job.Progress) {
-		logger.Infof("Initiating stash-box batch performer tag")
+		logger.Info("Initiating stash-box batch performer tag")
 
 		boxes := config.GetInstance().GetStashBoxes()
 		if input.Endpoint < 0 || input.Endpoint >= len(boxes) {
-			logger.Error(fmt.Errorf("invalid stash_box_index %d", input.Endpoint))
+			logger.Errorf("invalid stash_box_index %d", input.Endpoint)
 			return
 		}
 		box := boxes[input.Endpoint]
@@ -350,7 +350,7 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input StashBoxB
 				}
 				return nil
 			}); err != nil {
-				logger.Error(err.Error())
+				logger.Error(err)
 			}
 		} else if len(input.PerformerNames) > 0 {
 			for i := range input.PerformerNames {
@@ -391,7 +391,7 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input StashBoxB
 				}
 				return nil
 			}); err != nil {
-				logger.Error(err.Error())
+				logger.Error(err)
 				return
 			}
 		}

@@ -78,7 +78,7 @@ func (e SystemStatusEnum) String() string {
 func (e *SystemStatusEnum) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = SystemStatusEnum(str)
@@ -231,7 +231,7 @@ func initialize() error {
 		if err := instance.PostInit(ctx); err != nil {
 			var migrationNeededErr *sqlite.MigrationNeededError
 			if errors.As(err, &migrationNeededErr) {
-				logger.Warn(err.Error())
+				logger.Warn(err)
 			} else {
 				return err
 			}
@@ -380,7 +380,7 @@ func initProfiling(cpuProfilePath string) {
 
 	f, err := os.Create(cpuProfilePath)
 	if err != nil {
-		logger.Fatalf("unable to create cpu profile file: %s", err.Error())
+		logger.Fatalf("unable to create cpu profile file: %v", err)
 	}
 
 	logger.Infof("profiling to %s", cpuProfilePath)
@@ -410,7 +410,7 @@ func initFFMPEG(ctx context.Context) error {
 	Check the readme for download links.
 	The FFMPEG and FFProbe binaries should be placed in %s
 
-	The error was: %s
+	The error was: %v
 	`
 				logger.Errorf(msg, configDirectory, err)
 				return err
@@ -450,7 +450,7 @@ func (s *Manager) PostInit(ctx context.Context) error {
 	s.PluginCache.RegisterSessionStore(s.SessionStore)
 
 	if err := s.PluginCache.LoadPlugins(); err != nil {
-		logger.Errorf("Error reading plugin configs: %s", err.Error())
+		logger.Errorf("Error reading plugin configs: %v", err)
 	}
 
 	s.ScraperCache = instance.initScraperCache()
@@ -499,7 +499,7 @@ func writeStashIcon() {
 	iconPath := filepath.Join(instance.Config.GetConfigPath(), "icon.png")
 	err := os.WriteFile(iconPath, p.GetFaviconPng(), 0644)
 	if err != nil {
-		logger.Errorf("Couldn't write icon file: %s", err.Error())
+		logger.Errorf("Couldn't write icon file: %v", err)
 	}
 }
 
@@ -515,7 +515,7 @@ func (s *Manager) initScraperCache() *scraper.Cache {
 	})
 
 	if err != nil {
-		logger.Errorf("Error reading scraper configs: %s", err.Error())
+		logger.Errorf("Error reading scraper configs: %v", err)
 	}
 
 	return ret
@@ -613,7 +613,7 @@ func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
 	if err := s.PostInit(ctx); err != nil {
 		var migrationNeededErr *sqlite.MigrationNeededError
 		if errors.As(err, &migrationNeededErr) {
-			logger.Warn(err.Error())
+			logger.Warn(err)
 		} else {
 			return fmt.Errorf("error initializing the database: %v", err)
 		}
@@ -654,16 +654,16 @@ func (s *Manager) Migrate(ctx context.Context, input MigrateInput) error {
 
 	// perform database backup
 	if err := database.Backup(backupPath); err != nil {
-		return fmt.Errorf("error backing up database: %s", err)
+		return fmt.Errorf("error backing up database: %v", err)
 	}
 
 	if err := database.RunMigrations(); err != nil {
-		errStr := fmt.Sprintf("error performing migration: %s", err)
+		errStr := fmt.Sprintf("error performing migration: %v", err)
 
 		// roll back to the backed up version
 		restoreErr := database.RestoreFromBackup(backupPath)
 		if restoreErr != nil {
-			errStr = fmt.Sprintf("ERROR: unable to restore database from backup after migration failure: %s\n%s", restoreErr.Error(), errStr)
+			errStr = fmt.Sprintf("ERROR: unable to restore database from backup after migration failure: %v\n%s", restoreErr, errStr)
 		} else {
 			errStr = "An error occurred migrating the database to the latest schema version. The backup database file was automatically renamed to restore the database.\n" + errStr
 		}
@@ -677,7 +677,7 @@ func (s *Manager) Migrate(ctx context.Context, input MigrateInput) error {
 	// if no backup path was provided, then delete the created backup
 	if input.BackupPath == "" {
 		if err := os.Remove(backupPath); err != nil {
-			logger.Warnf("error removing unwanted database backup (%s): %s", backupPath, err.Error())
+			logger.Warnf("error removing unwanted database backup (%s): %v", backupPath, err)
 		}
 	}
 
@@ -716,7 +716,7 @@ func (s *Manager) Shutdown(code int) {
 	// for now, we just close the database.
 	err := s.Database.Close()
 	if err != nil {
-		logger.Errorf("Error closing database: %s", err)
+		logger.Errorf("Error closing database: %v", err)
 		if code == 0 {
 			os.Exit(1)
 		}

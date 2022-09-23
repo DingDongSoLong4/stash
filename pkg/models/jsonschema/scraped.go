@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -43,7 +43,7 @@ func LoadScrapedFile(filePath string) ([]ScrapedItem, error) {
 
 func SaveScrapedFile(filePath string, scrapedItems []ScrapedItem) error {
 	if scrapedItems == nil {
-		return fmt.Errorf("scraped items must not be nil")
+		return errors.New("scraped items must not be nil")
 	}
 	return marshalToFile(filePath, scrapedItems)
 }

@@ -3,6 +3,7 @@ package scraper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -91,7 +92,7 @@ func loadURL(ctx context.Context, loadURL string, client *http.Client, scraperCo
 func urlFromCDP(ctx context.Context, urlCDP string, driverOptions scraperDriverOptions, globalConfig GlobalConfig) (io.Reader, error) {
 
 	if !driverOptions.UseCDP {
-		return nil, fmt.Errorf("url shouldn't be fetched through CDP")
+		return nil, errors.New("url shouldn't be fetched through CDP")
 	}
 
 	sleepDuration := scrapeDefaultSleep
@@ -206,7 +207,7 @@ func setCDPClicks(driverOptions scraperDriverOptions) chromedp.Tasks {
 			action := chromedp.ActionFunc(func(ctx context.Context) error {
 				var nodes []*cdp.Node
 				if err := chromedp.Nodes(xpath, &nodes, chromedp.AtLeast(0)).Do(ctx); err != nil {
-					logger.Debugf("Error %s looking for click xpath %s.\n", err, xpath)
+					logger.Debugf("Error %v looking for click xpath %s.\n", err, xpath)
 					return err
 				}
 				if len(nodes) == 0 {

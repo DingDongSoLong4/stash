@@ -20,7 +20,7 @@ func TestMarkerFindBySceneID(t *testing.T) {
 		markers, err := mqb.FindBySceneID(ctx, sceneID)
 
 		if err != nil {
-			t.Errorf("Error finding markers: %s", err.Error())
+			t.Errorf("error finding markers: %v", err)
 		}
 
 		assert.Greater(t, len(markers), 0)
@@ -31,7 +31,7 @@ func TestMarkerFindBySceneID(t *testing.T) {
 		markers, err = mqb.FindBySceneID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("Error finding marker: %s", err.Error())
+			t.Errorf("error finding marker: %v", err)
 		}
 
 		assert.Len(t, markers, 0)
@@ -47,7 +47,7 @@ func TestMarkerCountByTagID(t *testing.T) {
 		markerCount, err := mqb.CountByTagID(ctx, tagIDs[tagIdxWithPrimaryMarkers])
 
 		if err != nil {
-			t.Errorf("error calling CountByTagID: %s", err.Error())
+			t.Errorf("error calling CountByTagID: %v", err)
 		}
 
 		assert.Equal(t, 3, markerCount)
@@ -55,7 +55,7 @@ func TestMarkerCountByTagID(t *testing.T) {
 		markerCount, err = mqb.CountByTagID(ctx, tagIDs[tagIdxWithMarkers])
 
 		if err != nil {
-			t.Errorf("error calling CountByTagID: %s", err.Error())
+			t.Errorf("error calling CountByTagID: %v", err)
 		}
 
 		assert.Equal(t, 1, markerCount)
@@ -63,7 +63,7 @@ func TestMarkerCountByTagID(t *testing.T) {
 		markerCount, err = mqb.CountByTagID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling CountByTagID: %s", err.Error())
+			t.Errorf("error calling CountByTagID: %v", err)
 		}
 
 		assert.Equal(t, 0, markerCount)
@@ -80,7 +80,7 @@ func TestMarkerQuerySortBySceneUpdated(t *testing.T) {
 		})
 
 		if err != nil {
-			t.Errorf("Error querying scene markers: %s", err.Error())
+			t.Errorf("error querying scene markers: %v", err)
 		}
 
 		return nil
@@ -211,7 +211,7 @@ func queryMarkers(ctx context.Context, t *testing.T, sqb models.SceneMarkerReade
 	t.Helper()
 	result, _, err := sqb.Query(ctx, markerFilter, findFilter)
 	if err != nil {
-		t.Errorf("Error querying markers: %v", err)
+		t.Errorf("error querying markers: %v", err)
 	}
 
 	return result

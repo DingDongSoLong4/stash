@@ -187,7 +187,7 @@ func (s *Store) MakePluginCookie(ctx context.Context) *http.Cookie {
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values,
 		s.sessionStore.Codecs...)
 	if err != nil {
-		logger.Errorf("error creating session cookie: %s", err.Error())
+		logger.Errorf("error creating session cookie: %v", err)
 		return nil
 	}
 

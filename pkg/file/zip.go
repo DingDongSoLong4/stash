@@ -86,7 +86,7 @@ type zipReadDirFile struct {
 func (f *zipReadDirFile) ReadDir(n int) ([]fs.DirEntry, error) {
 	asReadDirFile, _ := f.File.(fs.ReadDirFile)
 	if asReadDirFile == nil {
-		return nil, fmt.Errorf("internal error: not a ReadDirFile")
+		return nil, errors.New("internal error: not a ReadDirFile")
 	}
 
 	return asReadDirFile.ReadDir(n)

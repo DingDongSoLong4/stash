@@ -54,14 +54,14 @@ func runTests(m *testing.M) int {
 	// create the database file
 	f, err := os.CreateTemp("", "*.sqlite")
 	if err != nil {
-		panic(fmt.Sprintf("Could not create temporary file: %s", err.Error()))
+		panic(fmt.Sprintf("Could not create temporary file: %v", err))
 	}
 
 	f.Close()
 	databaseFile := f.Name()
 	db = sqlite.NewDatabase()
 	if err := db.Open(databaseFile); err != nil {
-		panic(fmt.Sprintf("Could not initialize database: %s", err.Error()))
+		panic(fmt.Sprintf("Could not initialize database: %v", err))
 	}
 
 	r = db.TxnRepository()
@@ -71,7 +71,7 @@ func runTests(m *testing.M) int {
 
 	err = populateDB()
 	if err != nil {
-		panic(fmt.Sprintf("Could not populate database: %s", err.Error()))
+		panic(fmt.Sprintf("Could not populate database: %v", err))
 	} else {
 		// run the tests
 		return m.Run()
@@ -260,7 +260,7 @@ func createScene(ctx context.Context, sqb models.SceneWriter, s *models.Scene, f
 	err := sqb.Create(ctx, s, []file.ID{f.ID})
 
 	if err != nil {
-		return fmt.Errorf("Failed to create scene with path '%s': %s", f.Path, err.Error())
+		return fmt.Errorf("Failed to create scene with path '%s': %v", f.Path, err)
 	}
 
 	return nil
@@ -368,7 +368,7 @@ func createImage(ctx context.Context, w models.ImageWriter, o *models.Image, f *
 	})
 
 	if err != nil {
-		return fmt.Errorf("Failed to create image with path '%s': %s", f.Path, err.Error())
+		return fmt.Errorf("Failed to create image with path '%s': %v", f.Path, err)
 	}
 
 	return nil
@@ -470,7 +470,7 @@ func makeGallery(expectedResult bool) *models.Gallery {
 func createGallery(ctx context.Context, w models.GalleryWriter, o *models.Gallery, f *file.BaseFile) error {
 	err := w.Create(ctx, o, []file.ID{f.ID})
 	if err != nil {
-		return fmt.Errorf("Failed to create gallery with path '%s': %s", f.Path, err.Error())
+		return fmt.Errorf("Failed to create gallery with path '%s': %v", f.Path, err)
 	}
 
 	return nil
@@ -535,7 +535,7 @@ func TestParsePerformerScenes(t *testing.T) {
 		performers, err = r.Performer.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -543,7 +543,7 @@ func TestParsePerformerScenes(t *testing.T) {
 		if err := withTxn(func(ctx context.Context) error {
 			return PerformerScenes(ctx, p, nil, r.Scene, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -553,14 +553,14 @@ func TestParsePerformerScenes(t *testing.T) {
 
 		scenes, err := r.Scene.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, scene := range scenes {
 			performers, err := pqb.FindBySceneID(ctx, scene.ID)
 
 			if err != nil {
-				t.Errorf("Error getting scene performers: %s", err.Error())
+				t.Errorf("Error getting scene performers: %v", err)
 			}
 
 			// title is only set on scenes where we expect performer to be set
@@ -582,7 +582,7 @@ func TestParseStudioScenes(t *testing.T) {
 		studios, err = r.Studio.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting studio: %s", err)
+		t.Errorf("Error getting studio: %v", err)
 		return
 	}
 
@@ -595,7 +595,7 @@ func TestParseStudioScenes(t *testing.T) {
 
 			return StudioScenes(ctx, s, nil, aliases, r.Scene, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -603,7 +603,7 @@ func TestParseStudioScenes(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		scenes, err := r.Scene.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, scene := range scenes {
@@ -638,7 +638,7 @@ func TestParseTagScenes(t *testing.T) {
 		tags, err = r.Tag.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -651,7 +651,7 @@ func TestParseTagScenes(t *testing.T) {
 
 			return TagScenes(ctx, s, nil, aliases, r.Scene, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -659,7 +659,7 @@ func TestParseTagScenes(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		scenes, err := r.Scene.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		tqb := r.Tag
@@ -668,7 +668,7 @@ func TestParseTagScenes(t *testing.T) {
 			tags, err := tqb.FindBySceneID(ctx, scene.ID)
 
 			if err != nil {
-				t.Errorf("Error getting scene tags: %s", err.Error())
+				t.Errorf("Error getting scene tags: %v", err)
 			}
 
 			// title is only set on scenes where we expect tag to be set
@@ -690,7 +690,7 @@ func TestParsePerformerImages(t *testing.T) {
 		performers, err = r.Performer.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -698,7 +698,7 @@ func TestParsePerformerImages(t *testing.T) {
 		if err := withTxn(func(ctx context.Context) error {
 			return PerformerImages(ctx, p, nil, r.Image, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -708,14 +708,14 @@ func TestParsePerformerImages(t *testing.T) {
 
 		images, err := r.Image.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, image := range images {
 			performers, err := pqb.FindByImageID(ctx, image.ID)
 
 			if err != nil {
-				t.Errorf("Error getting image performers: %s", err.Error())
+				t.Errorf("Error getting image performers: %v", err)
 			}
 
 			// title is only set on images where we expect performer to be set
@@ -738,7 +738,7 @@ func TestParseStudioImages(t *testing.T) {
 		studios, err = r.Studio.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting studio: %s", err)
+		t.Errorf("Error getting studio: %v", err)
 		return
 	}
 
@@ -751,7 +751,7 @@ func TestParseStudioImages(t *testing.T) {
 
 			return StudioImages(ctx, s, nil, aliases, r.Image, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -759,7 +759,7 @@ func TestParseStudioImages(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		images, err := r.Image.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, image := range images {
@@ -794,7 +794,7 @@ func TestParseTagImages(t *testing.T) {
 		tags, err = r.Tag.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -807,7 +807,7 @@ func TestParseTagImages(t *testing.T) {
 
 			return TagImages(ctx, s, nil, aliases, r.Image, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -815,7 +815,7 @@ func TestParseTagImages(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		images, err := r.Image.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		tqb := r.Tag
@@ -824,7 +824,7 @@ func TestParseTagImages(t *testing.T) {
 			tags, err := tqb.FindByImageID(ctx, image.ID)
 
 			if err != nil {
-				t.Errorf("Error getting image tags: %s", err.Error())
+				t.Errorf("Error getting image tags: %v", err)
 			}
 
 			// title is only set on images where we expect performer to be set
@@ -847,7 +847,7 @@ func TestParsePerformerGalleries(t *testing.T) {
 		performers, err = r.Performer.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -855,7 +855,7 @@ func TestParsePerformerGalleries(t *testing.T) {
 		if err := withTxn(func(ctx context.Context) error {
 			return PerformerGalleries(ctx, p, nil, r.Gallery, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -865,14 +865,14 @@ func TestParsePerformerGalleries(t *testing.T) {
 
 		galleries, err := r.Gallery.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, gallery := range galleries {
 			performers, err := pqb.FindByGalleryID(ctx, gallery.ID)
 
 			if err != nil {
-				t.Errorf("Error getting gallery performers: %s", err.Error())
+				t.Errorf("Error getting gallery performers: %v", err)
 			}
 
 			// title is only set on galleries where we expect performer to be set
@@ -895,7 +895,7 @@ func TestParseStudioGalleries(t *testing.T) {
 		studios, err = r.Studio.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting studio: %s", err)
+		t.Errorf("Error getting studio: %v", err)
 		return
 	}
 
@@ -908,7 +908,7 @@ func TestParseStudioGalleries(t *testing.T) {
 
 			return StudioGalleries(ctx, s, nil, aliases, r.Gallery, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -916,7 +916,7 @@ func TestParseStudioGalleries(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		galleries, err := r.Gallery.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		for _, gallery := range galleries {
@@ -951,7 +951,7 @@ func TestParseTagGalleries(t *testing.T) {
 		tags, err = r.Tag.All(ctx)
 		return err
 	}); err != nil {
-		t.Errorf("Error getting performer: %s", err)
+		t.Errorf("Error getting performer: %v", err)
 		return
 	}
 
@@ -964,7 +964,7 @@ func TestParseTagGalleries(t *testing.T) {
 
 			return TagGalleries(ctx, s, nil, aliases, r.Gallery, nil)
 		}); err != nil {
-			t.Errorf("Error auto-tagging performers: %s", err)
+			t.Errorf("Error auto-tagging performers: %v", err)
 		}
 	}
 
@@ -972,7 +972,7 @@ func TestParseTagGalleries(t *testing.T) {
 	withTxn(func(ctx context.Context) error {
 		galleries, err := r.Gallery.All(ctx)
 		if err != nil {
-			t.Error(err.Error())
+			t.Error(err)
 		}
 
 		tqb := r.Tag
@@ -981,7 +981,7 @@ func TestParseTagGalleries(t *testing.T) {
 			tags, err := tqb.FindByGalleryID(ctx, gallery.ID)
 
 			if err != nil {
-				t.Errorf("Error getting gallery tags: %s", err.Error())
+				t.Errorf("Error getting gallery tags: %v", err)
 			}
 
 			// title is only set on galleries where we expect performer to be set

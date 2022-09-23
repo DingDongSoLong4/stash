@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -89,7 +89,7 @@ func LoadSceneFile(filePath string) (*Scene, error) {
 
 func SaveSceneFile(filePath string, scene *Scene) error {
 	if scene == nil {
-		return fmt.Errorf("scene must not be nil")
+		return errors.New("scene must not be nil")
 	}
 	return marshalToFile(filePath, scene)
 }

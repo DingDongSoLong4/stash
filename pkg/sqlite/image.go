@@ -555,7 +555,7 @@ func (qb *ImageStore) Size(ctx context.Context) (float64, error) {
 	table := qb.table()
 	fileTable := fileTableMgr.table
 	q := dialect.Select(
-		goqu.SUM(fileTableMgr.table.Col("size")),
+		goqu.SUM(fileTable.Col("size")),
 	).From(table).InnerJoin(
 		imagesFilesJoinTable,
 		goqu.On(table.Col(idColumn).Eq(imagesFilesJoinTable.Col(imageIDColumn))),
@@ -922,7 +922,6 @@ func imageStudioCriterionHandler(qb *ImageStore, studios *models.HierarchicalMul
 		primaryTable: imageTable,
 		foreignTable: studioTable,
 		foreignFK:    studioIDColumn,
-		derivedTable: "studio",
 		parentFK:     "parent_id",
 	}
 

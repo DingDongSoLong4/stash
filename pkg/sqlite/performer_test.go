@@ -6,6 +6,7 @@ package sqlite_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -28,7 +29,7 @@ func TestPerformerFindBySceneID(t *testing.T) {
 		performers, err := pqb.FindBySceneID(ctx, sceneID)
 
 		if err != nil {
-			t.Errorf("Error finding performer: %s", err.Error())
+			t.Errorf("error finding performer: %v", err)
 		}
 
 		assert.Equal(t, 1, len(performers))
@@ -39,7 +40,7 @@ func TestPerformerFindBySceneID(t *testing.T) {
 		performers, err = pqb.FindBySceneID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("Error finding performer: %s", err.Error())
+			t.Errorf("error finding performer: %v", err)
 		}
 
 		assert.Equal(t, 0, len(performers))
@@ -66,14 +67,14 @@ func TestPerformerFindByNames(t *testing.T) {
 
 		performers, err := pqb.FindByNames(ctx, names, false)
 		if err != nil {
-			t.Errorf("Error finding performers: %s", err.Error())
+			t.Errorf("error finding performers: %v", err)
 		}
 		assert.Len(t, performers, 1)
 		assert.Equal(t, performerNames[performerIdxWithScene], performers[0].Name.String)
 
 		performers, err = pqb.FindByNames(ctx, names, true) // find performers by names nocase
 		if err != nil {
-			t.Errorf("Error finding performers: %s", err.Error())
+			t.Errorf("error finding performers: %v", err)
 		}
 		assert.Len(t, performers, 2) // performerIdxWithScene and performerIdxWithDupName
 		assert.Equal(t, strings.ToLower(performerNames[performerIdxWithScene]), strings.ToLower(performers[0].Name.String))
@@ -83,14 +84,14 @@ func TestPerformerFindByNames(t *testing.T) {
 
 		performers, err = pqb.FindByNames(ctx, names, false)
 		if err != nil {
-			t.Errorf("Error finding performers: %s", err.Error())
+			t.Errorf("error finding performers: %v", err)
 		}
 		retNames := getNames(performers)
 		assert.Equal(t, names, retNames)
 
 		performers, err = pqb.FindByNames(ctx, names, true) // find performers by names ( 2 names nocase)
 		if err != nil {
-			t.Errorf("Error finding performers: %s", err.Error())
+			t.Errorf("error finding performers: %v", err)
 		}
 		retNames = getNames(performers)
 		assert.Equal(t, []string{
@@ -270,7 +271,7 @@ func TestPerformerQueryForAutoTag(t *testing.T) {
 		performers, err := tqb.QueryForAutoTag(ctx, []string{name})
 
 		if err != nil {
-			t.Errorf("Error finding performers: %s", err.Error())
+			t.Errorf("error finding performers: %v", err)
 		}
 
 		assert.Len(t, performers, 2)
@@ -294,31 +295,31 @@ func TestPerformerUpdatePerformerImage(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, performer)
 		if err != nil {
-			return fmt.Errorf("Error creating performer: %s", err.Error())
+			return fmt.Errorf("error creating performer: %v", err)
 		}
 
 		image := []byte("image")
 		err = qb.UpdateImage(ctx, created.ID, image)
 		if err != nil {
-			return fmt.Errorf("Error updating performer image: %s", err.Error())
+			return fmt.Errorf("error updating performer image: %v", err)
 		}
 
 		// ensure image set
 		storedImage, err := qb.GetImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("error getting image: %v", err)
 		}
 		assert.Equal(t, storedImage, image)
 
 		// set nil image
 		err = qb.UpdateImage(ctx, created.ID, nil)
 		if err == nil {
-			return fmt.Errorf("Expected error setting nil image")
+			return errors.New("Expected error setting nil image")
 		}
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -335,30 +336,30 @@ func TestPerformerDestroyPerformerImage(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, performer)
 		if err != nil {
-			return fmt.Errorf("Error creating performer: %s", err.Error())
+			return fmt.Errorf("error creating performer: %v", err)
 		}
 
 		image := []byte("image")
 		err = qb.UpdateImage(ctx, created.ID, image)
 		if err != nil {
-			return fmt.Errorf("Error updating performer image: %s", err.Error())
+			return fmt.Errorf("error updating performer image: %v", err)
 		}
 
 		err = qb.DestroyImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error destroying performer image: %s", err.Error())
+			return fmt.Errorf("error destroying performer image: %v", err)
 		}
 
 		// image should be nil
 		storedImage, err := qb.GetImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("error getting image: %v", err)
 		}
 		assert.Nil(t, storedImage)
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -390,7 +391,7 @@ func verifyPerformerAge(t *testing.T, ageCriterion models.IntCriterionInput) {
 
 		performers, _, err := qb.Query(ctx, &performerFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying performer: %s", err.Error())
+			t.Errorf("error querying performer: %v", err)
 		}
 
 		now := time.Now()
@@ -443,7 +444,7 @@ func verifyPerformerCareerLength(t *testing.T, criterion models.StringCriterionI
 
 		performers, _, err := qb.Query(ctx, &performerFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying performer: %s", err.Error())
+			t.Errorf("error querying performer: %v", err)
 		}
 
 		for _, performer := range performers {
@@ -514,7 +515,7 @@ func verifyPerformerQuery(t *testing.T, filter models.PerformerFilterType, verif
 func queryPerformers(ctx context.Context, t *testing.T, qb models.PerformerReader, performerFilter *models.PerformerFilterType, findFilter *models.FindFilterType) []*models.Performer {
 	performers, _, err := qb.Query(ctx, performerFilter, findFilter)
 	if err != nil {
-		t.Errorf("Error querying performers: %s", err.Error())
+		t.Errorf("error querying performers: %v", err)
 	}
 
 	return performers
@@ -855,13 +856,13 @@ func TestPerformerStashIDs(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, performer)
 		if err != nil {
-			return fmt.Errorf("Error creating performer: %s", err.Error())
+			return fmt.Errorf("error creating performer: %v", err)
 		}
 
 		testStashIDReaderWriter(ctx, t, qb, created.ID)
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 func TestPerformerQueryRating(t *testing.T) {
@@ -936,7 +937,7 @@ func TestPerformerQueryIsMissingImage(t *testing.T) {
 		// ensure query does not error
 		performers, _, err := sqlite.PerformerReaderWriter.Query(ctx, performerFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying performers: %s", err.Error())
+			t.Errorf("error querying performers: %v", err)
 		}
 
 		assert.True(t, len(performers) > 0)
@@ -944,7 +945,7 @@ func TestPerformerQueryIsMissingImage(t *testing.T) {
 		for _, performer := range performers {
 			img, err := sqlite.PerformerReaderWriter.GetImage(ctx, performer.ID)
 			if err != nil {
-				t.Errorf("error getting performer image: %s", err.Error())
+				t.Errorf("error getting performer image: %v", err)
 			}
 			assert.Nil(t, img)
 		}
@@ -965,7 +966,7 @@ func TestPerformerQuerySortScenesCount(t *testing.T) {
 		// just ensure it queries without error
 		performers, _, err := sqlite.PerformerReaderWriter.Query(ctx, nil, findFilter)
 		if err != nil {
-			t.Errorf("Error querying performers: %s", err.Error())
+			t.Errorf("error querying performers: %v", err)
 		}
 
 		assert.True(t, len(performers) > 0)
@@ -980,7 +981,7 @@ func TestPerformerQuerySortScenesCount(t *testing.T) {
 
 		performers, _, err = sqlite.PerformerReaderWriter.Query(ctx, nil, findFilter)
 		if err != nil {
-			t.Errorf("Error querying performers: %s", err.Error())
+			t.Errorf("error querying performers: %v", err)
 		}
 
 		assert.True(t, len(performers) > 0)

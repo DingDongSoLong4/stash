@@ -176,7 +176,7 @@ func (log *PluginLogger) handleStderrLine(line string) {
 	case ProgressLevel:
 		p, err := strconv.ParseFloat(ll, 64)
 		if err != nil {
-			logger.Errorf("Error parsing progress value '%s': %s", ll, err.Error())
+			logger.Errorf("error parsing progress value '%s': %v", ll, err)
 		} else if log.ProgressChan != nil { // only pass progress through if channel present
 			// don't block on this
 			select {

@@ -21,7 +21,7 @@ var (
 func isService() bool {
 	result, err := svc.IsWindowsService()
 	if err != nil {
-		logger.Errorf("Encountered error checking if running as Windows service: %s", err.Error())
+		logger.Errorf("Error checking if running as service: %v", err)
 		return false
 	}
 	return result
@@ -79,7 +79,7 @@ func sendNotification(notificationTitle string, notificationText string) {
 	}
 	err := notification.Push()
 	if err != nil {
-		logger.Errorf("Error creating Windows notification: %s", err.Error())
+		logger.Errorf("Error sending notification: %v", err)
 	}
 }
 

@@ -78,7 +78,7 @@ func getTagID(ctx context.Context, client *graphql.Client, create bool) (*graphq
 
 	err := client.Query(ctx, &q, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting tags: %s\n", err.Error())
+		return nil, fmt.Errorf("error getting tags: %v\n", err)
 	}
 
 	for _, t := range q.AllTags {
@@ -110,7 +110,7 @@ func getTagID(ctx context.Context, client *graphql.Client, create bool) (*graphq
 
 	err = client.Mutate(ctx, &m, vars)
 	if err != nil {
-		return nil, fmt.Errorf("Error mutating scene: %s\n", err.Error())
+		return nil, fmt.Errorf("error mutating scene: %v\n", err)
 	}
 
 	return &m.TagCreate.ID, nil
@@ -136,7 +136,7 @@ func findRandomScene(ctx context.Context, client *graphql.Client) (*Scene, error
 	log.Info("Finding a random scene")
 	err := client.Query(ctx, &q, vars)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting random scene: %s\n", err.Error())
+		return nil, fmt.Errorf("error getting random scene: %v\n", err)
 	}
 
 	if q.FindScenes.Count == 0 {

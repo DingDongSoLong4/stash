@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,7 +51,7 @@ func LoadFolderFile(filePath string) (*Folder, error) {
 
 func SaveFolderFile(filePath string, folder *Folder) error {
 	if folder == nil {
-		return fmt.Errorf("folder must not be nil")
+		return errors.New("folder must not be nil")
 	}
 	return marshalToFile(filePath, folder)
 }

@@ -86,7 +86,7 @@ func (s *Service) getInterfaces() ([]net.Interface, error) {
 		for _, n := range ifNames {
 			if_, err := net.InterfaceByName(n)
 			if err != nil {
-				return nil, fmt.Errorf("error getting interface for name %s: %s", n, err.Error())
+				return nil, fmt.Errorf("error getting interface for name %s: %v", n, err)
 			}
 
 			if if_ != nil {
@@ -139,7 +139,7 @@ func (s *Service) init() error {
 		HTTPConn: func() net.Listener {
 			conn, err := net.Listen("tcp", dmsConfig.Http)
 			if err != nil {
-				logger.Error(err.Error())
+				logger.Error(err)
 			}
 			return conn
 		}(),

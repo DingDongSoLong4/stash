@@ -24,7 +24,7 @@ func setInitialMD5Config(ctx context.Context, txnManager txn.Manager, counter Sc
 		count, err = counter.Count(ctx)
 		return err
 	}); err != nil {
-		logger.Errorf("Error while counting scenes: %s", err.Error())
+		logger.Errorf("error while counting scenes: %v", err)
 		return
 	}
 
@@ -37,7 +37,7 @@ func setInitialMD5Config(ctx context.Context, txnManager txn.Manager, counter Sc
 	config := config.GetInstance()
 	config.SetChecksumDefaultValues(defaultAlgorithm, usingMD5)
 	if err := config.Write(); err != nil {
-		logger.Errorf("Error while writing configuration file: %s", err.Error())
+		logger.Errorf("error while writing configuration file: %v", err)
 	}
 }
 

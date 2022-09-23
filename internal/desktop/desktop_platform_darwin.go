@@ -27,7 +27,7 @@ func sendNotification(notificationTitle string, notificationText string) {
 	err := notification.Push()
 
 	if err != nil {
-		logger.Errorf("Could not send MacOS notification: %s", err.Error())
+		logger.Errorf("Error sending notification: %v", err)
 	}
 }
 

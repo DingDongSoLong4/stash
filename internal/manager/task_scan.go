@@ -295,14 +295,14 @@ func (g *imageThumbnailGenerator) GenerateThumbnail(ctx context.Context, i *mode
 	if err != nil {
 		// don't log for animated images
 		if !errors.Is(err, image.ErrNotSupportedForThumbnail) {
-			return fmt.Errorf("getting thumbnail for image %s: %w", f.Path, err)
+			return fmt.Errorf("error getting thumbnail for image %s: %w", f.Path, err)
 		}
 		return nil
 	}
 
 	err = fsutil.WriteFile(thumbPath, data)
 	if err != nil {
-		return fmt.Errorf("writing thumbnail for image %s: %w", f.Path, err)
+		return fmt.Errorf("error writing thumbnail for image %s: %w", f.Path, err)
 	}
 
 	return nil

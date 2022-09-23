@@ -27,7 +27,7 @@ func (t *GenerateSpriteTask) Start(ctx context.Context) {
 	ffprobe := instance.FFProbe
 	videoFile, err := ffprobe.NewVideoFile(t.Scene.Path)
 	if err != nil {
-		logger.Errorf("error reading video file: %s", err.Error())
+		logger.Errorf("error reading video file: %v", err)
 		return
 	}
 
@@ -37,13 +37,13 @@ func (t *GenerateSpriteTask) Start(ctx context.Context) {
 	generator, err := NewSpriteGenerator(*videoFile, sceneHash, imagePath, vttPath, 9, 9)
 
 	if err != nil {
-		logger.Errorf("error creating sprite generator: %s", err.Error())
+		logger.Errorf("error creating sprite generator: %v", err)
 		return
 	}
 	generator.Overwrite = t.Overwrite
 
 	if err := generator.Generate(); err != nil {
-		logger.Errorf("error generating sprite: %s", err.Error())
+		logger.Errorf("error generating sprite: %v", err)
 		logErrorOutput(err)
 		return
 	}

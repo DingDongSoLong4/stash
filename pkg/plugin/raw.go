@@ -73,21 +73,21 @@ func (t *rawPluginTask) Start() error {
 
 		inBytes, err := json.Marshal(t.input)
 		if err != nil {
-			logger.Warnf("error marshalling raw command input")
+			logger.Warnf("error marshalling raw command input: %v", err)
 		}
-		if k, err := io.WriteString(stdin, string(inBytes)); err != nil {
-			logger.Warnf("error writing input to plugins stdin (wrote %v bytes out of %v): %v", k, len(string(inBytes)), err)
+		if k, err := stdin.Write(inBytes); err != nil {
+			logger.Warnf("error writing input to plugins stdin (wrote %v bytes out of %v): %v", k, len(inBytes), err)
 		}
 	}()
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		logger.Error("plugin stderr not available: " + err.Error())
+		logger.Errorf("plugin stderr not available: %v", err)
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if nil != err {
-		logger.Error("plugin stdout not available: " + err.Error())
+		logger.Errorf("plugin stdout not available: %v", err)
 	}
 
 	t.waitGroup.Add(1)

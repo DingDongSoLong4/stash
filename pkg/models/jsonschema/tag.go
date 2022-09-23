@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -41,7 +41,7 @@ func LoadTagFile(filePath string) (*Tag, error) {
 
 func SaveTagFile(filePath string, tag *Tag) error {
 	if tag == nil {
-		return fmt.Errorf("tag must not be nil")
+		return errors.New("tag must not be nil")
 	}
 	return marshalToFile(filePath, tag)
 }

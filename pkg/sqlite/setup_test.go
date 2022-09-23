@@ -513,7 +513,7 @@ func runTests(m *testing.M) int {
 	// create the database file
 	f, err := os.CreateTemp("", "*.sqlite")
 	if err != nil {
-		panic(fmt.Sprintf("Could not create temporary file: %s", err.Error()))
+		panic(fmt.Sprintf("Could not create temporary file: %v", err))
 	}
 
 	f.Close()
@@ -521,7 +521,7 @@ func runTests(m *testing.M) int {
 	db = sqlite.NewDatabase()
 
 	if err := db.Open(databaseFile); err != nil {
-		panic(fmt.Sprintf("Could not initialize database: %s", err.Error()))
+		panic(fmt.Sprintf("Could not initialize database: %v", err))
 	}
 
 	// defer close and delete the database
@@ -529,7 +529,7 @@ func runTests(m *testing.M) int {
 
 	err = populateDB()
 	if err != nil {
-		panic(fmt.Sprintf("Could not populate database: %s", err.Error()))
+		panic(fmt.Sprintf("Could not populate database: %v", err))
 	} else {
 		// run the tests
 		return m.Run()
@@ -549,60 +549,60 @@ func populateDB() error {
 		// TODO - link folders to zip files
 
 		if err := createMovies(ctx, sqlite.MovieReaderWriter, moviesNameCase, moviesNameNoCase); err != nil {
-			return fmt.Errorf("error creating movies: %s", err.Error())
+			return fmt.Errorf("error creating movies: %v", err)
 		}
 
 		if err := createPerformers(ctx, sqlite.PerformerReaderWriter, performersNameCase, performersNameNoCase); err != nil {
-			return fmt.Errorf("error creating performers: %s", err.Error())
+			return fmt.Errorf("error creating performers: %v", err)
 		}
 
 		if err := createTags(ctx, sqlite.TagReaderWriter, tagsNameCase, tagsNameNoCase); err != nil {
-			return fmt.Errorf("error creating tags: %s", err.Error())
+			return fmt.Errorf("error creating tags: %v", err)
 		}
 
 		if err := createStudios(ctx, sqlite.StudioReaderWriter, studiosNameCase, studiosNameNoCase); err != nil {
-			return fmt.Errorf("error creating studios: %s", err.Error())
+			return fmt.Errorf("error creating studios: %v", err)
 		}
 
 		if err := createGalleries(ctx, totalGalleries); err != nil {
-			return fmt.Errorf("error creating galleries: %s", err.Error())
+			return fmt.Errorf("error creating galleries: %v", err)
 		}
 
 		if err := createScenes(ctx, totalScenes); err != nil {
-			return fmt.Errorf("error creating scenes: %s", err.Error())
+			return fmt.Errorf("error creating scenes: %v", err)
 		}
 
 		if err := createImages(ctx, totalImages); err != nil {
-			return fmt.Errorf("error creating images: %s", err.Error())
+			return fmt.Errorf("error creating images: %v", err)
 		}
 
 		if err := addTagImage(ctx, sqlite.TagReaderWriter, tagIdxWithCoverImage); err != nil {
-			return fmt.Errorf("error adding tag image: %s", err.Error())
+			return fmt.Errorf("error adding tag image: %v", err)
 		}
 
 		if err := createSavedFilters(ctx, sqlite.SavedFilterReaderWriter, totalSavedFilters); err != nil {
-			return fmt.Errorf("error creating saved filters: %s", err.Error())
+			return fmt.Errorf("error creating saved filters: %v", err)
 		}
 
 		if err := linkPerformerTags(ctx, sqlite.PerformerReaderWriter); err != nil {
-			return fmt.Errorf("error linking performer tags: %s", err.Error())
+			return fmt.Errorf("error linking performer tags: %v", err)
 		}
 
 		if err := linkMovieStudios(ctx, sqlite.MovieReaderWriter); err != nil {
-			return fmt.Errorf("error linking movie studios: %s", err.Error())
+			return fmt.Errorf("error linking movie studios: %v", err)
 		}
 
 		if err := linkStudiosParent(ctx, sqlite.StudioReaderWriter); err != nil {
-			return fmt.Errorf("error linking studios parent: %s", err.Error())
+			return fmt.Errorf("error linking studios parent: %v", err)
 		}
 
 		if err := linkTagsParent(ctx, sqlite.TagReaderWriter); err != nil {
-			return fmt.Errorf("error linking tags parent: %s", err.Error())
+			return fmt.Errorf("error linking tags parent: %v", err)
 		}
 
 		for _, ms := range markerSpecs {
 			if err := createMarker(ctx, sqlite.SceneMarkerReaderWriter, ms); err != nil {
-				return fmt.Errorf("error creating scene marker: %s", err.Error())
+				return fmt.Errorf("error creating scene marker: %v", err)
 			}
 		}
 
@@ -654,7 +654,7 @@ func createFolders(ctx context.Context) error {
 		folder := makeFolder(i)
 
 		if err := qb.Create(ctx, &folder); err != nil {
-			return fmt.Errorf("Error creating folder [%d] %v+: %s", i, folder, err.Error())
+			return fmt.Errorf("error creating folder [%d] %v+: %v", i, folder, err)
 		}
 
 		folderIDs = append(folderIDs, folder.ID)
@@ -757,7 +757,7 @@ func createFiles(ctx context.Context) error {
 		file := makeFile(i)
 
 		if err := qb.Create(ctx, file); err != nil {
-			return fmt.Errorf("Error creating file [%d] %v+: %s", i, file, err.Error())
+			return fmt.Errorf("error creating file [%d] %v+: %v", i, file, err)
 		}
 
 		fileIDs = append(fileIDs, file.Base().ID)
@@ -999,7 +999,7 @@ func createScenes(ctx context.Context, n int) error {
 		scene := makeScene(i)
 
 		if err := sqb.Create(ctx, scene, []file.ID{f.ID}); err != nil {
-			return fmt.Errorf("Error creating scene %v+: %s", scene, err.Error())
+			return fmt.Errorf("error creating scene %v+: %v", scene, err)
 		}
 
 		sceneIDs = append(sceneIDs, scene.ID)
@@ -1080,7 +1080,7 @@ func createImages(ctx context.Context, n int) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("Error creating image %v+: %s", image, err.Error())
+			return fmt.Errorf("error creating image %v+: %v", image, err)
 		}
 
 		imageIDs = append(imageIDs, image.ID)
@@ -1170,7 +1170,7 @@ func createGalleries(ctx context.Context, n int) error {
 		err := gqb.Create(ctx, gallery, fileIDs)
 
 		if err != nil {
-			return fmt.Errorf("Error creating gallery %v+: %s", gallery, err.Error())
+			return fmt.Errorf("error creating gallery %v+: %v", gallery, err)
 		}
 
 		galleryIDs = append(galleryIDs, gallery.ID)
@@ -1212,7 +1212,7 @@ func createMovies(ctx context.Context, mqb models.MovieReaderWriter, n int, o in
 		created, err := mqb.Create(ctx, movie)
 
 		if err != nil {
-			return fmt.Errorf("Error creating movie [%d] %v+: %s", i, movie, err.Error())
+			return fmt.Errorf("error creating movie [%d] %v+: %v", i, movie, err)
 		}
 
 		movieIDs = append(movieIDs, created.ID)
@@ -1308,7 +1308,7 @@ func createPerformers(ctx context.Context, pqb models.PerformerReaderWriter, n i
 		created, err := pqb.Create(ctx, performer)
 
 		if err != nil {
-			return fmt.Errorf("Error creating performer %v+: %s", performer, err.Error())
+			return fmt.Errorf("error creating performer %v+: %v", performer, err)
 		}
 
 		performerIDs = append(performerIDs, created.ID)
@@ -1382,7 +1382,7 @@ func getTagChildCount(id int) int {
 	return 0
 }
 
-//createTags creates n tags with plain Name and o tags with camel cased NaMe included
+// createTags creates n tags with plain Name and o tags with camel cased NaMe included
 func createTags(ctx context.Context, tqb models.TagReaderWriter, n int, o int) error {
 	const namePlain = "Name"
 	const nameNoCase = "NaMe"
@@ -1406,13 +1406,13 @@ func createTags(ctx context.Context, tqb models.TagReaderWriter, n int, o int) e
 		created, err := tqb.Create(ctx, tag)
 
 		if err != nil {
-			return fmt.Errorf("Error creating tag %v+: %s", tag, err.Error())
+			return fmt.Errorf("error creating tag %v+: %v", tag, err)
 		}
 
 		// add alias
 		alias := getTagStringValue(i, "Alias")
 		if err := tqb.UpdateAliases(ctx, created.ID, []string{alias}); err != nil {
-			return fmt.Errorf("error setting tag alias: %s", err.Error())
+			return fmt.Errorf("error setting tag alias: %v", err)
 		}
 
 		tagIDs = append(tagIDs, created.ID)
@@ -1447,7 +1447,7 @@ func createStudioFromModel(ctx context.Context, sqb models.StudioReaderWriter, s
 	created, err := sqb.Create(ctx, studio)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error creating studio %v+: %s", studio, err.Error())
+		return nil, fmt.Errorf("error creating studio %v+: %v", studio, err)
 	}
 
 	return created, nil
@@ -1484,7 +1484,7 @@ func createStudios(ctx context.Context, sqb models.StudioReaderWriter, n int, o 
 		// add alias
 		alias := getStudioStringValue(i, "Alias")
 		if err := sqb.UpdateAliases(ctx, created.ID, []string{alias}); err != nil {
-			return fmt.Errorf("error setting studio alias: %s", err.Error())
+			return fmt.Errorf("error setting studio alias: %v", err)
 		}
 
 		studioIDs = append(studioIDs, created.ID)
@@ -1559,7 +1559,7 @@ func createSavedFilters(ctx context.Context, qb models.SavedFilterReaderWriter, 
 		created, err := qb.Create(ctx, savedFilter)
 
 		if err != nil {
-			return fmt.Errorf("Error creating saved filter %v+: %s", savedFilter, err.Error())
+			return fmt.Errorf("error creating saved filter %v+: %v", savedFilter, err)
 		}
 
 		savedFilterIDs = append(savedFilterIDs, created.ID)

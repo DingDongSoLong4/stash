@@ -95,7 +95,7 @@ func initConfig(instance *Instance, flags flagStruct) error {
 
 			// ensure we can write to the file
 			if err := fsutil.Touch(configFile); err != nil {
-				return fmt.Errorf(`could not write to provided config path "%s": %s`, configFile, err.Error())
+				return fmt.Errorf(`could not write to provided config path "%s": %v`, configFile, err)
 			} else {
 				// remove the file
 				os.Remove(configFile)
@@ -153,7 +153,7 @@ func makeOverrideConfig() *viper.Viper {
 	viper := viper.New()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		logger.Infof("failed to bind flags: %s", err.Error())
+		logger.Infof("failed to bind flags: %v", err)
 	}
 
 	initEnvs(viper)

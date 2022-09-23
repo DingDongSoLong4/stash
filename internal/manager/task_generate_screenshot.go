@@ -50,21 +50,21 @@ func (t *GenerateScreenshotTask) Start(ctx context.Context) {
 	if err := g.Screenshot(context.TODO(), videoFile.Path, checksum, videoFile.Width, videoFile.Duration, generate.ScreenshotOptions{
 		At: &at,
 	}); err != nil {
-		logger.Errorf("Error generating screenshot: %v", err)
+		logger.Errorf("error generating screenshot: %v", err)
 		logErrorOutput(err)
 		return
 	}
 
 	f, err := os.Open(normalPath)
 	if err != nil {
-		logger.Errorf("Error reading screenshot: %s", err.Error())
+		logger.Errorf("error reading screenshot: %v", err)
 		return
 	}
 	defer f.Close()
 
 	coverImageData, err := io.ReadAll(f)
 	if err != nil {
-		logger.Errorf("Error reading screenshot: %s", err.Error())
+		logger.Errorf("error reading screenshot: %v", err)
 		return
 	}
 
@@ -89,6 +89,6 @@ func (t *GenerateScreenshotTask) Start(ctx context.Context) {
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 }

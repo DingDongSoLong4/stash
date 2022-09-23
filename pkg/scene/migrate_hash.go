@@ -53,14 +53,14 @@ func MigrateHash(p *paths.Paths, oldHash string, newHash string) {
 func migrateSceneFiles(oldName, newName string) {
 	oldExists, err := fsutil.FileExists(oldName)
 	if err != nil && !os.IsNotExist(err) {
-		logger.Errorf("Error checking existence of %s: %s", oldName, err.Error())
+		logger.Errorf("error checking existence of %s: %v", oldName, err)
 		return
 	}
 
 	if oldExists {
 		logger.Infof("renaming %s to %s", oldName, newName)
 		if err := os.Rename(oldName, newName); err != nil {
-			logger.Errorf("error renaming %s to %s: %s", oldName, newName, err.Error())
+			logger.Errorf("error renaming %s to %s: %v", oldName, newName, err)
 		}
 	}
 }
@@ -69,7 +69,7 @@ func migrateSceneFiles(oldName, newName string) {
 func migrateVttFile(vttPath, oldSpritePath, newSpritePath string) {
 	contents, err := os.ReadFile(vttPath)
 	if err != nil {
-		logger.Errorf("Error reading %s for vtt migration: %v", vttPath, err)
+		logger.Errorf("error reading %s for vtt migration: %v", vttPath, err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func migrateVttFile(vttPath, oldSpritePath, newSpritePath string) {
 	contents = bytes.ReplaceAll(contents, []byte(oldSpriteBasename), []byte(newSpriteBasename))
 
 	if err := os.WriteFile(vttPath, contents, 0644); err != nil {
-		logger.Errorf("Error writing %s for vtt migration: %v", vttPath, err)
+		logger.Errorf("error writing %s for vtt migration: %v", vttPath, err)
 		return
 	}
 }

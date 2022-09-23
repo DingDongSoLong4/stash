@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/stashapp/stash/internal/manager/config"
@@ -68,12 +69,12 @@ func makeStreamEndpoint(streamURL string, streamingResolution models.StreamingRe
 
 func GetSceneStreamPaths(scene *models.Scene, directStreamURL string, maxStreamingTranscodeSize models.StreamingResolutionEnum) ([]*SceneStreamEndpoint, error) {
 	if scene == nil {
-		return nil, fmt.Errorf("nil scene")
+		return nil, errors.New("nil scene")
 	}
 
 	pf := scene.Files.Primary()
 	if pf == nil {
-		return nil, fmt.Errorf("nil file")
+		return nil, errors.New("nil file")
 	}
 
 	var ret []*SceneStreamEndpoint

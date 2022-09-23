@@ -107,7 +107,7 @@ func (s *DownloadStore) waitAndRemoveFile(hash string, w *http.ResponseWriter, r
 		delete(s.m, hash)
 		err := os.Remove(f.path)
 		if err != nil {
-			logger.Errorf("error removing %s after downloading: %s", f.path, err.Error())
+			logger.Errorf("error removing %s after downloading: %v", f.path, err)
 		}
 	})
 }

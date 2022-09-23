@@ -32,13 +32,13 @@ func redirectToLogin(loginUIBox embed.FS, w http.ResponseWriter, returnURL strin
 	data := getLoginPage(loginUIBox)
 	templ, err := template.New("Login").Parse(string(data))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	err = templ.Execute(w, loginTemplateData{URL: returnURL, Error: loginError})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("error: %v", err), http.StatusInternalServerError)
 	}
 }
 

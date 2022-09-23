@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -88,7 +89,7 @@ func (e ResolutionEnum) String() string {
 func (e *ResolutionEnum) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = ResolutionEnum(str)
@@ -155,7 +156,7 @@ func (e StreamingResolutionEnum) String() string {
 func (e *StreamingResolutionEnum) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = StreamingResolutionEnum(str)

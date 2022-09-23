@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -44,7 +45,7 @@ func (e ImageLightboxDisplayMode) String() string {
 func (e *ImageLightboxDisplayMode) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = ImageLightboxDisplayMode(str)
@@ -85,7 +86,7 @@ func (e ImageLightboxScrollMode) String() string {
 func (e *ImageLightboxScrollMode) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = ImageLightboxScrollMode(str)

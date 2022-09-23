@@ -61,7 +61,7 @@ func (log *Logger) Init(logFile string, logOut bool, logLevel string) {
 		file, err = os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 
 		if err != nil {
-			fmt.Printf("Could not open '%s' for log output due to error: %s\n", logFile, err.Error())
+			fmt.Printf("Could not open '%s' for log output due to error: %v\n", logFile, err)
 		}
 	}
 

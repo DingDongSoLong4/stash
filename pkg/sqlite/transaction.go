@@ -33,7 +33,7 @@ func (db *Database) Begin(ctx context.Context) (context.Context, error) {
 		// log the stack trace so we can see
 		logger.Error(string(debug.Stack()))
 
-		return nil, fmt.Errorf("already in transaction")
+		return nil, errors.New("already in transaction")
 	}
 
 	tx, err := db.db.BeginTxx(ctx, nil)
@@ -73,7 +73,7 @@ func (db *Database) Rollback(ctx context.Context) error {
 func getTx(ctx context.Context) (*sqlx.Tx, error) {
 	tx, ok := ctx.Value(txnKey).(*sqlx.Tx)
 	if !ok || tx == nil {
-		return nil, fmt.Errorf("not in transaction")
+		return nil, errors.New("not in transaction")
 	}
 	return tx, nil
 }
@@ -85,7 +85,7 @@ func getDBReader(ctx context.Context) (dbReader, error) {
 		// try to get database if present
 		db, ok := ctx.Value(dbKey).(*sqlx.DB)
 		if !ok || db == nil {
-			return nil, fmt.Errorf("not in transaction")
+			return nil, errors.New("not in transaction")
 		}
 		return db, nil
 	}

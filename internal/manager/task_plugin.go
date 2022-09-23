@@ -14,13 +14,13 @@ func (s *Manager) RunPluginTask(ctx context.Context, pluginID string, taskName s
 		pluginProgress := make(chan float64)
 		task, err := s.PluginCache.CreateTask(ctx, pluginID, taskName, args, pluginProgress)
 		if err != nil {
-			logger.Errorf("Error creating plugin task: %s", err.Error())
+			logger.Errorf("error creating plugin task: %v", err)
 			return
 		}
 
 		err = task.Start()
 		if err != nil {
-			logger.Errorf("Error running plugin task: %s", err.Error())
+			logger.Errorf("error running plugin task: %v", err)
 			return
 		}
 
@@ -49,7 +49,7 @@ func (s *Manager) RunPluginTask(ctx context.Context, pluginID string, taskName s
 				progress.SetPercent(p)
 			case <-jobCtx.Done():
 				if err := task.Stop(); err != nil {
-					logger.Errorf("Error stopping plugin operation: %s", err.Error())
+					logger.Errorf("error stopping plugin operation: %v", err)
 				}
 				return
 			}

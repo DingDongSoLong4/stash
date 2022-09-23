@@ -245,7 +245,7 @@ func (g Generator) previewVideoChunkCombine(lockCtx *fsutil.LockContext, concatF
 func removeFiles(list []string) {
 	for _, f := range list {
 		if err := os.Remove(f); err != nil {
-			logger.Warnf("[generator] Delete error: %s", err)
+			logger.Warnf("[generator] Delete error: %v", err)
 		}
 	}
 }

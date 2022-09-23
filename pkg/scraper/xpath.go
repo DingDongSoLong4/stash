@@ -294,7 +294,7 @@ func (q *xpathQuery) subScrape(ctx context.Context, value string) mappedQuery {
 	doc, err := q.scraper.loadURL(ctx, value)
 
 	if err != nil {
-		logger.Warnf("Error getting URL '%s' for sub-scraper: %s", value, err.Error())
+		logger.Warnf("error getting URL '%s' for sub-scraper: %v", value, err)
 		return nil
 	}
 

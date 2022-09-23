@@ -150,7 +150,7 @@ func LoadFileFile(filePath string) (DirEntry, error) {
 
 func SaveFileFile(filePath string, file DirEntry) error {
 	if file == nil {
-		return fmt.Errorf("file must not be nil")
+		return errors.New("file must not be nil")
 	}
 	return marshalToFile(filePath, file)
 }

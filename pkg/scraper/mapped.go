@@ -341,7 +341,7 @@ func (c mappedRegexConfig) apply(value string) string {
 	if c.Regex != "" {
 		re, err := regexp.Compile(c.Regex)
 		if err != nil {
-			logger.Warnf("Error compiling regex '%s': %s", c.Regex, err.Error())
+			logger.Warnf("error compiling regex '%s': %v", c.Regex, err)
 			return value
 		}
 
@@ -398,7 +398,7 @@ func (p *postProcessParseDate) Apply(ctx context.Context, value string, q mapped
 	// if it fails, then just fall back to the original value
 	parsedValue, err := time.Parse(parseDate, value)
 	if err != nil {
-		logger.Warnf("Error parsing date string '%s' using format '%s': %s", value, parseDate, err.Error())
+		logger.Warnf("error parsing date string '%s' using format '%s': %v", value, parseDate, err)
 		return value
 	}
 
@@ -413,7 +413,7 @@ func (p *postProcessSubtractDays) Apply(ctx context.Context, value string, q map
 
 	i, err := strconv.Atoi(value)
 	if err != nil {
-		logger.Warnf("Error parsing day string %s: %s", value, err)
+		logger.Warnf("error parsing day string %s: %v", value)
 		return value
 	}
 

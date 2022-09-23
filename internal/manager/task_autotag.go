@@ -102,7 +102,7 @@ func (j *autoTagJob) autoTagSpecific(ctx context.Context, progress *job.Progress
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 		return
 	}
 
@@ -142,12 +142,12 @@ func (j *autoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progre
 			} else {
 				performerIdInt, err := strconv.Atoi(performerId)
 				if err != nil {
-					return fmt.Errorf("error parsing performer id %s: %s", performerId, err.Error())
+					return fmt.Errorf("error parsing performer id %s: %v", performerId, err)
 				}
 
 				performer, err := performerQuery.Find(ctx, performerIdInt)
 				if err != nil {
-					return fmt.Errorf("error finding performer id %s: %s", performerId, err.Error())
+					return fmt.Errorf("error finding performer id %s: %v", performerId, err)
 				}
 
 				if performer == nil {
@@ -176,7 +176,7 @@ func (j *autoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progre
 
 					return nil
 				}); err != nil {
-					return fmt.Errorf("error auto-tagging performer '%s': %s", performer.Name.String, err.Error())
+					return fmt.Errorf("error auto-tagging performer '%s': %v", performer.Name.String, err)
 				}
 
 				progress.Increment()
@@ -184,7 +184,7 @@ func (j *autoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progre
 
 			return nil
 		}); err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			continue
 		}
 	}
@@ -217,12 +217,12 @@ func (j *autoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress,
 			} else {
 				studioIdInt, err := strconv.Atoi(studioId)
 				if err != nil {
-					return fmt.Errorf("error parsing studio id %s: %s", studioId, err.Error())
+					return fmt.Errorf("error parsing studio id %s: %v", studioId, err)
 				}
 
 				studio, err := studioQuery.Find(ctx, studioIdInt)
 				if err != nil {
-					return fmt.Errorf("error finding studio id %s: %s", studioId, err.Error())
+					return fmt.Errorf("error finding studio id %s: %v", studioId, err)
 				}
 
 				if studio == nil {
@@ -256,7 +256,7 @@ func (j *autoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress,
 
 					return nil
 				}); err != nil {
-					return fmt.Errorf("error auto-tagging studio '%s': %s", studio.Name.String, err.Error())
+					return fmt.Errorf("error auto-tagging studio '%s': %v", studio.Name.String, err)
 				}
 
 				progress.Increment()
@@ -264,7 +264,7 @@ func (j *autoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress,
 
 			return nil
 		}); err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			continue
 		}
 	}
@@ -296,12 +296,12 @@ func (j *autoTagJob) autoTagTags(ctx context.Context, progress *job.Progress, pa
 			} else {
 				tagIdInt, err := strconv.Atoi(tagId)
 				if err != nil {
-					return fmt.Errorf("error parsing tag id %s: %s", tagId, err.Error())
+					return fmt.Errorf("error parsing tag id %s: %v", tagId, err)
 				}
 
 				tag, err := tagQuery.Find(ctx, tagIdInt)
 				if err != nil {
-					return fmt.Errorf("error finding tag id %s: %s", tagId, err.Error())
+					return fmt.Errorf("error finding tag id %s: %v", tagId, err)
 				}
 				tags = append(tags, tag)
 			}
@@ -330,7 +330,7 @@ func (j *autoTagJob) autoTagTags(ctx context.Context, progress *job.Progress, pa
 
 					return nil
 				}); err != nil {
-					return fmt.Errorf("error auto-tagging tag '%s': %s", tag.Name, err.Error())
+					return fmt.Errorf("error auto-tagging tag '%s': %v", tag.Name, err)
 				}
 
 				progress.Increment()
@@ -338,7 +338,7 @@ func (j *autoTagJob) autoTagTags(ctx context.Context, progress *job.Progress, pa
 
 			return nil
 		}); err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 			continue
 		}
 	}
@@ -715,7 +715,7 @@ func (t *autoTagSceneTask) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 }
 
@@ -752,7 +752,7 @@ func (t *autoTagImageTask) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 }
 
@@ -789,6 +789,6 @@ func (t *autoTagGalleryTask) Start(ctx context.Context, wg *sync.WaitGroup) {
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 }

@@ -6,6 +6,7 @@ package sqlite_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ func TestMovieFindByName(t *testing.T) {
 		movie, err := mqb.FindByName(ctx, name, false)
 
 		if err != nil {
-			t.Errorf("Error finding movies: %s", err.Error())
+			t.Errorf("error finding movies: %v", err)
 		}
 
 		assert.Equal(t, movieNames[movieIdxWithScene], movie.Name.String)
@@ -37,7 +38,7 @@ func TestMovieFindByName(t *testing.T) {
 		movie, err = mqb.FindByName(ctx, name, true)
 
 		if err != nil {
-			t.Errorf("Error finding movies: %s", err.Error())
+			t.Errorf("error finding movies: %v", err)
 		}
 		// movieIdxWithDupName and movieIdxWithScene should have similar names ( only diff should be Name vs NaMe)
 		//movie.Name should match with movieIdxWithScene since its ID is before moveIdxWithDupName
@@ -59,14 +60,14 @@ func TestMovieFindByNames(t *testing.T) {
 
 		movies, err := mqb.FindByNames(ctx, names, false)
 		if err != nil {
-			t.Errorf("Error finding movies: %s", err.Error())
+			t.Errorf("error finding movies: %v", err)
 		}
 		assert.Len(t, movies, 1)
 		assert.Equal(t, movieNames[movieIdxWithScene], movies[0].Name.String)
 
 		movies, err = mqb.FindByNames(ctx, names, true) // find movies by names nocase
 		if err != nil {
-			t.Errorf("Error finding movies: %s", err.Error())
+			t.Errorf("error finding movies: %v", err)
 		}
 		assert.Len(t, movies, 2) // movieIdxWithScene and movieIdxWithDupName
 		assert.Equal(t, strings.ToLower(movieNames[movieIdxWithScene]), strings.ToLower(movies[0].Name.String))
@@ -92,7 +93,7 @@ func TestMovieQueryStudio(t *testing.T) {
 
 		movies, _, err := mqb.Query(ctx, &movieFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying movie: %s", err.Error())
+			t.Errorf("error querying movie: %v", err)
 		}
 
 		assert.Len(t, movies, 1)
@@ -114,7 +115,7 @@ func TestMovieQueryStudio(t *testing.T) {
 
 		movies, _, err = mqb.Query(ctx, &movieFilter, &findFilter)
 		if err != nil {
-			t.Errorf("Error querying movie: %s", err.Error())
+			t.Errorf("error querying movie: %v", err)
 		}
 		assert.Len(t, movies, 0)
 
@@ -181,7 +182,7 @@ func verifyMovieQuery(t *testing.T, filter models.MovieFilterType, verifyFn func
 func queryMovie(ctx context.Context, t *testing.T, sqb models.MovieReader, movieFilter *models.MovieFilterType, findFilter *models.FindFilterType) []*models.Movie {
 	movies, _, err := sqb.Query(ctx, movieFilter, findFilter)
 	if err != nil {
-		t.Errorf("Error querying movie: %s", err.Error())
+		t.Errorf("error querying movie: %v", err)
 	}
 
 	return movies
@@ -228,26 +229,26 @@ func TestMovieUpdateMovieImages(t *testing.T) {
 		}
 		created, err := mqb.Create(ctx, movie)
 		if err != nil {
-			return fmt.Errorf("Error creating movie: %s", err.Error())
+			return fmt.Errorf("error creating movie: %v", err)
 		}
 
 		frontImage := []byte("frontImage")
 		backImage := []byte("backImage")
 		err = mqb.UpdateImages(ctx, created.ID, frontImage, backImage)
 		if err != nil {
-			return fmt.Errorf("Error updating movie images: %s", err.Error())
+			return fmt.Errorf("error updating movie images: %v", err)
 		}
 
 		// ensure images are set
 		storedFront, err := mqb.GetFrontImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting front image: %s", err.Error())
+			return fmt.Errorf("error getting front image: %v", err)
 		}
 		assert.Equal(t, storedFront, frontImage)
 
 		storedBack, err := mqb.GetBackImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting back image: %s", err.Error())
+			return fmt.Errorf("error getting back image: %v", err)
 		}
 		assert.Equal(t, storedBack, backImage)
 
@@ -255,31 +256,31 @@ func TestMovieUpdateMovieImages(t *testing.T) {
 		newImage := []byte("newImage")
 		err = mqb.UpdateImages(ctx, created.ID, newImage, nil)
 		if err != nil {
-			return fmt.Errorf("Error updating movie images: %s", err.Error())
+			return fmt.Errorf("error updating movie images: %v", err)
 		}
 
 		storedFront, err = mqb.GetFrontImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting front image: %s", err.Error())
+			return fmt.Errorf("error getting front image: %v", err)
 		}
 		assert.Equal(t, storedFront, newImage)
 
 		// back image should be nil
 		storedBack, err = mqb.GetBackImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting back image: %s", err.Error())
+			return fmt.Errorf("error getting back image: %v", err)
 		}
 		assert.Nil(t, nil)
 
 		// set back image only
 		err = mqb.UpdateImages(ctx, created.ID, nil, newImage)
 		if err == nil {
-			return fmt.Errorf("Expected error setting nil front image")
+			return errors.New("expected error setting nil front image")
 		}
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -295,38 +296,38 @@ func TestMovieDestroyMovieImages(t *testing.T) {
 		}
 		created, err := mqb.Create(ctx, movie)
 		if err != nil {
-			return fmt.Errorf("Error creating movie: %s", err.Error())
+			return fmt.Errorf("error creating movie: %v", err)
 		}
 
 		frontImage := []byte("frontImage")
 		backImage := []byte("backImage")
 		err = mqb.UpdateImages(ctx, created.ID, frontImage, backImage)
 		if err != nil {
-			return fmt.Errorf("Error updating movie images: %s", err.Error())
+			return fmt.Errorf("error updating movie images: %v", err)
 		}
 
 		err = mqb.DestroyImages(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error destroying movie images: %s", err.Error())
+			return fmt.Errorf("error destroying movie images: %v", err)
 		}
 
 		// front image should be nil
 		storedFront, err := mqb.GetFrontImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting front image: %s", err.Error())
+			return fmt.Errorf("error getting front image: %v", err)
 		}
 		assert.Nil(t, storedFront)
 
 		// back image should be nil
 		storedBack, err := mqb.GetBackImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting back image: %s", err.Error())
+			return fmt.Errorf("error getting back image: %v", err)
 		}
 		assert.Nil(t, storedBack)
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 

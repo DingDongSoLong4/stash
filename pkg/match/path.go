@@ -297,7 +297,7 @@ func PathToScenes(ctx context.Context, name string, paths []string, sceneReader 
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("error querying scenes with regex '%s': %s", regex, err.Error())
+		return nil, fmt.Errorf("error querying scenes with regex '%s': %w", regex, err)
 	}
 
 	var ret []*models.Scene
@@ -334,7 +334,7 @@ func PathToImages(ctx context.Context, name string, paths []string, imageReader 
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("error querying images with regex '%s': %s", regex, err.Error())
+		return nil, fmt.Errorf("error querying images with regex '%s': %w", regex, err)
 	}
 
 	var ret []*models.Image
@@ -371,7 +371,7 @@ func PathToGalleries(ctx context.Context, name string, paths []string, galleryRe
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("error querying gallerys with regex '%s': %s", regex, err.Error())
+		return nil, fmt.Errorf("error querying galleries with regex '%s': %w", regex, err)
 	}
 
 	var ret []*models.Gallery

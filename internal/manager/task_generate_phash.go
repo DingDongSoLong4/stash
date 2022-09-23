@@ -30,7 +30,7 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 
 	hash, err := videophash.Generate(instance.FFMPEG, t.File)
 	if err != nil {
-		logger.Errorf("error generating phash: %s", err.Error())
+		logger.Errorf("error generating phash: %v", err)
 		logErrorOutput(err)
 		return
 	}
@@ -45,7 +45,7 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 
 		return qb.Update(ctx, t.File)
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 }
 

@@ -77,12 +77,12 @@ func (f *FFProbe) NewVideoFile(videoPath string) (*VideoFile, error) {
 	out, err := cmd.Output()
 
 	if err != nil {
-		return nil, fmt.Errorf("FFProbe encountered an error with <%s>.\nError JSON:\n%s\nError: %s", videoPath, string(out), err.Error())
+		return nil, fmt.Errorf("FFProbe encountered an error with <%s>.\nError JSON:\n%s\nError: %w", videoPath, string(out), err)
 	}
 
 	probeJSON := &FFProbeJSON{}
 	if err := json.Unmarshal(out, probeJSON); err != nil {
-		return nil, fmt.Errorf("error unmarshalling video data for <%s>: %s", videoPath, err.Error())
+		return nil, fmt.Errorf("error unmarshalling video data for <%s>: %w", videoPath, err)
 	}
 
 	return parse(videoPath, probeJSON)
@@ -95,12 +95,12 @@ func (f *FFProbe) GetReadFrameCount(path string) (int64, error) {
 	out, err := exec.Command(string(*f), args...).Output()
 
 	if err != nil {
-		return 0, fmt.Errorf("FFProbe encountered an error with <%s>.\nError JSON:\n%s\nError: %s", path, string(out), err.Error())
+		return 0, fmt.Errorf("FFProbe encountered an error with <%s>.\nError JSON:\n%s\nError: %w", path, string(out), err)
 	}
 
 	probeJSON := &FFProbeJSON{}
 	if err := json.Unmarshal(out, probeJSON); err != nil {
-		return 0, fmt.Errorf("error unmarshalling video data for <%s>: %s", path, err.Error())
+		return 0, fmt.Errorf("error unmarshalling video data for <%s>: %w", path, err)
 	}
 
 	fc, err := parse(path, probeJSON)

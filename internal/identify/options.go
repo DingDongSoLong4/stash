@@ -1,6 +1,7 @@
 package identify
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -77,7 +78,7 @@ func (e FieldStrategy) String() string {
 func (e *FieldStrategy) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = FieldStrategy(str)

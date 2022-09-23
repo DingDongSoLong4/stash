@@ -88,7 +88,7 @@ const (
 func makeDeviceUuid(unique string) string {
 	h := md5.New()
 	if _, err := io.WriteString(h, unique); err != nil {
-		panic("makeDeviceUuid write failed: " + err.Error())
+		panic(fmt.Sprintf("makeDeviceUuid write failed: %v", err))
 	}
 	buf := h.Sum(nil)
 	return upnp.FormatUUID(buf)
@@ -223,7 +223,7 @@ func (me *Server) ssdpInterface(if_ net.Interface) {
 			// good.
 			return
 		}
-		logger.Errorf("error creating ssdp server on %s: %s", if_.Name, err)
+		logger.Errorf("error creating ssdp server on %s: %v", if_.Name, err)
 		return
 	}
 	defer s.Close()
@@ -297,7 +297,7 @@ func init() {
 func xmlMarshalOrPanic(value interface{}) []byte {
 	ret, err := xml.MarshalIndent(value, "", "  ")
 	if err != nil {
-		panic(fmt.Sprintf("xmlMarshalOrPanic failed to marshal %v: %s", value, err))
+		panic(fmt.Sprintf("xmlMarshalOrPanic failed to marshal %v: %v", value, err))
 	}
 	return ret
 }
@@ -428,7 +428,7 @@ func (me *Server) serviceControlHandler(w http.ResponseWriter, r *http.Request) 
 	bodyStr := fmt.Sprintf(`<?xml version="1.0" encoding="utf-8" standalone="yes"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>%s</s:Body></s:Envelope>`, soapRespXML)
 	w.WriteHeader(code)
 	if _, err := w.Write([]byte(bodyStr)); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err)
 	}
 }
 
@@ -491,7 +491,7 @@ func (me *Server) contentDirectoryInitialEvent(ctx context.Context, urls []*url.
 		bodyReader := bytes.NewReader(body)
 		req, err := http.NewRequestWithContext(ctx, "NOTIFY", _url.String(), bodyReader)
 		if err != nil {
-			logger.Errorf("Could not create a request to notify %s: %s", _url.String(), err)
+			logger.Errorf("Could not create a request to notify %s: %v", _url.String(), err)
 			continue
 		}
 		req.Header["CONTENT-TYPE"] = []string{`text/xml; charset="utf-8"`}
@@ -503,7 +503,7 @@ func (me *Server) contentDirectoryInitialEvent(ctx context.Context, urls []*url.
 		// req.ContentLength = int64(bodyReader.Len())
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			logger.Errorf("Could not notify %s: %s", _url.String(), err)
+			logger.Errorf("Could not notify %s: %v", _url.String(), err)
 			continue
 		}
 		b, _ := io.ReadAll(resp.Body)
@@ -571,7 +571,7 @@ func (me *Server) initMux(mux *http.ServeMux) {
 			me.RootObjectPath,
 		})
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err)
 		}
 	})
 	mux.HandleFunc(contentDirectoryEventSubURL, me.contentDirectoryEventSubHandler)
@@ -642,7 +642,7 @@ func (me *Server) Serve() (err error) {
 	if me.Interfaces == nil {
 		ifs, err := net.Interfaces()
 		if err != nil {
-			logger.Errorf(err.Error())
+			logger.Error(err)
 		}
 		var tmp []net.Interface
 		for _, if_ := range ifs {

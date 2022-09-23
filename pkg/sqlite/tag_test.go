@@ -6,6 +6,7 @@ package sqlite_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -26,7 +27,7 @@ func TestMarkerFindBySceneMarkerID(t *testing.T) {
 		tags, err := tqb.FindBySceneMarkerID(ctx, markerID)
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 
 		assert.Len(t, tags, 1)
@@ -35,7 +36,7 @@ func TestMarkerFindBySceneMarkerID(t *testing.T) {
 		tags, err = tqb.FindBySceneMarkerID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 
 		assert.Len(t, tags, 0)
@@ -53,7 +54,7 @@ func TestTagFindByName(t *testing.T) {
 		tag, err := tqb.FindByName(ctx, name, false)
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 
 		assert.Equal(t, tagNames[tagIdxWithScene], tag.Name)
@@ -63,7 +64,7 @@ func TestTagFindByName(t *testing.T) {
 		tag, err = tqb.FindByName(ctx, name, true)
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 		// tagIdxWithDupName and tagIdxWithScene should have similar names ( only diff should be Name vs NaMe)
 		//tag.Name should match with tagIdxWithScene since its ID is before tagIdxWithDupName
@@ -104,7 +105,7 @@ func TestTagQueryForAutoTag(t *testing.T) {
 		tags, err := tqb.QueryForAutoTag(ctx, []string{name})
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 
 		assert.Len(t, tags, 2)
@@ -117,7 +118,7 @@ func TestTagQueryForAutoTag(t *testing.T) {
 		tags, err = tqb.QueryForAutoTag(ctx, []string{name})
 
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 
 		assert.Len(t, tags, 1)
@@ -137,14 +138,14 @@ func TestTagFindByNames(t *testing.T) {
 
 		tags, err := tqb.FindByNames(ctx, names, false)
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 		assert.Len(t, tags, 1)
 		assert.Equal(t, tagNames[tagIdxWithScene], tags[0].Name)
 
 		tags, err = tqb.FindByNames(ctx, names, true) // find tags by names nocase
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 		assert.Len(t, tags, 2) // tagIdxWithScene and tagIdxWithDupName
 		assert.Equal(t, strings.ToLower(tagNames[tagIdxWithScene]), strings.ToLower(tags[0].Name))
@@ -154,7 +155,7 @@ func TestTagFindByNames(t *testing.T) {
 
 		tags, err = tqb.FindByNames(ctx, names, false)
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 		assert.Len(t, tags, 2) // tagIdxWithScene and tagIdx1WithScene
 		assert.Equal(t, tagNames[tagIdxWithScene], tags[0].Name)
@@ -162,7 +163,7 @@ func TestTagFindByNames(t *testing.T) {
 
 		tags, err = tqb.FindByNames(ctx, names, true) // find tags by names ( 2 names nocase)
 		if err != nil {
-			t.Errorf("Error finding tags: %s", err.Error())
+			t.Errorf("error finding tags: %v", err)
 		}
 		assert.Len(t, tags, 4) // tagIdxWithScene and tagIdxWithDupName , tagIdx1WithScene and tagIdx1WithDupName
 		assert.Equal(t, tagNames[tagIdxWithScene], tags[0].Name)
@@ -255,7 +256,7 @@ func TestTagQueryAlias(t *testing.T) {
 	verifyFn := func(ctx context.Context, tag *models.Tag) {
 		aliases, err := sqlite.TagReaderWriter.GetAliases(ctx, tag.ID)
 		if err != nil {
-			t.Errorf("Error querying tags: %s", err.Error())
+			t.Errorf("error querying tags: %v", err)
 		}
 
 		var alias string
@@ -297,7 +298,7 @@ func queryTags(ctx context.Context, t *testing.T, qb models.TagReader, tagFilter
 	t.Helper()
 	tags, _, err := qb.Query(ctx, tagFilter, findFilter)
 	if err != nil {
-		t.Errorf("Error querying tags: %s", err.Error())
+		t.Errorf("error querying tags: %v", err)
 	}
 
 	return tags
@@ -318,7 +319,7 @@ func TestTagQueryIsMissingImage(t *testing.T) {
 
 		tags, _, err := qb.Query(ctx, &tagFilter, &findFilter)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		assert.Len(t, tags, 0)
@@ -326,7 +327,7 @@ func TestTagQueryIsMissingImage(t *testing.T) {
 		findFilter.Q = nil
 		tags, _, err = qb.Query(ctx, &tagFilter, &findFilter)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		// ensure non of the ids equal the one with image
@@ -366,7 +367,7 @@ func verifyTagSceneCount(t *testing.T, sceneCountCriterion models.IntCriterionIn
 
 		tags, _, err := qb.Query(ctx, &tagFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		for _, tag := range tags {
@@ -408,7 +409,7 @@ func verifyTagMarkerCount(t *testing.T, markerCountCriterion models.IntCriterion
 
 		tags, _, err := qb.Query(ctx, &tagFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		for _, tag := range tags {
@@ -450,7 +451,7 @@ func verifyTagImageCount(t *testing.T, imageCountCriterion models.IntCriterionIn
 
 		tags, _, err := qb.Query(ctx, &tagFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		for _, tag := range tags {
@@ -492,7 +493,7 @@ func verifyTagGalleryCount(t *testing.T, imageCountCriterion models.IntCriterion
 
 		tags, _, err := qb.Query(ctx, &tagFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		for _, tag := range tags {
@@ -534,7 +535,7 @@ func verifyTagPerformerCount(t *testing.T, imageCountCriterion models.IntCriteri
 
 		tags, _, err := qb.Query(ctx, &tagFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying tag: %s", err.Error())
+			t.Errorf("error querying tag: %v", err)
 		}
 
 		for _, tag := range tags {
@@ -800,31 +801,31 @@ func TestTagUpdateTagImage(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, tag)
 		if err != nil {
-			return fmt.Errorf("Error creating tag: %s", err.Error())
+			return fmt.Errorf("error creating tag: %v", err)
 		}
 
 		image := []byte("image")
 		err = qb.UpdateImage(ctx, created.ID, image)
 		if err != nil {
-			return fmt.Errorf("Error updating studio image: %s", err.Error())
+			return fmt.Errorf("error updating studio image: %v", err)
 		}
 
 		// ensure image set
 		storedImage, err := qb.GetImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("error getting image: %v", err)
 		}
 		assert.Equal(t, storedImage, image)
 
 		// set nil image
 		err = qb.UpdateImage(ctx, created.ID, nil)
 		if err == nil {
-			return fmt.Errorf("Expected error setting nil image")
+			return errors.New("Expected error setting nil image")
 		}
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -839,30 +840,30 @@ func TestTagDestroyTagImage(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, tag)
 		if err != nil {
-			return fmt.Errorf("Error creating tag: %s", err.Error())
+			return fmt.Errorf("error creating tag: %v", err)
 		}
 
 		image := []byte("image")
 		err = qb.UpdateImage(ctx, created.ID, image)
 		if err != nil {
-			return fmt.Errorf("Error updating studio image: %s", err.Error())
+			return fmt.Errorf("error updating studio image: %v", err)
 		}
 
 		err = qb.DestroyImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error destroying studio image: %s", err.Error())
+			return fmt.Errorf("error destroying studio image: %v", err)
 		}
 
 		// image should be nil
 		storedImage, err := qb.GetImage(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("error getting image: %v", err)
 		}
 		assert.Nil(t, storedImage)
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -877,25 +878,25 @@ func TestTagUpdateAlias(t *testing.T) {
 		}
 		created, err := qb.Create(ctx, tag)
 		if err != nil {
-			return fmt.Errorf("Error creating tag: %s", err.Error())
+			return fmt.Errorf("error creating tag: %v", err)
 		}
 
 		aliases := []string{"alias1", "alias2"}
 		err = qb.UpdateAliases(ctx, created.ID, aliases)
 		if err != nil {
-			return fmt.Errorf("Error updating tag aliases: %s", err.Error())
+			return fmt.Errorf("error updating tag aliases: %v", err)
 		}
 
 		// ensure aliases set
 		storedAliases, err := qb.GetAliases(ctx, created.ID)
 		if err != nil {
-			return fmt.Errorf("Error getting aliases: %s", err.Error())
+			return fmt.Errorf("error getting aliases: %v", err)
 		}
 		assert.Equal(t, aliases, storedAliases)
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -1013,7 +1014,7 @@ func TestTagMerge(t *testing.T) {
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 

@@ -9,6 +9,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -104,7 +105,7 @@ func loadPlugins(path string) ([]Config, error) {
 	for _, file := range pluginFiles {
 		plugin, err := loadPluginFromYAMLFile(file)
 		if err != nil {
-			logger.Errorf("Error loading plugin %s: %s", file, err.Error())
+			logger.Errorf("error loading plugin %s: %v", file, err)
 		} else {
 			plugins = append(plugins, *plugin)
 		}
@@ -196,7 +197,7 @@ func (c Cache) ExecutePostHooks(ctx context.Context, id int, hookType HookTrigge
 		Input:       input,
 		InputFields: inputFields,
 	}); err != nil {
-		logger.Errorf("error executing post hooks: %s", err.Error())
+		logger.Errorf("error executing post hooks: %v", err)
 	}
 }
 
@@ -260,7 +261,7 @@ func (c Cache) executePostHooks(ctx context.Context, hookType HookTriggerEnum, h
 				if err := task.Stop(); err != nil {
 					logger.Warnf("could not stop task: %v", err)
 				}
-				return fmt.Errorf("operation cancelled")
+				return errors.New("operation cancelled")
 			case <-c:
 				// task finished normally
 			}

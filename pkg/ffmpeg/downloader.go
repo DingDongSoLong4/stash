@@ -3,6 +3,7 @@ package ffmpeg
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,7 +83,7 @@ func (r *progressReader) Read(p []byte) (int, error) {
 
 func downloadSingle(ctx context.Context, configDirectory, url string) error {
 	if url == "" {
-		return fmt.Errorf("no ffmpeg url for this platform")
+		return errors.New("no ffmpeg url for this platform")
 	}
 
 	// Configure where we want to download the archive

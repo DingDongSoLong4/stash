@@ -244,7 +244,7 @@ func (r *queryResolver) ValidateStashBoxCredentials(ctx context.Context, input c
 		case err.Error() == "" || err.Error() == "signature is invalid":
 			status = "Invalid or expired API key."
 		default:
-			status = fmt.Sprintf("Unknown error: %s", err)
+			status = fmt.Sprintf("Unknown error: %v", err)
 		}
 	}
 

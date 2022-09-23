@@ -47,7 +47,7 @@ func openURLInBrowser(path string) {
 
 	err := browser.OpenURL(serverAddress)
 	if err != nil {
-		logger.Error("Could not open browser: " + err.Error())
+		logger.Errorf("Could not open browser: %v", err)
 	}
 }
 
@@ -94,7 +94,7 @@ func writeStashIcon(faviconProvider FaviconProvider) {
 		iconPath := path.Join(c.GetConfigPath(), "icon.png")
 		err := os.WriteFile(iconPath, faviconProvider.GetFaviconPng(), 0644)
 		if err != nil {
-			logger.Errorf("Couldn't write icon file: %s", err.Error())
+			logger.Errorf("Couldn't write icon file: %v", err)
 		}
 	}
 }
@@ -112,12 +112,12 @@ func IsAllowedAutoUpdate() bool {
 	if runtime.GOOS == "linux" {
 		executablePath, err := os.Executable()
 		if err != nil {
-			logger.Errorf("Cannot get executable path: %s", err)
+			logger.Errorf("Cannot get executable path: %v", err)
 			return false
 		}
 		executablePath, err = filepath.EvalSymlinks(executablePath)
 		if err != nil {
-			logger.Errorf("Cannot get executable path: %s", err)
+			logger.Errorf("Cannot get executable path: %v", err)
 			return false
 		}
 		if fsutil.IsPathInDir("/usr", executablePath) || fsutil.IsPathInDir("/opt", executablePath) {
@@ -139,7 +139,7 @@ func getIconPath() string {
 func RevealInFileManager(path string) {
 	exists, err := fsutil.FileExists(path)
 	if err != nil {
-		logger.Errorf("Error checking file: %s", err)
+		logger.Errorf("Error checking file: %v", err)
 		return
 	}
 	if exists && IsDesktop() {

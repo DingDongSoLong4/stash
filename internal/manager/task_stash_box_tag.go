@@ -76,7 +76,7 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 	}
 
 	if err != nil {
-		logger.Errorf("Error fetching performer data from stash-box: %s", err.Error())
+		logger.Errorf("error fetching performer data from stash-box: %v", err)
 		return
 	}
 
@@ -251,7 +251,7 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 				return err
 			})
 			if err != nil {
-				logger.Errorf("Failed to save performer %s: %s", *t.name, err.Error())
+				logger.Errorf("Failed to save performer %s: %v", *t.name, err)
 			} else {
 				logger.Infof("Saved performer %s", *t.name)
 			}

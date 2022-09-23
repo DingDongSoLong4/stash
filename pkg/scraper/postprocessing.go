@@ -63,7 +63,7 @@ func (c Cache) postScrapePerformer(ctx context.Context, p models.ScrapedPerforme
 
 	// post-process - set the image if applicable
 	if err := setPerformerImage(ctx, c.client, &p, c.globalConfig); err != nil {
-		logger.Warnf("Could not set image using URL %s: %s", *p.Image, err.Error())
+		logger.Warnf("could not set image using URL %s: %v", *p.Image, err)
 	}
 
 	return p, nil

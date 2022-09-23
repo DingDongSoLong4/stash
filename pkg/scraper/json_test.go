@@ -72,7 +72,7 @@ jsonScrapers:
 	err := yaml.Unmarshal([]byte(yamlStr), &c)
 
 	if err != nil {
-		t.Fatalf("Error loading yaml: %s", err.Error())
+		t.Fatalf("Error loading yaml: %v", err)
 	}
 
 	// perform scrape using json string
@@ -84,7 +84,7 @@ jsonScrapers:
 
 	scrapedPerformer, err := performerScraper.scrapePerformer(context.Background(), q)
 	if err != nil {
-		t.Fatalf("Error scraping performer: %s", err.Error())
+		t.Fatalf("Error scraping performer: %v", err)
 	}
 
 	verifyField(t, "Mia Malkova", scrapedPerformer.Name, "Name")
@@ -109,7 +109,7 @@ jsonScrapers:
 
 	scrapedPerformer, err = performerScraper.scrapePerformer(context.Background(), q)
 	if err != nil {
-		t.Fatalf("Error scraping performer: %s", err.Error())
+		t.Fatalf("Error scraping performer: %v", err)
 	}
 
 	if scrapedPerformer != nil {

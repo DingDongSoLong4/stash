@@ -40,7 +40,7 @@ func (t *GenerateTranscodeTask) Start(ctc context.Context) {
 	var err error
 	container, err = GetVideoFileContainer(f)
 	if err != nil {
-		logger.Errorf("[transcode] error getting scene container: %s", err.Error())
+		logger.Errorf("[transcode] error getting scene container: %v", err)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (t *GenerateTranscodeTask) Start(ctc context.Context) {
 
 	videoFile, err := ffprobe.NewVideoFile(f.Path)
 	if err != nil {
-		logger.Errorf("[transcode] error reading video file: %s", err.Error())
+		logger.Errorf("[transcode] error reading video file: %v", err)
 		return
 	}
 

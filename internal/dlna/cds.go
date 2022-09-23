@@ -189,7 +189,7 @@ func (me *contentDirectoryService) Handle(action string, argsXML []byte, r *http
 	case "Browse":
 		var browse browse
 		if err := xml.Unmarshal([]byte(argsXML), &browse); err != nil {
-			return nil, upnp.Errorf(upnp.ArgumentValueInvalidErrorCode, "cannot unmarshal browse argument: %s", err.Error())
+			return nil, upnp.Errorf(upnp.ArgumentValueInvalidErrorCode, "cannot unmarshal browse argument: %v", err)
 		}
 
 		obj, err := me.objectFromID(browse.ObjectID)
@@ -372,7 +372,7 @@ func (me *contentDirectoryService) handleBrowseMetadata(obj object, host string)
 
 			return nil
 		}); err != nil {
-			logger.Error(err.Error())
+			logger.Error(err)
 		}
 
 		if scene != nil {
@@ -394,7 +394,7 @@ func (me *contentDirectoryService) handleBrowseMetadata(obj object, host string)
 func makeBrowseResult(objs []interface{}, updateID string) (map[string]string, error) {
 	result, err := xml.Marshal(objs)
 	if err != nil {
-		return nil, upnp.Errorf(upnp.ActionFailedErrorCode, "could not marshal objects: %s", err.Error())
+		return nil, upnp.Errorf(upnp.ActionFailedErrorCode, "could not marshal objects: %v", err)
 	}
 
 	return map[string]string{
@@ -477,7 +477,7 @@ func (me *contentDirectoryService) getVideos(sceneFilter *models.SceneFilterType
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 
 	return objs
@@ -500,7 +500,7 @@ func (me *contentDirectoryService) getPageVideos(sceneFilter *models.SceneFilter
 
 		return nil
 	}); err != nil {
-		logger.Error(err.Error())
+		logger.Error(err)
 	}
 
 	return objs
@@ -539,7 +539,7 @@ func (me *contentDirectoryService) getStudios() []interface{} {
 
 		return nil
 	}); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err)
 	}
 
 	return objs
@@ -578,7 +578,7 @@ func (me *contentDirectoryService) getTags() []interface{} {
 
 		return nil
 	}); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err)
 	}
 
 	return objs
@@ -617,7 +617,7 @@ func (me *contentDirectoryService) getPerformers() []interface{} {
 
 		return nil
 	}); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err)
 	}
 
 	return objs
@@ -656,7 +656,7 @@ func (me *contentDirectoryService) getMovies() []interface{} {
 
 		return nil
 	}); err != nil {
-		logger.Errorf(err.Error())
+		logger.Error(err)
 	}
 
 	return objs

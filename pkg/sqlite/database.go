@@ -187,12 +187,12 @@ func (db *Database) Reset() error {
 	err := db.Close()
 
 	if err != nil {
-		return errors.New("Error closing database: " + err.Error())
+		return fmt.Errorf("error closing database: %w", err)
 	}
 
 	err = os.Remove(databasePath)
 	if err != nil {
-		return errors.New("Error removing database: " + err.Error())
+		return fmt.Errorf("error removing database: %w", err)
 	}
 
 	// remove the -shm, -wal files ( if they exist )
@@ -201,7 +201,7 @@ func (db *Database) Reset() error {
 		if exists, _ := fsutil.FileExists(wf); exists {
 			err = os.Remove(wf)
 			if err != nil {
-				return errors.New("Error removing database: " + err.Error())
+				return fmt.Errorf("error removing database: %w", err)
 			}
 		}
 	}
@@ -396,7 +396,7 @@ func registerCustomDriver() {
 
 				for name, fn := range funcs {
 					if err := conn.RegisterFunc(name, fn, true); err != nil {
-						return fmt.Errorf("error registering function %s: %s", name, err.Error())
+						return fmt.Errorf("error registering function %s: %v", name, err)
 					}
 				}
 

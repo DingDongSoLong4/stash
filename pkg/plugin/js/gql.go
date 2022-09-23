@@ -86,7 +86,7 @@ func gqlRequestFunc(ctx context.Context, vm *otto.Otto, cookie *http.Cookie, gql
 		// convert to JSON
 		var obj map[string]interface{}
 		if err = json.Unmarshal([]byte(output), &obj); err != nil {
-			throw(vm, fmt.Sprintf("could not unmarshal object %s: %s", output, err.Error()))
+			throw(vm, fmt.Sprintf("could not unmarshal object %s: %v", output, err))
 		}
 
 		retErr, hasErr := obj["error"]
@@ -97,7 +97,7 @@ func gqlRequestFunc(ctx context.Context, vm *otto.Otto, cookie *http.Cookie, gql
 
 		v, err := vm.ToValue(obj["data"])
 		if err != nil {
-			throw(vm, fmt.Sprintf("could not create return value: %s", err.Error()))
+			throw(vm, fmt.Sprintf("could not create return value: %v", err))
 		}
 
 		return v

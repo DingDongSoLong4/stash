@@ -50,7 +50,7 @@ type ImportObjectsInput struct {
 func CreateImportTask(a models.HashAlgorithm, input ImportObjectsInput) (*ImportTask, error) {
 	baseDir, err := instance.Paths.Generated.TempDir("import")
 	if err != nil {
-		logger.Errorf("error creating temporary directory for import: %s", err.Error())
+		logger.Errorf("error creating temporary directory for import: %v", err)
 		return nil, err
 	}
 
@@ -89,12 +89,12 @@ func (t *ImportTask) Start(ctx context.Context) {
 		defer func() {
 			err := fsutil.RemoveDir(t.BaseDir)
 			if err != nil {
-				logger.Errorf("error removing directory %s: %s", t.BaseDir, err.Error())
+				logger.Errorf("error removing directory %s: %v", t.BaseDir, err)
 			}
 		}()
 
 		if err := t.unzipFile(); err != nil {
-			logger.Errorf("error unzipping provided file for import: %s", err.Error())
+			logger.Errorf("error unzipping provided file for import: %v", err)
 			return
 		}
 	}
@@ -121,7 +121,7 @@ func (t *ImportTask) Start(ctx context.Context) {
 		err := t.txnManager.Reset()
 
 		if err != nil {
-			logger.Errorf("Error resetting database: %s", err.Error())
+			logger.Errorf("Error resetting database: %v", err)
 			return
 		}
 	}
@@ -142,7 +142,7 @@ func (t *ImportTask) unzipFile() error {
 	defer func() {
 		err := os.Remove(t.TmpZip)
 		if err != nil {
-			logger.Errorf("error removing temporary zip file %s: %s", t.TmpZip, err.Error())
+			logger.Errorf("error removing temporary zip file %s: %v", t.TmpZip, err)
 		}
 	}()
 
@@ -208,7 +208,7 @@ func (t *ImportTask) ImportPerformers(ctx context.Context) {
 		index := i + 1
 		performerJSON, err := jsonschema.LoadPerformerFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[performers] failed to read json: %s", err.Error())
+			logger.Errorf("[performers] failed to read json: %v", err)
 			continue
 		}
 
@@ -225,7 +225,7 @@ func (t *ImportTask) ImportPerformers(ctx context.Context) {
 
 			return performImport(ctx, importer, t.DuplicateBehaviour)
 		}); err != nil {
-			logger.Errorf("[performers] <%s> import failed: %s", fi.Name(), err.Error())
+			logger.Errorf("[performers] <%s> import failed: %v", fi.Name(), err)
 		}
 	}
 
@@ -251,7 +251,7 @@ func (t *ImportTask) ImportStudios(ctx context.Context) {
 		index := i + 1
 		studioJSON, err := jsonschema.LoadStudioFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[studios] failed to read json: %s", err.Error())
+			logger.Errorf("[studios] failed to read json: %v", err)
 			continue
 		}
 
@@ -268,7 +268,7 @@ func (t *ImportTask) ImportStudios(ctx context.Context) {
 				continue
 			}
 
-			logger.Errorf("[studios] <%s> failed to create: %s", fi.Name(), err.Error())
+			logger.Errorf("[studios] <%s> failed to create: %v", fi.Name(), err)
 			continue
 		}
 	}
@@ -282,7 +282,7 @@ func (t *ImportTask) ImportStudios(ctx context.Context) {
 				if err := t.txnManager.WithTxn(ctx, func(ctx context.Context) error {
 					return t.ImportStudio(ctx, orphanStudioJSON, nil, t.txnManager.Studio)
 				}); err != nil {
-					logger.Errorf("[studios] <%s> failed to create: %s", orphanStudioJSON.Name, err.Error())
+					logger.Errorf("[studios] <%s> failed to create: %v", orphanStudioJSON.Name, err)
 					continue
 				}
 			}
@@ -313,7 +313,7 @@ func (t *ImportTask) ImportStudio(ctx context.Context, studioJSON *jsonschema.St
 	for _, childStudioJSON := range s {
 		// map is nil since we're not checking parent studios at this point
 		if err := t.ImportStudio(ctx, childStudioJSON, nil, readerWriter); err != nil {
-			return fmt.Errorf("failed to create child studio <%s>: %s", childStudioJSON.Name, err.Error())
+			return fmt.Errorf("failed to create child studio <%s>: %v", childStudioJSON.Name, err)
 		}
 	}
 
@@ -340,7 +340,7 @@ func (t *ImportTask) ImportMovies(ctx context.Context) {
 		index := i + 1
 		movieJSON, err := jsonschema.LoadMovieFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[movies] failed to read json: %s", err.Error())
+			logger.Errorf("[movies] failed to read json: %v", err)
 			continue
 		}
 
@@ -360,7 +360,7 @@ func (t *ImportTask) ImportMovies(ctx context.Context) {
 
 			return performImport(ctx, movieImporter, t.DuplicateBehaviour)
 		}); err != nil {
-			logger.Errorf("[movies] <%s> import failed: %s", fi.Name(), err.Error())
+			logger.Errorf("[movies] <%s> import failed: %v", fi.Name(), err)
 			continue
 		}
 	}
@@ -387,7 +387,7 @@ func (t *ImportTask) ImportFiles(ctx context.Context) {
 		index := i + 1
 		fileJSON, err := jsonschema.LoadFileFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[files] failed to read json: %s", err.Error())
+			logger.Errorf("[files] failed to read json: %v", err)
 			continue
 		}
 
@@ -404,7 +404,7 @@ func (t *ImportTask) ImportFiles(ctx context.Context) {
 				continue
 			}
 
-			logger.Errorf("[files] <%s> failed to create: %s", fi.Name(), err.Error())
+			logger.Errorf("[files] <%s> failed to create: %v", fi.Name(), err)
 			continue
 		}
 	}
@@ -418,7 +418,7 @@ func (t *ImportTask) ImportFiles(ctx context.Context) {
 				if err := t.txnManager.WithTxn(ctx, func(ctx context.Context) error {
 					return t.ImportFile(ctx, orphanFileJSON, nil)
 				}); err != nil {
-					logger.Errorf("[files] <%s> failed to create: %s", orphanFileJSON.DirEntry().Path, err.Error())
+					logger.Errorf("[files] <%s> failed to create: %v", orphanFileJSON.DirEntry().Path, err)
 					continue
 				}
 			}
@@ -448,7 +448,7 @@ func (t *ImportTask) ImportFile(ctx context.Context, fileJSON jsonschema.DirEntr
 	for _, childFileJSON := range s {
 		// map is nil since we're not checking parent studios at this point
 		if err := t.ImportFile(ctx, childFileJSON, nil); err != nil {
-			return fmt.Errorf("failed to create child file <%s>: %s", childFileJSON.DirEntry().Path, err.Error())
+			return fmt.Errorf("failed to create child file <%s>: %v", childFileJSON.DirEntry().Path, err)
 		}
 	}
 
@@ -475,7 +475,7 @@ func (t *ImportTask) ImportGalleries(ctx context.Context) {
 		index := i + 1
 		galleryJSON, err := jsonschema.LoadGalleryFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[galleries] failed to read json: %s", err.Error())
+			logger.Errorf("[galleries] failed to read json: %v", err)
 			continue
 		}
 
@@ -501,7 +501,7 @@ func (t *ImportTask) ImportGalleries(ctx context.Context) {
 
 			return performImport(ctx, galleryImporter, t.DuplicateBehaviour)
 		}); err != nil {
-			logger.Errorf("[galleries] <%s> import failed to commit: %s", fi.Name(), err.Error())
+			logger.Errorf("[galleries] <%s> import failed to commit: %v", fi.Name(), err)
 			continue
 		}
 	}
@@ -527,7 +527,7 @@ func (t *ImportTask) ImportTags(ctx context.Context) {
 		index := i + 1
 		tagJSON, err := jsonschema.LoadTagFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Errorf("[tags] failed to read json: %s", err.Error())
+			logger.Errorf("[tags] failed to read json: %v", err)
 			continue
 		}
 
@@ -542,7 +542,7 @@ func (t *ImportTask) ImportTags(ctx context.Context) {
 				continue
 			}
 
-			logger.Errorf("[tags] <%s> failed to import: %s", fi.Name(), err.Error())
+			logger.Errorf("[tags] <%s> failed to import: %v", fi.Name(), err)
 			continue
 		}
 	}
@@ -552,7 +552,7 @@ func (t *ImportTask) ImportTags(ctx context.Context) {
 			if err := t.txnManager.WithTxn(ctx, func(ctx context.Context) error {
 				return t.ImportTag(ctx, orphanTagJSON, nil, true, t.txnManager.Tag)
 			}); err != nil {
-				logger.Errorf("[tags] <%s> failed to create: %s", orphanTagJSON.Name, err.Error())
+				logger.Errorf("[tags] <%s> failed to create: %v", orphanTagJSON.Name, err)
 				continue
 			}
 		}
@@ -585,7 +585,7 @@ func (t *ImportTask) ImportTag(ctx context.Context, tagJSON *jsonschema.Tag, pen
 				continue
 			}
 
-			return fmt.Errorf("failed to create child tag <%s>: %s", childTagJSON.Name, err.Error())
+			return fmt.Errorf("failed to create child tag <%s>: %v", childTagJSON.Name, err)
 		}
 	}
 
@@ -625,7 +625,7 @@ func (t *ImportTask) ImportScrapedItems(ctx context.Context) {
 
 			studio, err := sqb.FindByName(ctx, mappingJSON.Studio, false)
 			if err != nil {
-				logger.Errorf("[scraped sites] failed to fetch studio: %s", err.Error())
+				logger.Errorf("[scraped sites] failed to fetch studio: %v", err)
 			}
 			if studio != nil {
 				newScrapedItem.StudioID = sql.NullInt64{Int64: int64(studio.ID), Valid: true}
@@ -633,13 +633,13 @@ func (t *ImportTask) ImportScrapedItems(ctx context.Context) {
 
 			_, err = qb.Create(ctx, newScrapedItem)
 			if err != nil {
-				logger.Errorf("[scraped sites] <%s> failed to create: %s", newScrapedItem.Title.String, err.Error())
+				logger.Errorf("[scraped sites] <%s> failed to create: %v", newScrapedItem.Title.String, err)
 			}
 		}
 
 		return nil
 	}); err != nil {
-		logger.Errorf("[scraped sites] import failed to commit: %s", err.Error())
+		logger.Errorf("[scraped sites] import failed to commit: %v", err)
 	}
 
 	logger.Info("[scraped sites] import complete")
@@ -665,7 +665,7 @@ func (t *ImportTask) ImportScenes(ctx context.Context) {
 
 		sceneJSON, err := jsonschema.LoadSceneFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Infof("[scenes] <%s> json parse failure: %s", fi.Name(), err.Error())
+			logger.Infof("[scenes] <%s> json parse failure: %v", fi.Name(), err)
 			continue
 		}
 
@@ -715,7 +715,7 @@ func (t *ImportTask) ImportScenes(ctx context.Context) {
 
 			return nil
 		}); err != nil {
-			logger.Errorf("[scenes] <%s> import failed: %s", fi.Name(), err.Error())
+			logger.Errorf("[scenes] <%s> import failed: %v", fi.Name(), err)
 		}
 	}
 
@@ -742,7 +742,7 @@ func (t *ImportTask) ImportImages(ctx context.Context) {
 
 		imageJSON, err := jsonschema.LoadImageFile(filepath.Join(path, fi.Name()))
 		if err != nil {
-			logger.Infof("[images] <%s> json parse failure: %s", fi.Name(), err.Error())
+			logger.Infof("[images] <%s> json parse failure: %v", fi.Name(), err)
 			continue
 		}
 
@@ -769,7 +769,7 @@ func (t *ImportTask) ImportImages(ctx context.Context) {
 
 			return performImport(ctx, imageImporter, t.DuplicateBehaviour)
 		}); err != nil {
-			logger.Errorf("[images] <%s> import failed: %s", fi.Name(), err.Error())
+			logger.Errorf("[images] <%s> import failed: %v", fi.Name(), err)
 		}
 	}
 

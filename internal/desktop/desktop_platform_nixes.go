@@ -29,7 +29,7 @@ func isServerDockerized() bool {
 func sendNotification(notificationTitle string, notificationText string) {
 	err := exec.Command("notify-send", "-i", getIconPath(), notificationTitle, notificationText, "-a", "Stash").Run()
 	if err != nil {
-		logger.Errorf("Error sending notification on Linux: %s", err.Error())
+		logger.Errorf("Error sending notification: %v", err)
 	}
 }
 

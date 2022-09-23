@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"strings"
 
@@ -55,7 +55,7 @@ func LoadGalleryFile(filePath string) (*Gallery, error) {
 
 func SaveGalleryFile(filePath string, gallery *Gallery) error {
 	if gallery == nil {
-		return fmt.Errorf("gallery must not be nil")
+		return errors.New("gallery must not be nil")
 	}
 	return marshalToFile(filePath, gallery)
 }

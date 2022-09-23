@@ -240,7 +240,7 @@ func makePerformers(n int) {
 
 				_, err := repo.Performer.Create(ctx, performer)
 				if err != nil {
-					err = fmt.Errorf("error creating performer with name: %s: %s", performer.Name.String, err.Error())
+					err = fmt.Errorf("error creating performer with name: %s: %v", performer.Name.String, err)
 				}
 				return err
 			})

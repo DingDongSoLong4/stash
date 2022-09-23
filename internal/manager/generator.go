@@ -2,7 +2,7 @@ package manager
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"math"
 	"strconv"
 
@@ -25,7 +25,7 @@ type generatorInfo struct {
 func newGeneratorInfo(videoFile ffmpeg.VideoFile) (*generatorInfo, error) {
 	exists, err := fsutil.FileExists(videoFile.Path)
 	if !exists {
-		logger.Errorf("video file not found")
+		logger.Error("video file not found")
 		return nil, err
 	}
 
@@ -86,7 +86,7 @@ func isValidFloat64(value float64) bool {
 func (g *generatorInfo) configure() error {
 	videoStream := g.VideoFile.VideoStream
 	if videoStream == nil {
-		return fmt.Errorf("missing video stream")
+		return errors.New("missing video stream")
 	}
 
 	if err := g.calculateFrameRate(videoStream); err != nil {

@@ -81,7 +81,7 @@ func ReadImageFromURL(ctx context.Context, url string) ([]byte, error) {
 // returns the image itself as a byte slice.
 func ProcessBase64Image(imageString string) ([]byte, error) {
 	if imageString == "" {
-		return nil, fmt.Errorf("empty image string")
+		return nil, errors.New("empty image string")
 	}
 
 	regex := regexp.MustCompile(base64RE)

@@ -238,7 +238,7 @@ func (r *mutationResolver) TagUpdate(ctx context.Context, input TagUpdateInput) 
 		// requires a rewrite of ValidateHierarchy.
 		if parentIDs != nil || childIDs != nil {
 			if err := tag.ValidateHierarchy(ctx, t, parentIDs, childIDs, qb); err != nil {
-				logger.Errorf("Error saving tag: %s", err)
+				logger.Errorf("Error saving tag: %v", err)
 				return err
 			}
 		}
@@ -344,7 +344,7 @@ func (r *mutationResolver) TagsMerge(ctx context.Context, input TagsMergeInput) 
 
 		err = tag.ValidateHierarchy(ctx, t, parents, children, qb)
 		if err != nil {
-			logger.Errorf("Error merging tag: %s", err)
+			logger.Errorf("Error merging tag: %v", err)
 			return err
 		}
 

@@ -197,14 +197,14 @@ func (f *FFMpeg) GetTranscodeStream(ctx context.Context, options TranscodeStream
 	logger.Debugf("Streaming via: %s", strings.Join(cmd.Args, " "))
 
 	stdout, err := cmd.StdoutPipe()
-	if nil != err {
-		logger.Error("FFMPEG stdout not available: " + err.Error())
+	if err != nil {
+		logger.Errorf("FFMPEG stdout not available: %v", err)
 		return nil, err
 	}
 
 	stderr, err := cmd.StderrPipe()
-	if nil != err {
-		logger.Error("FFMPEG stderr not available: " + err.Error())
+	if err != nil {
+		logger.Errorf("FFMPEG stderr not available: %v", err)
 		return nil, err
 	}
 

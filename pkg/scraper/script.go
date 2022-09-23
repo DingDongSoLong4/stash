@@ -73,17 +73,18 @@ func (s *scriptScraper) runScraperScript(ctx context.Context, inString string, o
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		logger.Error("Scraper stderr not available: " + err.Error())
+		logger.Errorf("scraper stderr not available: %v", err)
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if nil != err {
-		logger.Error("Scraper stdout not available: " + err.Error())
+		logger.Errorf("scraper stdout not available: %v", err)
 	}
 
 	if err = cmd.Start(); err != nil {
-		logger.Error("Error running scraper script: " + err.Error())
-		return errors.New("error running scraper script")
+		err := fmt.Errorf("error running scraper script: %w", err)
+		logger.Error(err)
+		return err
 	}
 
 	go handleScraperStderr(s.config.Name, stderr)
@@ -107,8 +108,9 @@ func (s *scriptScraper) runScraperScript(ctx context.Context, inString string, o
 		lenientErr := json.NewDecoder(strings.NewReader(s)).Decode(out)
 		if lenientErr != nil {
 			// The error is genuine, so return it
-			logger.Errorf("could not unmarshal json from script output: %v", lenientErr)
-			return fmt.Errorf("could not unmarshal json from script output: %w", lenientErr)
+			err := fmt.Errorf("could not unmarshal json from script output: %w", lenientErr)
+			logger.Error(err)
+			return err
 		}
 
 		// Lenient decode succeeded, print a warning, but use the decode

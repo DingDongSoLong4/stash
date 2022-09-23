@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -70,7 +70,7 @@ func LoadMovieFile(filePath string) (*Movie, error) {
 
 func SaveMovieFile(filePath string, movie *Movie) error {
 	if movie == nil {
-		return fmt.Errorf("movie must not be nil")
+		return errors.New("movie must not be nil")
 	}
 	return marshalToFile(filePath, movie)
 }

@@ -6,6 +6,7 @@ package sqlite_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -1769,7 +1770,7 @@ func TestSceneCountByPerformerID(t *testing.T) {
 		count, err := sqb.CountByPerformerID(ctx, performerIDs[performerIdxWithScene])
 
 		if err != nil {
-			t.Errorf("Error counting scenes: %s", err.Error())
+			t.Errorf("Error counting scenes: %v", err)
 		}
 
 		assert.Equal(t, 1, count)
@@ -1777,7 +1778,7 @@ func TestSceneCountByPerformerID(t *testing.T) {
 		count, err = sqb.CountByPerformerID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("Error counting scenes: %s", err.Error())
+			t.Errorf("Error counting scenes: %v", err)
 		}
 
 		assert.Equal(t, 0, count)
@@ -1941,7 +1942,7 @@ func TestSceneWall(t *testing.T) {
 		scenes, err := sqb.Wall(ctx, &wallQuery)
 
 		if err != nil {
-			t.Errorf("Error finding scenes: %s", err.Error())
+			t.Errorf("Error finding scenes: %v", err)
 			return nil
 		}
 
@@ -1955,7 +1956,7 @@ func TestSceneWall(t *testing.T) {
 		scenes, err = sqb.Wall(ctx, &wallQuery)
 
 		if err != nil {
-			t.Errorf("Error finding scene: %s", err.Error())
+			t.Errorf("Error finding scene: %v", err)
 			return nil
 		}
 
@@ -2831,7 +2832,7 @@ func TestSceneQueryResolutionModifiers(t *testing.T) {
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -3697,7 +3698,7 @@ func TestSceneCountByTagID(t *testing.T) {
 		sceneCount, err := sqb.CountByTagID(ctx, tagIDs[tagIdxWithScene])
 
 		if err != nil {
-			t.Errorf("error calling CountByTagID: %s", err.Error())
+			t.Errorf("error calling CountByTagID: %v", err)
 		}
 
 		assert.Equal(t, 1, sceneCount)
@@ -3705,7 +3706,7 @@ func TestSceneCountByTagID(t *testing.T) {
 		sceneCount, err = sqb.CountByTagID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling CountByTagID: %s", err.Error())
+			t.Errorf("error calling CountByTagID: %v", err)
 		}
 
 		assert.Equal(t, 0, sceneCount)
@@ -3721,7 +3722,7 @@ func TestSceneCountByMovieID(t *testing.T) {
 		sceneCount, err := sqb.CountByMovieID(ctx, movieIDs[movieIdxWithScene])
 
 		if err != nil {
-			t.Errorf("error calling CountByMovieID: %s", err.Error())
+			t.Errorf("error calling CountByMovieID: %v", err)
 		}
 
 		assert.Equal(t, 1, sceneCount)
@@ -3729,7 +3730,7 @@ func TestSceneCountByMovieID(t *testing.T) {
 		sceneCount, err = sqb.CountByMovieID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling CountByMovieID: %s", err.Error())
+			t.Errorf("error calling CountByMovieID: %v", err)
 		}
 
 		assert.Equal(t, 0, sceneCount)
@@ -3745,7 +3746,7 @@ func TestSceneCountByStudioID(t *testing.T) {
 		sceneCount, err := sqb.CountByStudioID(ctx, studioIDs[studioIdxWithScene])
 
 		if err != nil {
-			t.Errorf("error calling CountByStudioID: %s", err.Error())
+			t.Errorf("error calling CountByStudioID: %v", err)
 		}
 
 		assert.Equal(t, 1, sceneCount)
@@ -3753,7 +3754,7 @@ func TestSceneCountByStudioID(t *testing.T) {
 		sceneCount, err = sqb.CountByStudioID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling CountByStudioID: %s", err.Error())
+			t.Errorf("error calling CountByStudioID: %v", err)
 		}
 
 		assert.Equal(t, 0, sceneCount)
@@ -3769,7 +3770,7 @@ func TestFindByMovieID(t *testing.T) {
 		scenes, err := sqb.FindByMovieID(ctx, movieIDs[movieIdxWithScene])
 
 		if err != nil {
-			t.Errorf("error calling FindByMovieID: %s", err.Error())
+			t.Errorf("error calling FindByMovieID: %v", err)
 		}
 
 		assert.Len(t, scenes, 1)
@@ -3778,7 +3779,7 @@ func TestFindByMovieID(t *testing.T) {
 		scenes, err = sqb.FindByMovieID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling FindByMovieID: %s", err.Error())
+			t.Errorf("error calling FindByMovieID: %v", err)
 		}
 
 		assert.Len(t, scenes, 0)
@@ -3794,7 +3795,7 @@ func TestFindByPerformerID(t *testing.T) {
 		scenes, err := sqb.FindByPerformerID(ctx, performerIDs[performerIdxWithScene])
 
 		if err != nil {
-			t.Errorf("error calling FindByPerformerID: %s", err.Error())
+			t.Errorf("error calling FindByPerformerID: %v", err)
 		}
 
 		assert.Len(t, scenes, 1)
@@ -3803,7 +3804,7 @@ func TestFindByPerformerID(t *testing.T) {
 		scenes, err = sqb.FindByPerformerID(ctx, 0)
 
 		if err != nil {
-			t.Errorf("error calling FindByPerformerID: %s", err.Error())
+			t.Errorf("error calling FindByPerformerID: %v", err)
 		}
 
 		assert.Len(t, scenes, 0)
@@ -3820,25 +3821,25 @@ func TestSceneUpdateSceneCover(t *testing.T) {
 
 		image := []byte("image")
 		if err := qb.UpdateCover(ctx, sceneID, image); err != nil {
-			return fmt.Errorf("Error updating scene cover: %s", err.Error())
+			return fmt.Errorf("Error updating scene cover: %v", err)
 		}
 
 		// ensure image set
 		storedImage, err := qb.GetCover(ctx, sceneID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("Error getting image: %v", err)
 		}
 		assert.Equal(t, storedImage, image)
 
 		// set nil image
 		err = qb.UpdateCover(ctx, sceneID, nil)
 		if err == nil {
-			return fmt.Errorf("Expected error setting nil image")
+			return errors.New("Expected error setting nil image")
 		}
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -3850,23 +3851,23 @@ func TestSceneDestroySceneCover(t *testing.T) {
 
 		image := []byte("image")
 		if err := qb.UpdateCover(ctx, sceneID, image); err != nil {
-			return fmt.Errorf("Error updating scene image: %s", err.Error())
+			return fmt.Errorf("error updating scene image: %v", err)
 		}
 
 		if err := qb.DestroyCover(ctx, sceneID); err != nil {
-			return fmt.Errorf("Error destroying scene cover: %s", err.Error())
+			return fmt.Errorf("error destroying scene cover: %v", err)
 		}
 
 		// image should be nil
 		storedImage, err := qb.GetCover(ctx, sceneID)
 		if err != nil {
-			return fmt.Errorf("Error getting image: %s", err.Error())
+			return fmt.Errorf("error getting image: %v", err)
 		}
 		assert.Nil(t, storedImage)
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -3880,7 +3881,7 @@ func TestSceneStashIDs(t *testing.T) {
 			Title: name,
 		}
 		if err := qb.Create(ctx, scene, nil); err != nil {
-			return fmt.Errorf("Error creating scene: %s", err.Error())
+			return fmt.Errorf("error creating scene: %v", err)
 		}
 
 		if err := scene.LoadStashIDs(ctx, qb); err != nil {
@@ -3890,7 +3891,7 @@ func TestSceneStashIDs(t *testing.T) {
 		testSceneStashIDs(ctx, t, scene)
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 
@@ -3917,11 +3918,11 @@ func testSceneStashIDs(ctx context.Context, t *testing.T, s *models.Scene) {
 		},
 	})
 	if err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 
 	if err := s.LoadStashIDs(ctx, qb); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 		return
 	}
 
@@ -3935,11 +3936,11 @@ func testSceneStashIDs(ctx context.Context, t *testing.T, s *models.Scene) {
 		},
 	})
 	if err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 
 	if err := s.LoadStashIDs(ctx, qb); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 		return
 	}
 
@@ -3985,7 +3986,7 @@ func TestSceneQueryQTrim(t *testing.T) {
 
 		return nil
 	}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 }
 

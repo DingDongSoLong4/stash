@@ -41,7 +41,7 @@ type addGalleryLinkFunc func(o *models.Gallery) (bool, error)
 type addSceneLinkFunc func(o *models.Scene) (bool, error)
 
 func (t *tagger) addError(otherType, otherName string, err error) error {
-	return fmt.Errorf("error adding %s '%s' to %s '%s': %s", otherType, otherName, t.Type, t.Name, err.Error())
+	return fmt.Errorf("error adding %s '%s' to %s '%s': %v", otherType, otherName, t.Type, t.Name, err)
 }
 
 func (t *tagger) addLog(otherType, otherName string) {

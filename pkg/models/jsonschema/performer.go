@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -63,7 +63,7 @@ func LoadPerformerFile(filePath string) (*Performer, error) {
 
 func SavePerformerFile(filePath string, performer *Performer) error {
 	if performer == nil {
-		return fmt.Errorf("performer must not be nil")
+		return errors.New("performer must not be nil")
 	}
 	return marshalToFile(filePath, performer)
 }

@@ -17,7 +17,7 @@ func TestSavedFilterFind(t *testing.T) {
 		savedFilter, err := sqlite.SavedFilterReaderWriter.Find(ctx, savedFilterIDs[savedFilterIdxImage])
 
 		if err != nil {
-			t.Errorf("Error finding saved filter: %s", err.Error())
+			t.Errorf("error finding saved filter: %v", err)
 		}
 
 		assert.Equal(t, savedFilterIDs[savedFilterIdxImage], savedFilter.ID)
@@ -31,7 +31,7 @@ func TestSavedFilterFindByMode(t *testing.T) {
 		savedFilters, err := sqlite.SavedFilterReaderWriter.FindByMode(ctx, models.FilterModeScenes)
 
 		if err != nil {
-			t.Errorf("Error finding saved filters: %s", err.Error())
+			t.Errorf("error finding saved filters: %v", err)
 		}
 
 		assert.Len(t, savedFilters, 1)

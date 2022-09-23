@@ -47,7 +47,7 @@ func (t *GenerateMarkersTask) Start(ctx context.Context) {
 			scene, err = t.TxnManager.Scene.Find(ctx, int(t.Marker.SceneID.Int64))
 			return err
 		}); err != nil {
-			logger.Errorf("error finding scene for marker: %s", err.Error())
+			logger.Errorf("error finding scene for marker: %v", err)
 			return
 		}
 
@@ -59,7 +59,7 @@ func (t *GenerateMarkersTask) Start(ctx context.Context) {
 		ffprobe := instance.FFProbe
 		videoFile, err := ffprobe.NewVideoFile(t.Scene.Path)
 		if err != nil {
-			logger.Errorf("error reading video file: %s", err.Error())
+			logger.Errorf("error reading video file: %v", err)
 			return
 		}
 
@@ -74,7 +74,7 @@ func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 		sceneMarkers, err = t.TxnManager.SceneMarker.FindBySceneID(ctx, t.Scene.ID)
 		return err
 	}); err != nil {
-		logger.Errorf("error getting scene markers: %s", err.Error())
+		logger.Errorf("error getting scene markers: %v", err)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 	ffprobe := instance.FFProbe
 	videoFile, err := ffprobe.NewVideoFile(t.Scene.Path)
 	if err != nil {
-		logger.Errorf("error reading video file: %s", err.Error())
+		logger.Errorf("error reading video file: %v", err)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (t *GenerateMarkersTask) markersNeeded(ctx context.Context) int {
 	markers := 0
 	sceneMarkers, err := t.TxnManager.SceneMarker.FindBySceneID(ctx, t.Scene.ID)
 	if err != nil {
-		logger.Errorf("error finding scene markers: %s", err.Error())
+		logger.Errorf("error finding scene markers: %v", err)
 		return 0
 	}
 

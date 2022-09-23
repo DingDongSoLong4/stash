@@ -639,7 +639,7 @@ func performerFragmentToScrapedScenePerformer(p graphql.PerformerFragment) *mode
 func getFirstImage(ctx context.Context, client *http.Client, images []*graphql.ImageFragment) *string {
 	ret, err := fetchImage(ctx, client, images[0].URL)
 	if err != nil {
-		logger.Warnf("Error fetching image %s: %s", images[0].URL, err.Error())
+		logger.Warnf("error fetching image %s: %v", images[0].URL, err)
 	}
 
 	return ret

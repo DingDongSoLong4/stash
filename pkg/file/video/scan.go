@@ -22,7 +22,7 @@ func (d *Decorator) Decorate(ctx context.Context, fs file.FS, f file.File) (file
 	base := f.Base()
 	// TODO - copy to temp file if not an OsFS
 	if _, isOs := fs.(*file.OsFS); !isOs {
-		return f, fmt.Errorf("video.constructFile: only OsFS is supported")
+		return f, errors.New("video.constructFile: only OsFS is supported")
 	}
 
 	probe := d.FFProbe

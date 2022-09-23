@@ -33,7 +33,7 @@ func testStashIDReaderWriter(ctx context.Context, t *testing.T, r stashIDReaderW
 
 	// update stash ids and ensure was updated
 	if err := r.UpdateStashIDs(ctx, id, []models.StashID{stashID}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 
 	testStashIDs(ctx, t, r, id, []models.StashID{stashID})
@@ -45,7 +45,7 @@ func testStashIDReaderWriter(ctx context.Context, t *testing.T, r stashIDReaderW
 
 	// remove stash ids and ensure was updated
 	if err := r.UpdateStashIDs(ctx, id, []models.StashID{}); err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 	}
 
 	testNoStashIDs(ctx, t, r, id)
@@ -55,7 +55,7 @@ func testNoStashIDs(ctx context.Context, t *testing.T, r stashIDReaderWriter, id
 	t.Helper()
 	stashIDs, err := r.GetStashIDs(ctx, id)
 	if err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func testStashIDs(ctx context.Context, t *testing.T, r stashIDReaderWriter, id i
 	t.Helper()
 	stashIDs, err := r.GetStashIDs(ctx, id)
 	if err != nil {
-		t.Error(err.Error())
+		t.Error(err)
 		return
 	}
 

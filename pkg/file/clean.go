@@ -368,7 +368,7 @@ func (j *cleanJob) deleteFile(ctx context.Context, fileID ID, fn string) {
 
 		return j.Repository.Destroy(ctx, fileID)
 	}); err != nil {
-		logger.Errorf("Error deleting file %q from database: %s", fn, err.Error())
+		logger.Errorf("Error deleting file %q from database: %v", fn, err)
 		return
 	}
 }
@@ -385,7 +385,7 @@ func (j *cleanJob) deleteFolder(ctx context.Context, folderID FolderID, fn strin
 
 		return j.Repository.FolderStore.Destroy(ctx, folderID)
 	}); err != nil {
-		logger.Errorf("Error deleting folder %q from database: %s", fn, err.Error())
+		logger.Errorf("Error deleting folder %q from database: %v", fn, err)
 		return
 	}
 }

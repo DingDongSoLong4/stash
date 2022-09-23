@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -45,7 +46,7 @@ func (e FilterMode) String() string {
 func (e *FilterMode) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
-		return fmt.Errorf("enums must be strings")
+		return errors.New("enums must be strings")
 	}
 
 	*e = FilterMode(str)

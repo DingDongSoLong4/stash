@@ -1394,7 +1394,7 @@ func galleryQueryQ(ctx context.Context, t *testing.T, q string, expectedGalleryI
 	}
 	galleries, _, err := qb.Query(ctx, nil, &filter)
 	if err != nil {
-		t.Errorf("Error querying gallery: %s", err.Error())
+		t.Errorf("error querying gallery: %v", err)
 		return
 	}
 
@@ -1406,7 +1406,7 @@ func galleryQueryQ(ctx context.Context, t *testing.T, q string, expectedGalleryI
 	filter.Q = nil
 	galleries, _, err = qb.Query(ctx, nil, &filter)
 	if err != nil {
-		t.Errorf("Error querying gallery: %s", err.Error())
+		t.Errorf("error querying gallery: %v", err)
 	}
 
 	assert.Len(t, galleries, totalGalleries)
@@ -1492,7 +1492,7 @@ func verifyGalleriesPath(ctx context.Context, t *testing.T, pathCriterion models
 	sqb := db.Gallery
 	galleries, _, err := sqb.Query(ctx, &galleryFilter, nil)
 	if err != nil {
-		t.Errorf("Error querying gallery: %s", err.Error())
+		t.Errorf("error querying gallery: %v", err)
 	}
 
 	for _, gallery := range galleries {
@@ -1733,7 +1733,7 @@ func verifyGalleriesRating(t *testing.T, ratingCriterion models.IntCriterionInpu
 
 		galleries, _, err := sqb.Query(ctx, &galleryFilter, nil)
 		if err != nil {
-			t.Errorf("Error querying gallery: %s", err.Error())
+			t.Errorf("error querying gallery: %v", err)
 		}
 
 		for _, gallery := range galleries {
@@ -1759,7 +1759,7 @@ func TestGalleryQueryIsMissingScene(t *testing.T) {
 
 		galleries, _, err := qb.Query(ctx, &galleryFilter, &findFilter)
 		if err != nil {
-			t.Errorf("Error querying gallery: %s", err.Error())
+			t.Errorf("error querying gallery: %v", err)
 		}
 
 		assert.Len(t, galleries, 0)
@@ -1767,7 +1767,7 @@ func TestGalleryQueryIsMissingScene(t *testing.T) {
 		findFilter.Q = nil
 		galleries, _, err = qb.Query(ctx, &galleryFilter, &findFilter)
 		if err != nil {
-			t.Errorf("Error querying gallery: %s", err.Error())
+			t.Errorf("error querying gallery: %v", err)
 		}
 
 		// ensure non of the ids equal the one with gallery
@@ -1782,7 +1782,7 @@ func TestGalleryQueryIsMissingScene(t *testing.T) {
 func queryGallery(ctx context.Context, t *testing.T, sqb models.GalleryReader, galleryFilter *models.GalleryFilterType, findFilter *models.FindFilterType) []*models.Gallery {
 	galleries, _, err := sqb.Query(ctx, galleryFilter, findFilter)
 	if err != nil {
-		t.Errorf("Error querying gallery: %s", err.Error())
+		t.Errorf("error querying gallery: %v", err)
 	}
 
 	return galleries

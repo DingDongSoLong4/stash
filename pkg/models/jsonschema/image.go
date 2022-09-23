@@ -1,7 +1,7 @@
 package jsonschema
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	jsoniter "github.com/json-iterator/go"
@@ -54,7 +54,7 @@ func LoadImageFile(filePath string) (*Image, error) {
 
 func SaveImageFile(filePath string, image *Image) error {
 	if image == nil {
-		return fmt.Errorf("image must not be nil")
+		return errors.New("image must not be nil")
 	}
 	return marshalToFile(filePath, image)
 }
