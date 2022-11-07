@@ -1,5 +1,5 @@
-import { Button, Modal } from "react-bootstrap";
-import React, { useState } from "react";
+import { Button } from "react-bootstrap";
+import React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { ImageInput } from "src/components/Shared/ImageInput";
 import cx from "classnames";
@@ -27,7 +27,6 @@ interface IProps {
 
 export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
   const intl = useIntl();
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
 
   function renderEditButton() {
     if (props.isNew) return;
@@ -65,7 +64,7 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
       <Button
         variant="danger"
         className="delete"
-        onClick={() => setIsDeleteAlertOpen(true)}
+        onClick={() => props.onDelete()}
       >
         <FormattedMessage id="actions.delete" />
       </Button>
@@ -105,30 +104,6 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
         </div>
       );
     }
-  }
-
-  function renderDeleteAlert() {
-    return (
-      <Modal show={isDeleteAlertOpen}>
-        <Modal.Body>
-          <FormattedMessage
-            id="dialogs.delete_confirm"
-            values={{ entityName: props.objectName }}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="danger" onClick={props.onDelete}>
-            <FormattedMessage id="actions.delete" />
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setIsDeleteAlertOpen(false)}
-          >
-            <FormattedMessage id="actions.cancel" />
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    );
   }
 
   return (
@@ -174,7 +149,6 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
       {props.customButtons}
       {renderSaveButton()}
       {renderDeleteButton()}
-      {renderDeleteAlert()}
     </div>
   );
 };

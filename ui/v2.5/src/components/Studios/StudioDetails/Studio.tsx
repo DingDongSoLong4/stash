@@ -204,7 +204,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
               onImageChange={() => {}}
               onClearImage={() => {}}
               onAutoTag={onAutoTag}
-              onDelete={onDelete}
+              onDelete={() => setIsDeleteAlertOpen(true)}
             />
           </>
         ) : (
@@ -212,7 +212,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
             studio={studio}
             onSubmit={onSave}
             onCancel={onToggleEdit}
-            onDelete={onDelete}
+            onDelete={() => setIsDeleteAlertOpen(true)}
             onImageChange={setImage}
           />
         )}

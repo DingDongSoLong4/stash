@@ -203,7 +203,7 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
               onToggleEdit={onToggleEdit}
               onSave={() => {}}
               onImageChange={() => {}}
-              onDelete={onDelete}
+              onDelete={() => setIsDeleteAlertOpen(true)}
             />
           </>
         ) : (
@@ -211,7 +211,7 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
             movie={movie}
             onSubmit={onSave}
             onCancel={onToggleEdit}
-            onDelete={onDelete}
+            onDelete={() => setIsDeleteAlertOpen(true)}
             setFrontImage={setFrontImage}
             setBackImage={setBackImage}
             onImageEncoding={onImageEncoding}

@@ -5,7 +5,6 @@ import {
   Dropdown,
   FormControl,
   InputGroup,
-  Modal,
   OverlayTrigger,
   Tooltip,
 } from "react-bootstrap";
@@ -18,11 +17,16 @@ import {
 import { useToast } from "src/hooks";
 import { ListFilterModel } from "src/models/list-filter/filter";
 import { SavedFilterDataFragment } from "src/core/generated-graphql";
-import { LoadingIndicator } from "src/components/Shared";
+import { LoadingIndicator, Modal } from "src/components/Shared";
 import { PersistanceLevel } from "src/hooks/ListHook";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Icon } from "../Shared";
-import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+  faExclamationTriangle,
+  faSave,
+  faTimes,
+  faTrashAlt,
+} from "@fortawesome/free-solid-svg-icons";
 
 interface ISavedFilterListProps {
   filter: ListFilterModel;
@@ -209,70 +213,62 @@ export const SavedFilterList: React.FC<ISavedFilterListProps> = ({
     );
   };
 
-  function maybeRenderDeleteAlert() {
-    if (!deletingFilter) {
-      return;
-    }
-
+  function renderDeleteAlert() {
     return (
-      <Modal show>
-        <Modal.Body>
+      <Modal
+        show={!!deletingFilter}
+        icon={faTrashAlt}
+        accept={{
+          text: intl.formatMessage({ id: "actions.delete" }),
+          variant: "danger",
+          onClick: () => {
+            if (deletingFilter) {
+              onDeleteFilter(deletingFilter);
+            }
+          },
+        }}
+        cancel={{ onClick: () => setDeletingFilter(undefined) }}
+      >
+        <p>
           <FormattedMessage
             id="dialogs.delete_confirm"
             values={{
-              entityName: deletingFilter.name,
+              entityName:
+                deletingFilter?.name ??
+                intl.formatMessage({ id: "filter" }).toLocaleLowerCase(),
             }}
           />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="danger"
-            onClick={() => onDeleteFilter(deletingFilter)}
-          >
-            {intl.formatMessage({ id: "actions.delete" })}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setDeletingFilter(undefined)}
-          >
-            {intl.formatMessage({ id: "actions.cancel" })}
-          </Button>
-        </Modal.Footer>
+        </p>
       </Modal>
     );
   }
 
-  function maybeRenderOverwriteAlert() {
-    if (!overwritingFilter) {
-      return;
-    }
-
+  function renderOverwriteAlert() {
     return (
-      <Modal show>
-        <Modal.Body>
+      <Modal
+        show={!!overwritingFilter}
+        icon={faExclamationTriangle}
+        accept={{
+          text: intl.formatMessage({ id: "actions.overwrite" }),
+          variant: "secondary",
+          onClick: () => {
+            if (overwritingFilter) {
+              onSaveFilter(overwritingFilter.name, overwritingFilter.id);
+            }
+          },
+        }}
+        cancel={{ onClick: () => setOverwritingFilter(undefined) }}
+      >
+        <p>
           <FormattedMessage
             id="dialogs.overwrite_filter_confirm"
             values={{
-              entityName: overwritingFilter.name,
+              entityName:
+                overwritingFilter?.name ??
+                intl.formatMessage({ id: "filter" }).toLocaleLowerCase(),
             }}
           />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="primary"
-            onClick={() =>
-              onSaveFilter(overwritingFilter.name, overwritingFilter.id)
-            }
-          >
-            {intl.formatMessage({ id: "actions.overwrite" })}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setOverwritingFilter(undefined)}
-          >
-            {intl.formatMessage({ id: "actions.cancel" })}
-          </Button>
-        </Modal.Footer>
+        </p>
       </Modal>
     );
   }
@@ -318,8 +314,8 @@ export const SavedFilterList: React.FC<ISavedFilterListProps> = ({
 
   return (
     <div>
-      {maybeRenderDeleteAlert()}
-      {maybeRenderOverwriteAlert()}
+      {renderDeleteAlert()}
+      {renderOverwriteAlert()}
       <InputGroup>
         <FormControl
           className="bg-secondary text-white border-secondary"
