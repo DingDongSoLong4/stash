@@ -199,18 +199,11 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
       <Col>
         <Row xs={8}>
           <DetailsEditNavbar
-            objectName={
-              performer?.name ?? intl.formatMessage({ id: "performer" })
-            }
-            onToggleEdit={() => {
-              setIsEditing(!isEditing);
-            }}
+            onToggleEdit={() => setIsEditing(!isEditing)}
             onDelete={() => setIsDeleteAlertOpen(true)}
             onAutoTag={onAutoTag}
             isNew={false}
             isEditing={false}
-            onSave={() => {}}
-            onImageChange={() => {}}
             classNames="mb-2"
             customButtons={
               <div>
@@ -298,9 +291,7 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
           isNew={false}
           onImageChange={onImageChange}
           onImageEncoding={onImageEncoding}
-          onCancelEditing={() => {
-            setIsEditing(false);
-          }}
+          onCancelEditing={() => setIsEditing(false)}
         />
       );
     } else {

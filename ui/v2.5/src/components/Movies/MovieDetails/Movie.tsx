@@ -197,12 +197,9 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
             <MovieDetailsPanel movie={movie} />
             {/* HACK - this is also rendered in the MovieEditPanel */}
             <DetailsEditNavbar
-              objectName={movie.name}
               isNew={false}
               isEditing={isEditing}
               onToggleEdit={onToggleEdit}
-              onSave={() => {}}
-              onImageChange={() => {}}
               onDelete={() => setIsDeleteAlertOpen(true)}
             />
           </>

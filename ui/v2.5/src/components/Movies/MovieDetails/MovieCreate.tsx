@@ -85,8 +85,6 @@ const MovieCreate: React.FC = () => {
 
         <MovieEditPanel
           onSubmit={onSave}
-          onCancel={() => history.push("/movies")}
-          onDelete={() => {}}
           setFrontImage={setFrontImage}
           setBackImage={setBackImage}
           onImageEncoding={onImageEncoding}

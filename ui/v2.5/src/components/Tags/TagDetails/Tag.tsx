@@ -283,13 +283,9 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
               <TagDetailsPanel tag={tag} />
               {/* HACK - this is also rendered in the TagEditPanel */}
               <DetailsEditNavbar
-                objectName={tag.name}
                 isNew={false}
                 isEditing={isEditing}
                 onToggleEdit={onToggleEdit}
-                onSave={() => {}}
-                onImageChange={() => {}}
-                onClearImage={() => {}}
                 onAutoTag={onAutoTag}
                 onDelete={() => setIsDeleteAlertOpen(true)}
                 classNames="mb-2"
