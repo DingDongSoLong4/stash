@@ -267,15 +267,11 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
               <TagDetailsPanel tag={tag} />
               {/* HACK - this is also rendered in the TagEditPanel */}
               <DetailsEditNavbar
-                objectName={tag.name}
                 isNew={false}
                 isEditing={false}
                 onToggleEdit={onToggleEdit}
-                onSave={() => {}}
-                onImageChange={() => {}}
-                onClearImage={() => {}}
                 onAutoTag={onAutoTag}
-                onDelete={onDelete}
+                onDelete={() => setIsDeleteAlertOpen(true)}
                 classNames="mb-2"
                 customButtons={renderMergeButton()}
               />
@@ -285,7 +281,7 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
               tag={tag}
               onSubmit={onSave}
               onCancel={onToggleEdit}
-              onDelete={onDelete}
+              onDelete={() => setIsDeleteAlertOpen(true)}
               setImage={setImage}
             />
           )}

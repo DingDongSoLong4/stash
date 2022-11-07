@@ -682,7 +682,6 @@ export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
         )}
         {renderScraperMenu()}
         <ImageInput
-          isEditing
           onImageChange={onImageChangeHandler}
           onImageURL={onImageChangeURL}
         />

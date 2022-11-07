@@ -906,7 +906,6 @@ export const SceneEditPanel: React.FC<IProps> = ({
                   />
                 )}
                 <ImageInput
-                  isEditing
                   onImageChange={onCoverImageChange}
                   onImageURL={onImageLoad}
                 />

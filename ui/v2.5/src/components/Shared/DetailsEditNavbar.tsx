@@ -1,25 +1,24 @@
-import { Button, Modal } from "react-bootstrap";
-import React, { useEffect, useState } from "react";
+import { Button } from "react-bootstrap";
+import React, { useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { ImageInput } from "src/components/Shared/ImageInput";
 import { useHotkeys } from "src/utils";
 import cx from "classnames";
 
 interface IProps {
-  objectName?: string;
   isNew: boolean;
   isEditing: boolean;
-  onToggleEdit: () => void;
-  onSave: () => void;
+  onToggleEdit?: () => void;
+  onSave?: () => void;
   saveDisabled?: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
   onAutoTag?: () => void;
-  onImageChange: (event: React.FormEvent<HTMLInputElement>) => void;
+  onImageChange?: (event: React.FormEvent<HTMLInputElement>) => void;
   onBackImageChange?: (event: React.FormEvent<HTMLInputElement>) => void;
   onImageChangeURL?: (url: string) => void;
   onBackImageChangeURL?: (url: string) => void;
-  onClearImage?: () => void;
-  onClearBackImage?: () => void;
+  onImageClear?: () => void;
+  onBackImageClear?: () => void;
   acceptSVG?: boolean;
   customButtons?: JSX.Element;
   classNames?: string;
@@ -27,7 +26,6 @@ interface IProps {
 }
 
 export const DetailsEditNavbar: React.FC<IProps> = ({
-  objectName,
   isNew,
   isEditing,
   onToggleEdit,
@@ -39,14 +37,13 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
   onBackImageChange,
   onImageChangeURL,
   onBackImageChangeURL,
-  onClearImage,
-  onClearBackImage,
+  onImageClear,
+  onBackImageClear,
   acceptSVG,
   customButtons,
   classNames,
 }) => {
   const intl = useIntl();
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
 
   // set up hotkeys
   const hotkeys = useHotkeys();
@@ -55,7 +52,7 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
     return hotkeys.bind("e", () => onToggleEdit());
   }, [hotkeys, onToggleEdit]);
   useEffect(() => {
-    if (!isEditing || saveDisabled) return;
+    if (!isEditing || saveDisabled || !onSave) return;
     return hotkeys.bind("s s", () => onSave());
   }, [hotkeys, isEditing, saveDisabled, onSave]);
   useEffect(() => {
@@ -64,7 +61,7 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
   }, [hotkeys, isEditing, isNew, onDelete]);
 
   function renderEditButton() {
-    if (isNew) return;
+    if (isNew || !onToggleEdit) return;
     return (
       <Button variant="primary" className="edit" onClick={() => onToggleEdit()}>
         {isEditing
@@ -75,7 +72,7 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
   }
 
   function renderSaveButton() {
-    if (!isEditing) return;
+    if (!isEditing || !onSave) return;
 
     return (
       <Button
@@ -90,29 +87,73 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
   }
 
   function renderDeleteButton() {
-    if (isNew || isEditing) return;
+    if (isNew || isEditing || !onDelete) return;
     return (
-      <Button
-        variant="danger"
-        className="delete"
-        onClick={() => setIsDeleteAlertOpen(true)}
-      >
+      <Button variant="danger" className="delete" onClick={() => onDelete()}>
         <FormattedMessage id="actions.delete" />
       </Button>
     );
   }
 
-  function renderBackImageInput() {
-    if (!isEditing || !onBackImageChange) {
-      return;
-    }
+  function renderFrontImageInput() {
+    if (!isEditing || !onImageChange) return;
+
+    const text = onBackImageChange
+      ? intl.formatMessage({ id: "actions.set_front_image" })
+      : undefined;
     return (
       <ImageInput
-        isEditing={isEditing}
+        text={text}
+        onImageChange={onImageChange}
+        onImageURL={onImageChangeURL}
+        acceptSVG={acceptSVG ?? false}
+      />
+    );
+  }
+  function renderFrontImageClear() {
+    if (!isEditing || !onImageClear) return;
+
+    const text = onBackImageClear
+      ? intl.formatMessage({ id: "actions.clear_front_image" })
+      : intl.formatMessage({ id: "actions.clear_image" });
+    return (
+      <div>
+        <Button
+          className="mr-2"
+          variant="danger"
+          onClick={() => onImageClear()}
+        >
+          {text}
+        </Button>
+      </div>
+    );
+  }
+
+  function renderBackImageInput() {
+    if (!isEditing || !onBackImageChange) return;
+
+    return (
+      <ImageInput
         text={intl.formatMessage({ id: "actions.set_back_image" })}
         onImageChange={onBackImageChange}
         onImageURL={onBackImageChangeURL}
       />
+    );
+  }
+
+  function renderBackImageClear() {
+    if (!isEditing || !onBackImageClear) return;
+
+    return (
+      <div>
+        <Button
+          className="mr-2"
+          variant="danger"
+          onClick={() => onBackImageClear()}
+        >
+          {intl.formatMessage({ id: "actions.clear_back_image" })}
+        </Button>
+      </div>
     );
   }
 
@@ -130,74 +171,17 @@ export const DetailsEditNavbar: React.FC<IProps> = ({
     }
   }
 
-  function renderDeleteAlert() {
-    return (
-      <Modal show={isDeleteAlertOpen}>
-        <Modal.Body>
-          <FormattedMessage
-            id="dialogs.delete_confirm"
-            values={{ entityName: objectName }}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="danger" onClick={onDelete}>
-            <FormattedMessage id="actions.delete" />
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setIsDeleteAlertOpen(false)}
-          >
-            <FormattedMessage id="actions.cancel" />
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    );
-  }
-
   return (
     <div className={cx("details-edit", classNames)}>
       {renderEditButton()}
-      <ImageInput
-        isEditing={isEditing}
-        text={
-          onBackImageChange
-            ? intl.formatMessage({ id: "actions.set_front_image" })
-            : undefined
-        }
-        onImageChange={onImageChange}
-        onImageURL={onImageChangeURL}
-        acceptSVG={acceptSVG ?? false}
-      />
-      {isEditing && onClearImage ? (
-        <div>
-          <Button
-            className="mr-2"
-            variant="danger"
-            onClick={() => onClearImage()}
-          >
-            {onClearBackImage
-              ? intl.formatMessage({ id: "actions.clear_front_image" })
-              : intl.formatMessage({ id: "actions.clear_image" })}
-          </Button>
-        </div>
-      ) : null}
+      {renderFrontImageInput()}
+      {renderFrontImageClear()}
       {renderBackImageInput()}
-      {isEditing && onClearBackImage ? (
-        <div>
-          <Button
-            className="mr-2"
-            variant="danger"
-            onClick={() => onClearBackImage()}
-          >
-            {intl.formatMessage({ id: "actions.clear_back_image" })}
-          </Button>
-        </div>
-      ) : null}
+      {renderBackImageClear()}
       {renderAutoTagButton()}
       {customButtons}
       {renderSaveButton()}
       {renderDeleteButton()}
-      {renderDeleteAlert()}
     </div>
   );
 };

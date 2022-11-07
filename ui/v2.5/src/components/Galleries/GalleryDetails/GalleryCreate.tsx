@@ -27,7 +27,6 @@ const GalleryCreate: React.FC = () => {
           isNew
           gallery={{ title: nameQuery ?? "" }}
           isVisible
-          onDelete={() => {}}
         />
       </div>
     </div>

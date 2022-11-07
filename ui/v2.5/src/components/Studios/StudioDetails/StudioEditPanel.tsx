@@ -16,8 +16,8 @@ interface IStudioEditPanel {
   onSubmit: (
     studio: Partial<GQL.StudioCreateInput | GQL.StudioUpdateInput>
   ) => void;
-  onCancel: () => void;
-  onDelete: () => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
   onImageChange?: (image?: string | null) => void;
   onImageEncoding?: (loading?: boolean) => void;
 }
@@ -321,7 +321,6 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
       </Form.Group>
 
       <DetailsEditNavbar
-        objectName={studio?.name ?? intl.formatMessage({ id: "studio" })}
         isNew={isNew}
         isEditing
         onToggleEdit={onCancel}
@@ -329,7 +328,7 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
         saveDisabled={!formik.dirty}
         onImageChange={onImageChangeHandler}
         onImageChangeURL={onImageChangeURL}
-        onClearImage={() => {
+        onImageClear={() => {
           formik.setFieldValue("image", null);
         }}
         onDelete={onDelete}

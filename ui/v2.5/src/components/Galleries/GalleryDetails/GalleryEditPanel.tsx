@@ -38,7 +38,7 @@ import { galleryTitle } from "src/core/galleries";
 
 interface IProps {
   isVisible: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
 }
 
 interface INewProps {
@@ -427,13 +427,15 @@ export const GalleryEditPanel: React.FC<
             >
               <FormattedMessage id="actions.save" />
             </Button>
-            <Button
-              className="edit-button"
-              variant="danger"
-              onClick={() => onDelete()}
-            >
-              <FormattedMessage id="actions.delete" />
-            </Button>
+            {onDelete && (
+              <Button
+                className="edit-button"
+                variant="danger"
+                onClick={() => onDelete()}
+              >
+                <FormattedMessage id="actions.delete" />
+              </Button>
+            )}
           </div>
           <Col xs={6} className="text-right">
             {renderScraperMenu()}

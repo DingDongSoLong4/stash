@@ -13,7 +13,6 @@ import Icon from "./Icon";
 import { faFile, faLink } from "@fortawesome/free-solid-svg-icons";
 
 interface IImageInput {
-  isEditing: boolean;
   text?: string;
   onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onImageURL?: (url: string) => void;
@@ -25,7 +24,6 @@ function acceptExtensions(acceptSVG: boolean = false) {
 }
 
 export const ImageInput: React.FC<IImageInput> = ({
-  isEditing,
   text,
   onImageChange,
   onImageURL,
@@ -34,8 +32,6 @@ export const ImageInput: React.FC<IImageInput> = ({
   const [isShowDialog, setIsShowDialog] = useState(false);
   const [url, setURL] = useState("");
   const intl = useIntl();
-
-  if (!isEditing) return <div />;
 
   if (!onImageURL) {
     // just return the file input

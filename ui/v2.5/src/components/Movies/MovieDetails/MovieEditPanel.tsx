@@ -26,8 +26,8 @@ interface IMovieEditPanel {
   onSubmit: (
     movie: Partial<GQL.MovieCreateInput | GQL.MovieUpdateInput>
   ) => void;
-  onCancel: () => void;
-  onDelete: () => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
   setFrontImage: (image?: string | null) => void;
   setBackImage: (image?: string | null) => void;
   onImageEncoding: (loading?: boolean) => void;
@@ -463,7 +463,6 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
       </Form>
 
       <DetailsEditNavbar
-        objectName={movie?.name ?? intl.formatMessage({ id: "movie" })}
         isNew={isNew}
         isEditing={isEditing}
         onToggleEdit={onCancel}
@@ -471,12 +470,12 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
         saveDisabled={!formik.dirty}
         onImageChange={onFrontImageChange}
         onImageChangeURL={(i) => formik.setFieldValue("front_image", i)}
-        onClearImage={() => {
+        onImageClear={() => {
           formik.setFieldValue("front_image", null);
         }}
         onBackImageChange={onBackImageChange}
         onBackImageChangeURL={(i) => formik.setFieldValue("back_image", i)}
-        onClearBackImage={() => {
+        onBackImageClear={() => {
           formik.setFieldValue("back_image", null);
         }}
         onDelete={onDelete}

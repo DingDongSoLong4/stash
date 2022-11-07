@@ -15,8 +15,8 @@ interface ITagEditPanel {
   onSubmit: (
     tag: Partial<GQL.TagCreateInput | GQL.TagUpdateInput>
   ) => Promise<string | undefined>;
-  onCancel: () => void;
-  onDelete: () => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
   setImage: (image?: string | null) => void;
 }
 
@@ -64,8 +64,8 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
   });
 
   const initialValues = {
-    name: tag?.name,
-    description: tag?.description,
+    name: tag?.name ?? "",
+    description: tag?.description ?? "",
     aliases: tag?.aliases,
     parent_ids: (tag?.parents ?? []).map((t) => t.id),
     child_ids: (tag?.children ?? []).map((t) => t.id),
@@ -245,7 +245,6 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
       </Form>
 
       <DetailsEditNavbar
-        objectName={tag?.name ?? intl.formatMessage({ id: "tag" })}
         isNew={isNew}
         isEditing={isEditing}
         onToggleEdit={onCancel}
@@ -253,9 +252,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
         saveDisabled={!formik.dirty}
         onImageChange={onImageChange}
         onImageChangeURL={setImage}
-        onClearImage={() => {
-          setImage(null);
-        }}
+        onImageClear={() => setImage(null)}
         onDelete={onDelete}
         acceptSVG
       />

@@ -77,8 +77,6 @@ const StudioCreate: React.FC = () => {
           studio={{ name: nameQuery ?? "" }}
           onSubmit={onSave}
           onImageChange={setImage}
-          onCancel={() => history.push("/studios")}
-          onDelete={() => {}}
         />
       </div>
     </div>

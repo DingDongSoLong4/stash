@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHistory, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import * as GQL from "src/core/generated-graphql";
 import { useTagCreate } from "src/core/StashService";
@@ -10,7 +10,6 @@ import { tagRelationHook } from "src/core/tags";
 import { TagEditPanel } from "./TagEditPanel";
 
 const TagCreate: React.FC = () => {
-  const history = useHistory();
   const Toast = useToast();
 
   function useQuery() {
@@ -88,8 +87,6 @@ const TagCreate: React.FC = () => {
         <TagEditPanel
           tag={{ name: nameQuery ?? "" }}
           onSubmit={onSave}
-          onCancel={() => history.push("/tags")}
-          onDelete={() => {}}
           setImage={setImage}
         />
       </div>

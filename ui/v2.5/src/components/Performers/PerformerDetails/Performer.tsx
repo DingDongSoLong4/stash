@@ -18,6 +18,7 @@ import {
   ErrorMessage,
   Icon,
   LoadingIndicator,
+  Modal,
 } from "src/components/Shared";
 import { useLightbox, useToast } from "src/hooks";
 import { ConfigurationContext } from "src/hooks/Config";
@@ -36,6 +37,7 @@ import {
   faDove,
   faHeart,
   faLink,
+  faTrashAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { IUIConfig } from "src/core/config";
 
@@ -57,9 +59,12 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
   const abbreviateCounter =
     (configuration?.ui as IUIConfig)?.abbreviateCounters ?? false;
 
+  // Editing state
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
+
   const [imagePreview, setImagePreview] = useState<string | null>();
   const [imageEncoding, setImageEncoding] = useState<boolean>(false);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   // if undefined then get the existing image
   // if null then get the default (no) image
@@ -195,23 +200,42 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
     history.push("/performers");
   }
 
+  function renderDeleteAlert() {
+    return (
+      <Modal
+        show={isDeleteAlertOpen}
+        icon={faTrashAlt}
+        accept={{
+          text: intl.formatMessage({ id: "actions.delete" }),
+          variant: "danger",
+          onClick: onDelete,
+        }}
+        cancel={{ onClick: () => setIsDeleteAlertOpen(false) }}
+      >
+        <p>
+          <FormattedMessage
+            id="dialogs.delete_confirm"
+            values={{
+              entityName:
+                performer.name ??
+                intl.formatMessage({ id: "performer" }).toLocaleLowerCase(),
+            }}
+          />
+        </p>
+      </Modal>
+    );
+  }
+
   const renderTabs = () => (
     <React.Fragment>
       <Col>
         <Row xs={8}>
           <DetailsEditNavbar
-            objectName={
-              performer?.name ?? intl.formatMessage({ id: "performer" })
-            }
-            onToggleEdit={() => {
-              setIsEditing(!isEditing);
-            }}
-            onDelete={onDelete}
+            onToggleEdit={() => setIsEditing(!isEditing)}
+            onDelete={() => setIsDeleteAlertOpen(true)}
             onAutoTag={onAutoTag}
             isNew={false}
             isEditing={false}
-            onSave={() => {}}
-            onImageChange={() => {}}
             classNames="mb-2"
             customButtons={
               <div>
@@ -299,9 +323,7 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
           isNew={false}
           onImageChange={onImageChange}
           onImageEncoding={onImageEncoding}
-          onCancelEditing={() => {
-            setIsEditing(false);
-          }}
+          onCancelEditing={() => setIsEditing(false)}
         />
       );
     } else {
@@ -446,6 +468,7 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
           <div className="performer-tabs">{renderTabsOrEditPanel()}</div>
         </div>
       </div>
+      {renderDeleteAlert()}
     </div>
   );
 };

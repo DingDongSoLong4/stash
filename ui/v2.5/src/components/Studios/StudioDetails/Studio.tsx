@@ -184,15 +184,11 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
             </Helmet>
             <StudioDetailsPanel studio={studio} />
             <DetailsEditNavbar
-              objectName={studio.name ?? intl.formatMessage({ id: "studio" })}
               isNew={false}
               isEditing={false}
               onToggleEdit={onToggleEdit}
-              onSave={() => {}}
-              onImageChange={() => {}}
-              onClearImage={() => {}}
               onAutoTag={onAutoTag}
-              onDelete={onDelete}
+              onDelete={() => setIsDeleteAlertOpen(true)}
             />
           </>
         ) : (
@@ -200,7 +196,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
             studio={studio}
             onSubmit={onSave}
             onCancel={onToggleEdit}
-            onDelete={onDelete}
+            onDelete={() => setIsDeleteAlertOpen(true)}
             onImageChange={setImage}
           />
         )}
