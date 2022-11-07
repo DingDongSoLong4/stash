@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button, Form, Col, Row, Badge, Dropdown } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
-import Mousetrap from "mousetrap";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
 import {
@@ -22,7 +21,7 @@ import {
   URLField,
   CountrySelect,
 } from "src/components/Shared";
-import { ImageUtils, getStashIDs } from "src/utils";
+import { ImageUtils, getStashIDs, useHotkeys } from "src/utils";
 import { useToast } from "src/hooks";
 import { Prompt, useHistory } from "react-router-dom";
 import { useFormik } from "formik";
@@ -153,6 +152,70 @@ export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
   };
 
   type InputValues = typeof initialValues;
+
+  const onSave = useCallback(
+    async (performerInput: InputValues) => {
+      function getUpdateValues(values: InputValues): GQL.PerformerUpdateInput {
+        return {
+          ...values,
+          gender: stringToGender(values.gender) ?? null,
+          weight: Number(values.weight),
+          id: performer.id ?? "",
+        };
+      }
+
+      function getCreateValues(values: InputValues): GQL.PerformerCreateInput {
+        return {
+          ...values,
+          gender: stringToGender(values.gender),
+          weight: Number(values.weight),
+        };
+      }
+
+      setIsLoading(true);
+      try {
+        if (isNew) {
+          const input = getCreateValues(performerInput);
+          const result = await createPerformer({
+            variables: {
+              input,
+            },
+          });
+          if (result.data?.performerCreate) {
+            history.push(`/performers/${result.data.performerCreate.id}`);
+          }
+        } else {
+          const input = getUpdateValues(performerInput);
+
+          await updatePerformer({
+            variables: {
+              input: {
+                ...input,
+                stash_ids: getStashIDs(performerInput?.stash_ids),
+              },
+            },
+          });
+        }
+      } catch (e) {
+        Toast.error(e);
+        setIsLoading(false);
+        return;
+      }
+      if (!isNew && onCancelEditing) {
+        onCancelEditing();
+      }
+      setIsLoading(false);
+    },
+    [
+      Toast,
+      isNew,
+      performer.id,
+      createPerformer,
+      updatePerformer,
+      onCancelEditing,
+      history,
+    ]
+  );
 
   const formik = useFormik({
     initialValues,
@@ -364,58 +427,20 @@ export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
     formik.setFieldValue("image", imageData);
   }
 
-  async function onSave(performerInput: InputValues) {
-    setIsLoading(true);
-    try {
-      if (isNew) {
-        const input = getCreateValues(performerInput);
-        const result = await createPerformer({
-          variables: {
-            input,
-          },
-        });
-        if (result.data?.performerCreate) {
-          history.push(`/performers/${result.data.performerCreate.id}`);
-        }
-      } else {
-        const input = getUpdateValues(performerInput);
-
-        await updatePerformer({
-          variables: {
-            input: {
-              ...input,
-              stash_ids: getStashIDs(performerInput?.stash_ids),
-            },
-          },
-        });
-      }
-    } catch (e) {
-      Toast.error(e);
-      setIsLoading(false);
-      return;
-    }
-    if (!isNew && onCancelEditing) {
-      onCancelEditing();
-    }
-    setIsLoading(false);
-  }
-
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    if (isVisible) {
-      Mousetrap.bind("s s", () => {
-        onSave?.(formik.values);
-      });
-
-      return () => {
-        Mousetrap.unbind("s s");
-
-        if (!isNew) {
-          Mousetrap.unbind("d d");
-        }
-      };
+    if (isVisible && onCancelEditing) {
+      return hotkeys.bind("e", () => onCancelEditing());
     }
-  });
+  }, [hotkeys, isVisible, onCancelEditing]);
+  useEffect(() => {
+    if (isVisible && onSave && formik.dirty) {
+      return hotkeys.bind("s s", () => {
+        onSave(formik.values);
+      });
+    }
+  }, [hotkeys, isVisible, onSave, formik.dirty, formik.values]);
 
   useEffect(() => {
     if (onImageChange) {
@@ -440,23 +465,6 @@ export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
   }, [Scrapers]);
 
   if (isLoading) return <LoadingIndicator />;
-
-  function getUpdateValues(values: InputValues): GQL.PerformerUpdateInput {
-    return {
-      ...values,
-      gender: stringToGender(values.gender) ?? null,
-      weight: Number(values.weight),
-      id: performer.id ?? "",
-    };
-  }
-
-  function getCreateValues(values: InputValues): GQL.PerformerCreateInput {
-    return {
-      ...values,
-      gender: stringToGender(values.gender),
-      weight: Number(values.weight),
-    };
-  }
 
   function onImageChangeHandler(event: React.FormEvent<HTMLInputElement>) {
     ImageUtils.onImageChange(event, onImageLoad);

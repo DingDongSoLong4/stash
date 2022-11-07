@@ -2,7 +2,7 @@ import React, { useCallback, useState, useMemo, MouseEvent } from "react";
 import { useIntl } from "react-intl";
 import cloneDeep from "lodash-es/cloneDeep";
 import { useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import {
   FindImagesQueryResult,
   SlimImageDataFragment,
@@ -219,16 +219,13 @@ export const ImageList: React.FC<IImageList> = ({
   ]);
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindImagesQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       viewRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   const { template, onSelectChange } = useImagesList({

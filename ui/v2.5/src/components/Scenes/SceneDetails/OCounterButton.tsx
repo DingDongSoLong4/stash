@@ -1,8 +1,9 @@
 import { faBan, faMinus } from "@fortawesome/free-solid-svg-icons";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button, ButtonGroup, Dropdown, DropdownButton } from "react-bootstrap";
 import { useIntl } from "react-intl";
 import { Icon, LoadingIndicator, SweatDrops } from "src/components/Shared";
+import { useHotkeys } from "src/utils";
 
 export interface IOCounterButtonProps {
   value: number;
@@ -11,29 +12,41 @@ export interface IOCounterButtonProps {
   onReset: () => Promise<void>;
 }
 
-export const OCounterButton: React.FC<IOCounterButtonProps> = (
-  props: IOCounterButtonProps
-) => {
+export const OCounterButton: React.FC<IOCounterButtonProps> = ({
+  value,
+  onIncrement,
+  onDecrement,
+  onReset,
+}) => {
   const intl = useIntl();
   const [loading, setLoading] = useState(false);
 
-  async function increment() {
+  const increment = useCallback(async () => {
     setLoading(true);
-    await props.onIncrement();
+    await onIncrement();
     setLoading(false);
-  }
+  }, [onIncrement]);
 
   async function decrement() {
     setLoading(true);
-    await props.onDecrement();
+    await onDecrement();
     setLoading(false);
   }
 
   async function reset() {
     setLoading(true);
-    await props.onReset();
+    await onReset();
     setLoading(false);
   }
+
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    if (loading) return;
+
+    return hotkeys.bind("o", () => {
+      increment();
+    });
+  }, [hotkeys, loading, increment]);
 
   if (loading) return <LoadingIndicator message="" inline small />;
 
@@ -45,12 +58,12 @@ export const OCounterButton: React.FC<IOCounterButtonProps> = (
       title={intl.formatMessage({ id: "o_counter" })}
     >
       <SweatDrops />
-      <span className="ml-2">{props.value}</span>
+      <span className="ml-2">{value}</span>
     </Button>
   );
 
   const maybeRenderDropdown = () => {
-    if (props.value) {
+    if (value) {
       return (
         <DropdownButton
           as={ButtonGroup}

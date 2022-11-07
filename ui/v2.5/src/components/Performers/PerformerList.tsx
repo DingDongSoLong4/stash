@@ -2,7 +2,7 @@ import cloneDeep from "lodash-es/cloneDeep";
 import React, { useState } from "react";
 import { useIntl } from "react-intl";
 import { useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import {
   FindPerformersQueryResult,
   SlimPerformerDataFragment,
@@ -54,16 +54,13 @@ export const PerformerList: React.FC<IPerformerList> = ({
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindPerformersQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       getRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   async function onExport() {

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Helmet } from "react-helmet";
-import Mousetrap from "mousetrap";
 import * as GQL from "src/core/generated-graphql";
 import {
   useFindMovie,
@@ -46,17 +45,6 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
   const [updateMovie, { loading: updating }] = useMovieUpdate();
   const [deleteMovie, { loading: deleting }] = useMovieDestroy({
     id: movie.id,
-  });
-
-  // set up hotkeys
-  useEffect(() => {
-    Mousetrap.bind("e", () => setIsEditing(true));
-    Mousetrap.bind("d d", () => onDelete());
-
-    return () => {
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("d d");
-    };
   });
 
   const onImageEncoding = (isEncoding = false) => setEncodingImage(isEncoding);
@@ -199,7 +187,7 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
             <DetailsEditNavbar
               objectName={movie.name}
               isNew={false}
-              isEditing={isEditing}
+              isEditing={false}
               onToggleEdit={onToggleEdit}
               onSave={() => {}}
               onImageChange={() => {}}

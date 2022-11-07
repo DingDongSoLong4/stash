@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useIntl } from "react-intl";
 import cloneDeep from "lodash-es/cloneDeep";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import { useHistory } from "react-router-dom";
 import {
   FindMoviesQueryResult,
@@ -47,16 +47,13 @@ export const MovieList: React.FC<IMovieList> = ({ filterHook }) => {
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindMoviesQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       viewRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   function renderEditDialog(

@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useContext,
   lazy,
+  useCallback,
   useRef,
 } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
@@ -28,7 +29,7 @@ import Icon from "src/components/Shared/Icon";
 import { useToast } from "src/hooks";
 import SceneQueue, { QueuedScene } from "src/models/sceneQueue";
 import { ListFilterModel } from "src/models/list-filter/filter";
-import Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import { OCounterButton } from "./OCounterButton";
 import { OrganizedButton } from "./OrganizedButton";
 import { ConfigurationContext } from "src/hooks/Config";
@@ -118,13 +119,13 @@ const ScenePage: React.FC<IProps> = ({
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
 
-  const onIncrementClick = async () => {
+  const onIncrementClick = useCallback(async () => {
     try {
       await incrementO();
     } catch (e) {
       Toast.error(e);
     }
-  };
+  }, [Toast, incrementO]);
 
   const onDecrementClick = async () => {
     try {
@@ -135,31 +136,36 @@ const ScenePage: React.FC<IProps> = ({
   };
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("a", () => setActiveTabKey("scene-details-panel"));
-    Mousetrap.bind("q", () => setActiveTabKey("scene-queue-panel"));
-    Mousetrap.bind("e", () => setActiveTabKey("scene-edit-panel"));
-    Mousetrap.bind("k", () => setActiveTabKey("scene-markers-panel"));
-    Mousetrap.bind("i", () => setActiveTabKey("scene-file-info-panel"));
-    Mousetrap.bind("o", () => onIncrementClick());
-    Mousetrap.bind("p n", () => onQueueNext());
-    Mousetrap.bind("p p", () => onQueuePrevious());
-    Mousetrap.bind("p r", () => onQueueRandom());
-    Mousetrap.bind(",", () => setCollapsed(!collapsed));
+    hotkeys.bind("a", () => setActiveTabKey("scene-details-panel"));
+    hotkeys.bind("q", () => setActiveTabKey("scene-queue-panel"));
+    hotkeys.bind("k", () => setActiveTabKey("scene-markers-panel"));
+    hotkeys.bind("i", () => setActiveTabKey("scene-file-info-panel"));
+    hotkeys.bind("e", () => setActiveTabKey("scene-edit-panel"));
 
     return () => {
-      Mousetrap.unbind("a");
-      Mousetrap.unbind("q");
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("k");
-      Mousetrap.unbind("i");
-      Mousetrap.unbind("o");
-      Mousetrap.unbind("p n");
-      Mousetrap.unbind("p p");
-      Mousetrap.unbind("p r");
-      Mousetrap.unbind(",");
+      hotkeys.unbind("a");
+      hotkeys.unbind("q");
+      hotkeys.unbind("k");
+      hotkeys.unbind("i");
+      hotkeys.unbind("e");
     };
-  });
+  }, [hotkeys]);
+  useEffect(() => {
+    hotkeys.bind("p n", () => onQueueNext());
+    hotkeys.bind("p p", () => onQueuePrevious());
+    hotkeys.bind("p r", () => onQueueRandom());
+
+    return () => {
+      hotkeys.unbind("p n");
+      hotkeys.unbind("p p");
+      hotkeys.unbind("p r");
+    };
+  }, [hotkeys, onQueueNext, onQueuePrevious, onQueueRandom]);
+  useEffect(() => {
+    return hotkeys.bind(",", () => setCollapsed(!collapsed));
+  }, [hotkeys, setCollapsed, collapsed]);
 
   const onOrganizedClick = async () => {
     try {
@@ -563,13 +569,10 @@ const SceneLoader: React.FC = () => {
   }
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind(".", () => setHideScrubber((value) => !value));
-
-    return () => {
-      Mousetrap.unbind(".");
-    };
-  }, []);
+    return hotkeys.bind(".", () => setHideScrubber((value) => !value));
+  }, [hotkeys]);
 
   async function getQueueFilterScenes(filter: ListFilterModel) {
     const query = await queryFindScenes(filter);

@@ -10,7 +10,7 @@ import {
   useGalleryUpdate,
 } from "src/core/StashService";
 import { ErrorMessage, LoadingIndicator, Icon } from "src/components/Shared";
-import Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import { useToast } from "src/hooks";
 import { OrganizedButton } from "src/components/Scenes/SceneDetails/OrganizedButton";
 import { GalleryEditPanel } from "./GalleryEditPanel";
@@ -260,17 +260,18 @@ export const GalleryPage: React.FC<IProps> = ({ gallery }) => {
   }
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("a", () => setActiveTabKey("gallery-details-panel"));
-    Mousetrap.bind("e", () => setActiveTabKey("gallery-edit-panel"));
-    Mousetrap.bind("f", () => setActiveTabKey("gallery-file-info-panel"));
+    hotkeys.bind("a", () => setActiveTabKey("gallery-details-panel"));
+    hotkeys.bind("i", () => setActiveTabKey("gallery-file-info-panel"));
+    hotkeys.bind("e", () => setActiveTabKey("gallery-edit-panel"));
 
     return () => {
-      Mousetrap.unbind("a");
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("f");
+      hotkeys.unbind("a");
+      hotkeys.unbind("i");
+      hotkeys.unbind("e");
     };
-  });
+  }, [hotkeys]);
 
   const title = galleryTitle(gallery);
 

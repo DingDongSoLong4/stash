@@ -9,7 +9,6 @@ import {
   Row,
   ButtonGroup,
 } from "react-bootstrap";
-import Mousetrap from "mousetrap";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
 import {
@@ -31,7 +30,7 @@ import {
   URLField,
 } from "src/components/Shared";
 import useToast from "src/hooks/Toast";
-import { ImageUtils, FormUtils, getStashIDs } from "src/utils";
+import { ImageUtils, FormUtils, getStashIDs, useHotkeys } from "src/utils";
 import { MovieSelect } from "src/components/Shared/Select";
 import { useFormik } from "formik";
 import { Prompt } from "react-router-dom";
@@ -153,10 +152,6 @@ export const SceneEditPanel: React.FC<IProps> = ({
     onSubmit: (values) => onSave(getSceneInput(values)),
   });
 
-  function setRating(v: number) {
-    formik.setFieldValue("rating", v);
-  }
-
   interface IGallerySelectValue {
     id: string;
     title: string;
@@ -170,47 +165,49 @@ export const SceneEditPanel: React.FC<IProps> = ({
     );
   }
 
+  // set up hotkeys
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    if (isVisible && formik.dirty) {
+      return hotkeys.bind("s s", () => formik.handleSubmit());
+    }
+  }, [hotkeys, isVisible, formik]);
   useEffect(() => {
     if (isVisible) {
-      Mousetrap.bind("s s", () => {
-        formik.handleSubmit();
-      });
-      Mousetrap.bind("d d", () => {
-        onDelete();
-      });
-
-      // numeric keypresses get caught by jwplayer, so blur the element
-      // if the rating sequence is started
-      Mousetrap.bind("r", () => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-
-        Mousetrap.bind("0", () => setRating(NaN));
-        Mousetrap.bind("1", () => setRating(1));
-        Mousetrap.bind("2", () => setRating(2));
-        Mousetrap.bind("3", () => setRating(3));
-        Mousetrap.bind("4", () => setRating(4));
-        Mousetrap.bind("5", () => setRating(5));
-
-        setTimeout(() => {
-          Mousetrap.unbind("0");
-          Mousetrap.unbind("1");
-          Mousetrap.unbind("2");
-          Mousetrap.unbind("3");
-          Mousetrap.unbind("4");
-          Mousetrap.unbind("5");
-        }, 1000);
-      });
-
-      return () => {
-        Mousetrap.unbind("s s");
-        Mousetrap.unbind("d d");
-
-        Mousetrap.unbind("r");
-      };
+      return hotkeys.bind("d d", () => onDelete());
     }
-  });
+  }, [hotkeys, isVisible, onDelete]);
+  useEffect(() => {
+    if (!isVisible) return;
+
+    function setRating(v: number | null) {
+      formik.setFieldValue("rating", v);
+    }
+
+    // numeric keypresses get caught by the player, so blur the element
+    // if the rating sequence is started
+    return hotkeys.bind("r", () => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      hotkeys.bind("0", () => setRating(null));
+      hotkeys.bind("1", () => setRating(1));
+      hotkeys.bind("2", () => setRating(2));
+      hotkeys.bind("3", () => setRating(3));
+      hotkeys.bind("4", () => setRating(4));
+      hotkeys.bind("5", () => setRating(5));
+
+      setTimeout(() => {
+        hotkeys.unbind("0");
+        hotkeys.unbind("1");
+        hotkeys.unbind("2");
+        hotkeys.unbind("3");
+        hotkeys.unbind("4");
+        hotkeys.unbind("5");
+      }, 1000);
+    });
+  }, [hotkeys, isVisible, formik]);
 
   useEffect(() => {
     const toFilter = Scrapers?.data?.listSceneScrapers ?? [];

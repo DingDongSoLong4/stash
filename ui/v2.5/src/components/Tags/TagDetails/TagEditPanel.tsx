@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
@@ -7,7 +7,6 @@ import { Form, Col, Row } from "react-bootstrap";
 import { FormUtils, ImageUtils } from "src/utils";
 import { useFormik } from "formik";
 import { Prompt, useHistory, useParams } from "react-router-dom";
-import Mousetrap from "mousetrap";
 import { StringListInput } from "src/components/Shared/StringListInput";
 
 interface ITagEditPanel {
@@ -89,15 +88,6 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
       history.push(`/tags/${id}`);
     }
   }
-
-  // set up hotkeys
-  useEffect(() => {
-    Mousetrap.bind("s s", () => formik.handleSubmit());
-
-    return () => {
-      Mousetrap.unbind("s s");
-    };
-  });
 
   function getTagInput(values: InputValues) {
     const input: Partial<GQL.TagCreateInput | GQL.TagUpdateInput> = {
@@ -260,6 +250,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
         isEditing={isEditing}
         onToggleEdit={onCancel}
         onSave={() => formik.handleSubmit()}
+        saveDisabled={!formik.dirty}
         onImageChange={onImageChange}
         onImageChangeURL={setImage}
         onClearImage={() => {

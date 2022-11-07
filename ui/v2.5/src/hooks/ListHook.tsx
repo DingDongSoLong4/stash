@@ -11,7 +11,6 @@ import React, {
 } from "react";
 import { ApolloError } from "@apollo/client";
 import { useHistory, useLocation } from "react-router-dom";
-import Mousetrap from "mousetrap";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   SlimSceneDataFragment,
@@ -60,7 +59,7 @@ import {
   CriterionValue,
 } from "src/models/list-filter/criteria/criterion";
 import { AddFilterDialog } from "src/components/List/AddFilterDialog";
-import { TextUtils } from "src/utils";
+import { IHotkeys, TextUtils, useHotkeys } from "src/utils";
 import { FormattedNumber } from "react-intl";
 
 const getSelectedData = <I extends IDataItem>(
@@ -143,6 +142,7 @@ interface IListHookOptions<T, E> {
     onClose: (confirmed: boolean) => void
   ) => React.ReactNode;
   addKeybinds?: (
+    hotkeys: IHotkeys,
     result: T,
     filter: ListFilterModel,
     selectedIds: Set<string>
@@ -223,61 +223,55 @@ const useRenderList = <
   }, [filter, onChangePage, totalCount]);
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
     if (filter === undefined) return;
 
-    Mousetrap.bind("f", () => setNewCriterion(true));
-
-    return () => {
-      Mousetrap.unbind("f");
-    };
-  }, [filter]);
+    return hotkeys.bind("f", () => setNewCriterion(true));
+  }, [hotkeys, filter]);
   useEffect(() => {
     if (filter === undefined) return;
 
     const pages = Math.ceil(totalCount / filter.itemsPerPage);
-    Mousetrap.bind("right", () => {
+    hotkeys.bind("right", () => {
       if (filter.currentPage < pages) {
         onChangePage(filter.currentPage + 1);
       }
     });
-    Mousetrap.bind("left", () => {
+    hotkeys.bind("left", () => {
       if (filter.currentPage > 1) {
         onChangePage(filter.currentPage - 1);
       }
     });
-    Mousetrap.bind("shift+right", () => {
+    hotkeys.bind("shift+right", () => {
       onChangePage(Math.min(pages, filter.currentPage + 10));
     });
-    Mousetrap.bind("shift+left", () => {
+    hotkeys.bind("shift+left", () => {
       onChangePage(Math.max(1, filter.currentPage - 10));
     });
-    Mousetrap.bind("ctrl+end", () => {
+    hotkeys.bind("ctrl+end", () => {
       onChangePage(pages);
     });
-    Mousetrap.bind("ctrl+home", () => {
+    hotkeys.bind("ctrl+home", () => {
       onChangePage(1);
     });
 
     return () => {
-      Mousetrap.unbind("right");
-      Mousetrap.unbind("left");
-      Mousetrap.unbind("shift+right");
-      Mousetrap.unbind("shift+left");
-      Mousetrap.unbind("ctrl+end");
-      Mousetrap.unbind("ctrl+home");
+      hotkeys.unbind("right");
+      hotkeys.unbind("left");
+      hotkeys.unbind("shift+right");
+      hotkeys.unbind("shift+left");
+      hotkeys.unbind("ctrl+end");
+      hotkeys.unbind("ctrl+home");
     };
-  }, [filter, onChangePage, totalCount]);
+  }, [hotkeys, filter, onChangePage, totalCount]);
   useEffect(() => {
     if (filter === undefined) return;
 
     if (addKeybinds) {
-      const unbindExtras = addKeybinds(result, filter, selectedIds);
-      return () => {
-        unbindExtras();
-      };
+      return addKeybinds(hotkeys, result, filter, selectedIds);
     }
-  }, [addKeybinds, filter, result, selectedIds]);
+  }, [hotkeys, addKeybinds, filter, result, selectedIds]);
 
   // Don't continue if filter is undefined
   // There are no hooks below this point so this is valid

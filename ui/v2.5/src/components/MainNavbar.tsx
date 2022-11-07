@@ -9,9 +9,8 @@ import { Nav, Navbar, Button, Fade } from "react-bootstrap";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { LinkContainer } from "react-router-bootstrap";
 import { Link, NavLink, useLocation, useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
 
-import { SessionUtils } from "src/utils";
+import { SessionUtils, useHotkeys } from "src/utils";
 import Icon from "src/components/Shared/Icon";
 import { ConfigurationContext } from "src/hooks/Config";
 import { ManualStateContext } from "./Help/context";
@@ -227,28 +226,26 @@ export const MainNavbar: React.FC = () => {
   }
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("?", () => openManual());
-    Mousetrap.bind("g z", () => goto("/settings"));
-
+    return hotkeys.bind("?", () => openManual());
+  }, [hotkeys, openManual]);
+  useEffect(() => {
+    return hotkeys.bind("g z", () => goto("/settings"));
+  }, [hotkeys, goto]);
+  useEffect(() => {
     menuItems.forEach((item) =>
-      Mousetrap.bind(item.hotkey, () => goto(item.href))
+      hotkeys.bind(item.hotkey, () => goto(item.href))
     );
-
-    if (newPath) {
-      Mousetrap.bind("n", () => history.push(String(newPath)));
-    }
-
     return () => {
-      Mousetrap.unbind("?");
-      Mousetrap.unbind("g z");
-      menuItems.forEach((item) => Mousetrap.unbind(item.hotkey));
-
-      if (newPath) {
-        Mousetrap.unbind("n");
-      }
+      menuItems.forEach((item) => hotkeys.unbind(item.hotkey));
     };
-  });
+  }, [hotkeys, goto, menuItems]);
+  useEffect(() => {
+    if (newPath) {
+      return hotkeys.bind("n", () => history.push(String(newPath)));
+    }
+  }, [hotkeys, history, newPath]);
 
   function maybeRenderLogout() {
     if (SessionUtils.isLoggedIn()) {

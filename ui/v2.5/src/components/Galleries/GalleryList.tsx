@@ -3,7 +3,7 @@ import { useIntl } from "react-intl";
 import cloneDeep from "lodash-es/cloneDeep";
 import { Table } from "react-bootstrap";
 import { Link, useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import {
   FindGalleriesQueryResult,
   SlimGalleryDataFragment,
@@ -51,16 +51,13 @@ export const GalleryList: React.FC<IGalleryList> = ({
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindGalleriesQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       viewRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   const listData = useGalleriesList({

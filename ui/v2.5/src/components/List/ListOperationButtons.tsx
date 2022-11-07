@@ -6,7 +6,7 @@ import {
   OverlayTrigger,
   Tooltip,
 } from "react-bootstrap";
-import Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import { FormattedMessage, useIntl } from "react-intl";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { Icon } from "../Shared";
@@ -43,29 +43,28 @@ export const ListOperationButtons: React.FC<IListOperationButtonsProps> = ({
 }) => {
   const intl = useIntl();
 
+  // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("s a", () => onSelectAll?.());
-    Mousetrap.bind("s n", () => onSelectNone?.());
-
-    Mousetrap.bind("e", () => {
-      if (itemsSelected) {
-        onEdit?.();
-      }
-    });
-
-    Mousetrap.bind("d d", () => {
-      if (itemsSelected) {
-        onDelete?.();
-      }
-    });
-
-    return () => {
-      Mousetrap.unbind("s a");
-      Mousetrap.unbind("s n");
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("d d");
-    };
-  });
+    if (onSelectAll) {
+      return hotkeys.bind("s a", () => onSelectAll());
+    }
+  }, [hotkeys, onSelectAll]);
+  useEffect(() => {
+    if (onSelectNone) {
+      return hotkeys.bind("s n", () => onSelectNone());
+    }
+  }, [hotkeys, onSelectNone]);
+  useEffect(() => {
+    if (itemsSelected && onEdit) {
+      return hotkeys.bind("e", () => onEdit());
+    }
+  }, [hotkeys, itemsSelected, onEdit]);
+  useEffect(() => {
+    if (itemsSelected && onDelete) {
+      return hotkeys.bind("d d", () => onDelete());
+    }
+  }, [hotkeys, itemsSelected, onDelete]);
 
   function maybeRenderButtons() {
     const buttons = (otherOperations ?? []).filter((o) => {

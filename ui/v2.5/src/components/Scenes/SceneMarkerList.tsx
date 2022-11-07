@@ -4,10 +4,9 @@ import { useHistory } from "react-router-dom";
 import { useIntl } from "react-intl";
 import { Helmet } from "react-helmet";
 import { TITLE_SUFFIX } from "src/components/Shared";
-import Mousetrap from "mousetrap";
 import { FindSceneMarkersQueryResult } from "src/core/generated-graphql";
 import { queryFindSceneMarkers } from "src/core/StashService";
-import { NavUtils } from "src/utils";
+import { IHotkeys, NavUtils } from "src/utils";
 import { useSceneMarkersList } from "src/hooks";
 import { PersistanceLevel } from "src/hooks/ListHook";
 import { ListFilterModel } from "src/models/list-filter/filter";
@@ -29,16 +28,13 @@ export const SceneMarkerList: React.FC<ISceneMarkerList> = ({ filterHook }) => {
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindSceneMarkersQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       playRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   const listData = useSceneMarkersList({

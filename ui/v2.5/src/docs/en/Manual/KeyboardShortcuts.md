@@ -6,7 +6,7 @@
 |-------------------|--------|
 | `?` | Display manual |
 
-### Global Navigation
+### Global navigation
 
 | Keyboard sequence | Target page |
 |-------------------|--------|
@@ -30,16 +30,17 @@
 | `v g` | Set view to grid |
 | `v l` | Set view to list |
 | `v w` | Set view to wall |
+| `v t` | Set view to tagger |
 | `+` | Increase zoom slider |
 | `-` | Decrease zoom slider |
-| `←` | Previous page of results |
-| `→` | Next page of results |
-| `Shift + ←` | Go to current results page -10 |
-| `Shift + →` | Go to current results page +10 |
-| `Ctrl + Home` | Go to first page of results |
-| `Ctrl + End` | Go to last page of results |
+| `←` | Go to previous page |
+| `→` | Go to next page |
+| `Shift + ←` | Move 10 pages backward |
+| `Shift + →` | Move 10 pages forwards |
+| `Ctrl + Home` | Go to first page |
+| `Ctrl + End` | Go to last page |
 | `s a` | Select all on page |
-| `s n` | Unselect all |
+| `s n` | Deselect all |
 | `e` | Edit selected |
 | `d d` | Delete selected |
 
@@ -56,33 +57,44 @@
 | `a` | Details tab |
 | `q` | Queue tab |
 | `k` | Markers tab |
-| `i` | File info tab |
+| `i` | File Info tab |
 | `e` | Edit tab |
-| `,` | Hide/Show sidebar |
-| `.` | Hide/Show scene scrubber |
+| `,` | Hide/show sidebar |
+| `.` | Hide/show scene scrubber |
 | `o` | Increment O-Counter |
 | `p n` | Play next scene in queue |
 | `p p` | Play previous scene in queue |
 | `p r` | Play random scene in queue |
-| `{1-9}` | Seek to 10-90% duration |
-| `[` | Scrub backwards 10% duration |
-| `]` | Scrub forwards 10% duration |
 
-### Scene Markers tab shortcuts
+## Scene player shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `n` | Display Create Markers dialog |
+| `[Space]`, `[Enter]` | Toggle pause/play |
+| `f` | Toggle fullscreen |
+| `m` | Toggle mute |
+| `↑` | Increase volume by 10% |
+| `↓` | Decrease volume by 10% |
+| `←` | Scrub 5 seconds backwards |
+| `→` | Scrub 5 seconds forwards |
+| `{0-9}` | Seek to 0-90% of duration |
+| `[` | Scrub backwards by 10% of duration |
+| `]` | Scrub forwards by 10% of duration |
 
-### Edit Scene tab shortcuts
+### Scene markers tab shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `r {1-5}` | Set rating |
+| `n` | Create new marker |
+
+### Scene edit tab shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `s s` | Save scene |
+| `d d` | Delete scene |
 | `r 0` | Unset rating |
-| `s s` | Save Scene |
-| `d d` | Delete Scene |
-| `Ctrl + v` | Paste Scene cover |
+| `r {1-5}` | Set rating |
 
 [//]: # "Commented until implementation is dealt with"
 [//]: # "(| `l` | Focus Gallery selector |)"
@@ -91,83 +103,132 @@
 [//]: # "(| `v` | Focus Movies selector |)"
 [//]: # "(| `t` | Focus Tags selector |)"
 
-## Movies Page shortcuts
+## Images page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `n` | New Movie |
+| `p r` | View random image |
 
-## Movie Page shortcuts
+## Image page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `e` | Edit Movie |
-| `s s` | Save Movie |
-| `d d` | Delete Movie |
-| `r {1-5}` | Set rating (in edit mode) |
-| `r 0` | Unset rating (in edit mode) |
-| `Ctrl + v` | Paste Movie image |
+| `a` | Details tab |
+| `i` | File Info tab |
+| `e` | Edit tab |
+| `o` | Increment O-Counter |
+
+### Image edit tab shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `s s` | Save image |
+| `d d` | Delete image |
+| `r 0` | Unset rating |
+| `r {1-5}` | Set rating |
+
+## Movies page shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `n` | Create new movie |
+| `p r` | View random movie |
+
+## Movie page shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `e` | Edit movie |
+| `d d` | Delete movie |
+
+## Movie create/edit shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `s s` | Save movie |
+| `r 0` | Unset rating |
+| `r {1-5}` | Set rating |
 
 [//]: # "Commented until implementation is dealt with"
 [//]: # "(| `u` | Focus Studio selector (in edit mode) |)"
 
-## Markers Page shortcuts
+## Markers page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
 | `p r` | Play random marker |
 
-## Performers Page shortcuts
+## Galleries page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `n` | New Performer |
-| `p r` | Open random Performer |
+| `n` | Create new gallery |
+| `p r` | View random gallery |
 
-## Performer Page shortcuts
+## Gallery page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
 | `a` | Details tab |
-| `c` | Scenes tab |
+| `i` | File Info tab |
 | `e` | Edit tab |
-| `o` | Operations tab |
+
+### Gallery create/edit shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `s s` | Save gallery |
+| `d d` | Delete gallery (edit only) |
+| `r 0` | Unset rating |
+| `r {1-5}` | Set rating |
+
+## Performers page shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `n` | Create new performer |
+| `p r` | Open random performer |
+
+## Performer page shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
 | `f` | Toggle favourite |
+| `r 0` | Unset rating |
+| `r {1-5}` | Set rating |
+| `e` | Edit performer |
+| `s s` | Save performer (in edit mode) |
+| `d d` | Delete performer |
+| `a` | Details tab |
+| `s` | Scenes tab |
+| `l` | Galleries tab |
+| `i` | Images tab |
+| `m` | Movies tab |
 
-### Edit Performer tab shortcuts
-
-| Keyboard sequence | Action |
-|-------------------|--------|
-| `s s` | Save Performer |
-| `d d` | Delete Performer |
-| `Ctrl + v` | Paste Performer image |
-
-## Studios Page shortcuts
-
-| Keyboard sequence | Action |
-|-------------------|--------|
-| `n` | New Studio |
-
-## Studio Page shortcuts
+## Studios page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `e` | Edit Studio |
-| `s s` | Save Studio |
-| `d d` | Delete Studio |
-| `Ctrl + v` | Paste Studio image |
+| `n` | Create new studio |
 
-## Tags Page shortcuts
+## Studio page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `n` | New Tag |
+| `e` | Edit studio |
+| `s s` | Save studio (in edit mode) |
+| `d d` | Delete studio |
 
-## Tag Page shortcuts
+## Tags page shortcuts
 
 | Keyboard sequence | Action |
 |-------------------|--------|
-| `e` | Edit Tag |
-| `s s` | Save Tag |
-| `d d` | Delete Tag |
-| `Ctrl + v` | Paste Tag image |
+| `n` | Create new tag |
+
+## Tag page shortcuts
+
+| Keyboard sequence | Action |
+|-------------------|--------|
+| `e` | Edit tag |
+| `s s` | Save tag (in edit mode) |
+| `d d` | Delete tag |

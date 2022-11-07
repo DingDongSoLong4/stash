@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import cloneDeep from "lodash-es/cloneDeep";
 import { useIntl } from "react-intl";
 import { useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import {
   FindScenesQueryResult,
   SlimSceneDataFragment,
@@ -78,16 +78,13 @@ export const SceneList: React.FC<ISceneList> = ({
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindScenesQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       playRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   const renderDeleteDialog = (

@@ -1,8 +1,13 @@
 import debounce from "lodash-es/debounce";
 import cloneDeep from "lodash-es/cloneDeep";
-import React, { HTMLAttributes, useEffect, useRef, useState } from "react";
+import React, {
+  HTMLAttributes,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import cx from "classnames";
-import Mousetrap from "mousetrap";
 import { SortDirectionEnum } from "src/core/generated-graphql";
 import {
   Button,
@@ -19,7 +24,7 @@ import {
 
 import { Icon } from "src/components/Shared";
 import { ListFilterModel } from "src/models/list-filter/filter";
-import { useFocus } from "src/utils";
+import { useFocus, useHotkeys } from "src/utils";
 import { ListFilterOptions } from "src/models/list-filter/filter-options";
 import { FormattedMessage, useIntl } from "react-intl";
 import { PersistanceLevel } from "src/hooks/ListHook";
@@ -71,19 +76,26 @@ export const ListFilter: React.FC<IListFilterProps> = ({
 
   const intl = useIntl();
 
+  const onReshuffleRandomSort = useCallback(() => {
+    const newFilter = cloneDeep(filter);
+    newFilter.currentPage = 1;
+    newFilter.randomSeed = -1;
+    onFilterUpdate(newFilter);
+  }, [filter, onFilterUpdate]);
+
+  // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("/", (e) => {
+    return hotkeys.bind("/", (e) => {
       setQueryFocus();
       e.preventDefault();
     });
-
-    Mousetrap.bind("r", () => onReshuffleRandomSort());
-
-    return () => {
-      Mousetrap.unbind("/");
-      Mousetrap.unbind("r");
-    };
-  });
+  }, [hotkeys, setQueryFocus]);
+  useEffect(() => {
+    if (filter.sortBy === "random") {
+      return hotkeys.bind("r", () => onReshuffleRandomSort());
+    }
+  }, [hotkeys, filter.sortBy, onReshuffleRandomSort]);
 
   useEffect(() => {
     if (customPageSizeShowing) {
@@ -144,13 +156,6 @@ export const ListFilter: React.FC<IListFilterProps> = ({
     const newFilter = cloneDeep(filter);
     newFilter.sortBy = eventKey ?? undefined;
     newFilter.currentPage = 1;
-    onFilterUpdate(newFilter);
-  }
-
-  function onReshuffleRandomSort() {
-    const newFilter = cloneDeep(filter);
-    newFilter.currentPage = 1;
-    newFilter.randomSeed = -1;
     onFilterUpdate(newFilter);
   }
 

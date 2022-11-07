@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { FormattedMessage } from "react-intl";
-import Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import * as GQL from "src/core/generated-graphql";
 import { WallPanel } from "src/components/Wall/WallPanel";
 import { PrimaryTags } from "./PrimaryTags";
@@ -28,15 +28,12 @@ export const SceneMarkersPanel: React.FC<ISceneMarkersPanelProps> = (
   ] = useState<GQL.SceneMarkerDataFragment>();
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
     if (props.isVisible) {
-      Mousetrap.bind("n", () => onOpenEditor());
-
-      return () => {
-        Mousetrap.unbind("n");
-      };
+      return hotkeys.bind("n", () => onOpenEditor());
     }
-  });
+  }, [hotkeys, props.isVisible]);
 
   if (loading) return null;
 

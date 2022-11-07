@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import cloneDeep from "lodash-es/cloneDeep";
-import Mousetrap from "mousetrap";
 import { FindTagsQueryResult } from "src/core/generated-graphql";
 import { ListFilterModel } from "src/models/list-filter/filter";
 import { DisplayMode } from "src/models/list-filter/types";
@@ -20,7 +19,7 @@ import {
 } from "src/core/StashService";
 import { useToast } from "src/hooks";
 import { FormattedMessage, FormattedNumber, useIntl } from "react-intl";
-import { NavUtils } from "src/utils";
+import { IHotkeys, NavUtils } from "src/utils";
 import { Icon, Modal, DeleteEntityDialog } from "src/components/Shared";
 import { TagCard } from "./TagCard";
 import { ExportDialog } from "../Shared/ExportDialog";
@@ -62,16 +61,13 @@ export const TagList: React.FC<ITagList> = ({ filterHook }) => {
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindTagsQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       viewRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   async function viewRandom(

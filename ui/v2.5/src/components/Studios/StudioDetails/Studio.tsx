@@ -1,9 +1,8 @@
 import { Tabs, Tab } from "react-bootstrap";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Helmet } from "react-helmet";
-import Mousetrap from "mousetrap";
 
 import * as GQL from "src/core/generated-graphql";
 import {
@@ -61,17 +60,6 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
 
   const [updateStudio] = useStudioUpdate();
   const [deleteStudio] = useStudioDestroy({ id: studio.id });
-
-  // set up hotkeys
-  useEffect(() => {
-    Mousetrap.bind("e", () => setIsEditing(true));
-    Mousetrap.bind("d d", () => onDelete());
-
-    return () => {
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("d d");
-    };
-  });
 
   function onImageLoad(imageData: string) {
     setImage(imageData);
@@ -198,7 +186,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
             <DetailsEditNavbar
               objectName={studio.name ?? intl.formatMessage({ id: "studio" })}
               isNew={false}
-              isEditing={isEditing}
+              isEditing={false}
               onToggleEdit={onToggleEdit}
               onSave={() => {}}
               onImageChange={() => {}}

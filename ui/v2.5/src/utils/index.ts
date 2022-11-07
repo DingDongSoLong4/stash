@@ -15,3 +15,4 @@ export * from "./data";
 export { getStashIDs } from "./stashIds";
 export * from "./stashbox";
 export * from "./gender";
+export * from "./hotkeys";

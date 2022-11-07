@@ -1,9 +1,8 @@
 import { Tabs, Tab, Dropdown } from "react-bootstrap";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Helmet } from "react-helmet";
-import Mousetrap from "mousetrap";
 
 import * as GQL from "src/core/generated-graphql";
 import {
@@ -84,20 +83,24 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
     }
   };
 
-  // set up hotkeys
-  useEffect(() => {
-    Mousetrap.bind("e", () => setIsEditing(true));
-    Mousetrap.bind("d d", () => onDelete());
+  const onDelete = useCallback(async () => {
+    try {
+      const oldRelations = {
+        parents: tag.parents ?? [],
+        children: tag.children ?? [],
+      };
+      await deleteTag();
+      tagRelationHook(tag, oldRelations, {
+        parents: [],
+        children: [],
+      });
+    } catch (e) {
+      Toast.error(e);
+    }
 
-    return () => {
-      if (isEditing) {
-        Mousetrap.unbind("s s");
-      }
-
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("d d");
-    };
-  });
+    // redirect to tags page
+    history.push(`/tags`);
+  }, [Toast, deleteTag, history, tag]);
 
   function onImageLoad(imageData: string) {
     setImage(imageData);
@@ -154,25 +157,6 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
     } catch (e) {
       Toast.error(e);
     }
-  }
-
-  async function onDelete() {
-    try {
-      const oldRelations = {
-        parents: tag.parents ?? [],
-        children: tag.children ?? [],
-      };
-      await deleteTag();
-      tagRelationHook(tag as GQL.TagDataFragment, oldRelations, {
-        parents: [],
-        children: [],
-      });
-    } catch (e) {
-      Toast.error(e);
-    }
-
-    // redirect to tags page
-    history.push(`/tags`);
   }
 
   function renderDeleteAlert() {
@@ -285,7 +269,7 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
               <DetailsEditNavbar
                 objectName={tag.name}
                 isNew={false}
-                isEditing={isEditing}
+                isEditing={false}
                 onToggleEdit={onToggleEdit}
                 onSave={() => {}}
                 onImageChange={() => {}}

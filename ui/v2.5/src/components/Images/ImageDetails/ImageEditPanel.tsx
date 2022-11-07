@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Col, Row } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
-import Mousetrap from "mousetrap";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
 import { useImageUpdate } from "src/core/StashService";
@@ -12,7 +11,7 @@ import {
   LoadingIndicator,
 } from "src/components/Shared";
 import { useToast } from "src/hooks";
-import { FormUtils } from "src/utils";
+import { FormUtils, useHotkeys } from "src/utils";
 import { useFormik } from "formik";
 import { Prompt } from "react-router-dom";
 import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
@@ -60,51 +59,41 @@ export const ImageEditPanel: React.FC<IProps> = ({
     onSubmit: (values) => onSave(getImageInput(values)),
   });
 
-  function setRating(v: number) {
-    formik.setFieldValue("rating", v);
-  }
-
+  // set up hotkeys
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    if (isVisible && formik.dirty) {
+      return hotkeys.bind("s s", () => formik.handleSubmit());
+    }
+  }, [hotkeys, isVisible, formik]);
   useEffect(() => {
     if (isVisible) {
-      Mousetrap.bind("s s", () => {
-        formik.handleSubmit();
-      });
-      Mousetrap.bind("d d", () => {
-        onDelete();
-      });
-
-      // numeric keypresses get caught by jwplayer, so blur the element
-      // if the rating sequence is started
-      Mousetrap.bind("r", () => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur();
-        }
-
-        Mousetrap.bind("0", () => setRating(NaN));
-        Mousetrap.bind("1", () => setRating(1));
-        Mousetrap.bind("2", () => setRating(2));
-        Mousetrap.bind("3", () => setRating(3));
-        Mousetrap.bind("4", () => setRating(4));
-        Mousetrap.bind("5", () => setRating(5));
-
-        setTimeout(() => {
-          Mousetrap.unbind("0");
-          Mousetrap.unbind("1");
-          Mousetrap.unbind("2");
-          Mousetrap.unbind("3");
-          Mousetrap.unbind("4");
-          Mousetrap.unbind("5");
-        }, 1000);
-      });
-
-      return () => {
-        Mousetrap.unbind("s s");
-        Mousetrap.unbind("d d");
-
-        Mousetrap.unbind("r");
-      };
+      return hotkeys.bind("d d", () => onDelete());
     }
-  });
+  }, [hotkeys, isVisible, onDelete]);
+  useEffect(() => {
+    if (!isVisible) return;
+
+    function setRating(v: number | null) {
+      formik.setFieldValue("rating", v);
+    }
+
+    hotkeys.bind("r 0", () => setRating(null));
+    hotkeys.bind("r 1", () => setRating(1));
+    hotkeys.bind("r 2", () => setRating(2));
+    hotkeys.bind("r 3", () => setRating(3));
+    hotkeys.bind("r 4", () => setRating(4));
+    hotkeys.bind("r 5", () => setRating(5));
+
+    return () => {
+      hotkeys.unbind("r 0");
+      hotkeys.unbind("r 1");
+      hotkeys.unbind("r 2");
+      hotkeys.unbind("r 3");
+      hotkeys.unbind("r 4");
+      hotkeys.unbind("r 5");
+    };
+  }, [hotkeys, isVisible, formik]);
 
   function getImageInput(input: InputValues): GQL.ImageUpdateInput {
     return {

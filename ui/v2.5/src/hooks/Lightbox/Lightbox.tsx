@@ -9,7 +9,7 @@ import {
   Row,
 } from "react-bootstrap";
 import cx from "classnames";
-import Mousetrap from "mousetrap";
+import { useHotkeysContext } from "src/utils";
 import debounce from "lodash-es/debounce";
 
 import { Icon, LoadingIndicator } from "src/components/Shared";
@@ -116,6 +116,7 @@ export const LightboxComponent: React.FC<IProps> = ({
 
   const Toast = useToast();
   const intl = useIntl();
+  const hotkeysContext = useHotkeysContext();
   const { configuration: config } = React.useContext(ConfigurationContext);
   const [
     interfaceLocalForage,
@@ -267,10 +268,11 @@ export const LightboxComponent: React.FC<IProps> = ({
     if (isVisible) {
       if (index === null) setIndex(initialIndex);
       document.body.style.overflow = "hidden";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (Mousetrap as any).pause();
+      // pause all hotkeys except for "o"
+      hotkeysContext.pause();
+      hotkeysContext.unpause("o");
     }
-  }, [initialIndex, isVisible, setIndex, index]);
+  }, [initialIndex, isVisible, setIndex, index, hotkeysContext]);
 
   const toggleSlideshow = useCallback(() => {
     if (slideshowInterval) {
@@ -291,10 +293,9 @@ export const LightboxComponent: React.FC<IProps> = ({
     if (!isFullscreen) {
       hide();
       document.body.style.overflow = "auto";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (Mousetrap as any).unpause();
+      hotkeysContext.unpause();
     } else document.exitFullscreen();
-  }, [isFullscreen, hide]);
+  }, [isFullscreen, hide, hotkeysContext]);
 
   const handleClose = (e: React.MouseEvent<HTMLDivElement>) => {
     const { className } = e.target as Element;

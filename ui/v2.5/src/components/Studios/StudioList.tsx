@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useIntl } from "react-intl";
 import cloneDeep from "lodash-es/cloneDeep";
 import { useHistory } from "react-router-dom";
-import Mousetrap from "mousetrap";
+import { IHotkeys } from "src/utils";
 import {
   FindStudiosQueryResult,
   SlimStudioDataFragment,
@@ -46,16 +46,13 @@ export const StudioList: React.FC<IStudioList> = ({
   ];
 
   const addKeybinds = (
+    hotkeys: IHotkeys,
     result: FindStudiosQueryResult,
     filter: ListFilterModel
   ) => {
-    Mousetrap.bind("p r", () => {
+    return hotkeys.bind("p r", () => {
       viewRandom(result, filter);
     });
-
-    return () => {
-      Mousetrap.unbind("p r");
-    };
   };
 
   async function viewRandom(

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import {
   Button,
   ButtonGroup,
@@ -37,41 +37,54 @@ export const ListViewOptions: React.FC<IListViewOptionsProps> = ({
 
   const intl = useIntl();
 
+  // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("v g", () => {
+    hotkeys.bind("v g", () => {
       if (displayModeOptions.includes(DisplayMode.Grid)) {
         onSetDisplayMode(DisplayMode.Grid);
       }
     });
-    Mousetrap.bind("v l", () => {
+    hotkeys.bind("v l", () => {
       if (displayModeOptions.includes(DisplayMode.List)) {
         onSetDisplayMode(DisplayMode.List);
       }
     });
-    Mousetrap.bind("v w", () => {
+    hotkeys.bind("v w", () => {
       if (displayModeOptions.includes(DisplayMode.Wall)) {
         onSetDisplayMode(DisplayMode.Wall);
       }
     });
-    Mousetrap.bind("+", () => {
+    hotkeys.bind("v t", () => {
+      if (displayModeOptions.includes(DisplayMode.Tagger)) {
+        onSetDisplayMode(DisplayMode.Tagger);
+      }
+    });
+
+    return () => {
+      hotkeys.unbind("v g");
+      hotkeys.unbind("v l");
+      hotkeys.unbind("v w");
+      hotkeys.unbind("v t");
+    };
+  }, [hotkeys, displayModeOptions, onSetDisplayMode]);
+  useEffect(() => {
+    hotkeys.bind("+", () => {
       if (onSetZoom && zoomIndex !== undefined && zoomIndex < maxZoom) {
         onSetZoom(zoomIndex + 1);
       }
     });
-    Mousetrap.bind("-", () => {
+    hotkeys.bind("-", () => {
       if (onSetZoom && zoomIndex !== undefined && zoomIndex > minZoom) {
         onSetZoom(zoomIndex - 1);
       }
     });
 
     return () => {
-      Mousetrap.unbind("v g");
-      Mousetrap.unbind("v l");
-      Mousetrap.unbind("v w");
-      Mousetrap.unbind("+");
-      Mousetrap.unbind("-");
+      hotkeys.unbind("+");
+      hotkeys.unbind("-");
     };
-  });
+  }, [hotkeys, onSetZoom, zoomIndex]);
 
   function maybeRenderDisplayModeOptions() {
     function getIcon(option: DisplayMode) {

@@ -13,7 +13,7 @@ import {
 } from "src/core/StashService";
 import { ErrorMessage, LoadingIndicator, Icon } from "src/components/Shared";
 import { useToast } from "src/hooks";
-import * as Mousetrap from "mousetrap";
+import { useHotkeys } from "src/utils";
 import { OCounterButton } from "src/components/Scenes/SceneDetails/OCounterButton";
 import { OrganizedButton } from "src/components/Scenes/SceneDetails/OrganizedButton";
 import { ImageFileInfoPanel } from "./ImageFileInfoPanel";
@@ -227,19 +227,18 @@ export const Image: React.FC = () => {
   }
 
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("a", () => setActiveTabKey("image-details-panel"));
-    Mousetrap.bind("e", () => setActiveTabKey("image-edit-panel"));
-    Mousetrap.bind("f", () => setActiveTabKey("image-file-info-panel"));
-    Mousetrap.bind("o", () => onIncrementClick());
+    hotkeys.bind("a", () => setActiveTabKey("image-details-panel"));
+    hotkeys.bind("i", () => setActiveTabKey("image-file-info-panel"));
+    hotkeys.bind("e", () => setActiveTabKey("image-edit-panel"));
 
     return () => {
-      Mousetrap.unbind("a");
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("f");
-      Mousetrap.unbind("o");
+      hotkeys.unbind("a");
+      hotkeys.unbind("i");
+      hotkeys.unbind("e");
     };
-  });
+  }, [hotkeys]);
 
   if (loading) {
     return <LoadingIndicator />;

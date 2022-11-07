@@ -26,6 +26,7 @@ import { LoadingIndicator, TITLE_SUFFIX } from "./components/Shared";
 import { ConfigurationProvider } from "./hooks/Config";
 import { ManualProvider } from "./components/Help/context";
 import { InteractiveProvider } from "./hooks/Interactive/context";
+import { HotkeysProvider } from "./utils/hotkeys";
 import { ReleaseNotesDialog } from "./components/Dialogs/ReleaseNotesDialog";
 import { IUIConfig } from "./core/config";
 import { releaseNotes } from "./docs/en/ReleaseNotes";
@@ -234,20 +235,22 @@ export const App: React.FC = () => {
             {maybeRenderReleaseNotes()}
             <ToastProvider>
               <Suspense fallback={<LoadingIndicator />}>
-                <LightboxProvider>
-                  <ManualProvider>
-                    <InteractiveProvider>
-                      <Helmet
-                        titleTemplate={`%s ${TITLE_SUFFIX}`}
-                        defaultTitle="Stash"
-                      />
-                      {maybeRenderNavbar()}
-                      <div className="main container-fluid">
-                        {renderContent()}
-                      </div>
-                    </InteractiveProvider>
-                  </ManualProvider>
-                </LightboxProvider>
+                <HotkeysProvider>
+                  <LightboxProvider>
+                    <ManualProvider>
+                      <InteractiveProvider>
+                        <Helmet
+                          titleTemplate={`%s ${TITLE_SUFFIX}`}
+                          defaultTitle="Stash"
+                        />
+                        {maybeRenderNavbar()}
+                        <div className="main container-fluid">
+                          {renderContent()}
+                        </div>
+                      </InteractiveProvider>
+                    </ManualProvider>
+                  </LightboxProvider>
+                </HotkeysProvider>
               </Suspense>
             </ToastProvider>
           </ConfigurationProvider>

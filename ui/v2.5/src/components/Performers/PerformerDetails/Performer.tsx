@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Tabs, Tab, Col, Row } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useParams, useHistory } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import cx from "classnames";
-import Mousetrap from "mousetrap";
 import * as GQL from "src/core/generated-graphql";
 import {
   useFindPerformer,
@@ -22,7 +21,7 @@ import {
 } from "src/components/Shared";
 import { useLightbox, useToast } from "src/hooks";
 import { ConfigurationContext } from "src/hooks/Config";
-import { TextUtils } from "src/utils";
+import { TextUtils, useHotkeys } from "src/utils";
 import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { PerformerDetailsPanel } from "./PerformerDetailsPanel";
 import { PerformerScenesPanel } from "./PerformerScenesPanel";
@@ -88,12 +87,15 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
     tab === "movies"
       ? tab
       : "details";
-  const setActiveTabKey = (newTab: string | null) => {
-    if (tab !== newTab) {
-      const tabParam = newTab === "details" ? "" : `/${newTab}`;
-      history.replace(`/performers/${performer.id}${tabParam}`);
-    }
-  };
+  const setActiveTabKey = useCallback(
+    (newTab: string | null) => {
+      if (tab !== newTab) {
+        const tabParam = newTab === "details" ? "" : `/${newTab}`;
+        history.replace(`/performers/${performer.id}${tabParam}`);
+      }
+    },
+    [history, performer.id, tab]
+  );
 
   const onImageChange = (image?: string | null) => setImagePreview(image);
 
@@ -110,47 +112,77 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
     }
   }
 
-  // set up hotkeys
-  useEffect(() => {
-    Mousetrap.bind("a", () => setActiveTabKey("details"));
-    Mousetrap.bind("e", () => setIsEditing(!isEditing));
-    Mousetrap.bind("c", () => setActiveTabKey("scenes"));
-    Mousetrap.bind("g", () => setActiveTabKey("galleries"));
-    Mousetrap.bind("m", () => setActiveTabKey("movies"));
-    Mousetrap.bind("f", () => setFavorite(!performer.favorite));
-
-    // numeric keypresses get caught by jwplayer, so blur the element
-    // if the rating sequence is started
-    Mousetrap.bind("r", () => {
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
+  const setFavorite = useCallback(
+    (v: boolean) => {
+      if (performer.id) {
+        updatePerformer({
+          variables: {
+            input: {
+              id: performer.id,
+              favorite: v,
+            },
+          },
+        });
       }
+    },
+    [performer.id, updatePerformer]
+  );
 
-      Mousetrap.bind("0", () => setRating(NaN));
-      Mousetrap.bind("1", () => setRating(1));
-      Mousetrap.bind("2", () => setRating(2));
-      Mousetrap.bind("3", () => setRating(3));
-      Mousetrap.bind("4", () => setRating(4));
-      Mousetrap.bind("5", () => setRating(5));
+  const setRating = useCallback(
+    (v: number | null) => {
+      if (performer.id) {
+        updatePerformer({
+          variables: {
+            input: {
+              id: performer.id,
+              rating: v,
+            },
+          },
+        });
+      }
+    },
+    [performer.id, updatePerformer]
+  );
 
-      setTimeout(() => {
-        Mousetrap.unbind("0");
-        Mousetrap.unbind("1");
-        Mousetrap.unbind("2");
-        Mousetrap.unbind("3");
-        Mousetrap.unbind("4");
-        Mousetrap.unbind("5");
-      }, 1000);
-    });
+  // set up hotkeys
+  const hotkeys = useHotkeys();
+  useEffect(() => {
+    return hotkeys.bind("f", () => setFavorite(!performer.favorite));
+  }, [hotkeys, performer.favorite, setFavorite]);
+  useEffect(() => {
+    if (isEditing) return;
+
+    hotkeys.bind("a", () => setActiveTabKey("details"));
+    hotkeys.bind("s", () => setActiveTabKey("scenes"));
+    hotkeys.bind("l", () => setActiveTabKey("galleries"));
+    hotkeys.bind("i", () => setActiveTabKey("images"));
+    hotkeys.bind("m", () => setActiveTabKey("movies"));
 
     return () => {
-      Mousetrap.unbind("a");
-      Mousetrap.unbind("e");
-      Mousetrap.unbind("c");
-      Mousetrap.unbind("f");
-      Mousetrap.unbind("o");
+      hotkeys.unbind("a");
+      hotkeys.unbind("s");
+      hotkeys.unbind("l");
+      hotkeys.unbind("i");
+      hotkeys.unbind("m");
     };
-  });
+  }, [hotkeys, isEditing, setActiveTabKey]);
+  useEffect(() => {
+    hotkeys.bind("r 0", () => setRating(null));
+    hotkeys.bind("r 1", () => setRating(1));
+    hotkeys.bind("r 2", () => setRating(2));
+    hotkeys.bind("r 3", () => setRating(3));
+    hotkeys.bind("r 4", () => setRating(4));
+    hotkeys.bind("r 5", () => setRating(5));
+
+    return () => {
+      hotkeys.unbind("r 0");
+      hotkeys.unbind("r 1");
+      hotkeys.unbind("r 2");
+      hotkeys.unbind("r 3");
+      hotkeys.unbind("r 4");
+      hotkeys.unbind("r 5");
+    };
+  }, [hotkeys, setRating]);
 
   async function onDelete() {
     try {
@@ -305,32 +337,6 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
           <span className="alias">{performer.aliases}</span>
         </div>
       );
-    }
-  }
-
-  function setFavorite(v: boolean) {
-    if (performer.id) {
-      updatePerformer({
-        variables: {
-          input: {
-            id: performer.id,
-            favorite: v,
-          },
-        },
-      });
-    }
-  }
-
-  function setRating(v: number | null) {
-    if (performer.id) {
-      updatePerformer({
-        variables: {
-          input: {
-            id: performer.id,
-            rating: v,
-          },
-        },
-      });
     }
   }
 

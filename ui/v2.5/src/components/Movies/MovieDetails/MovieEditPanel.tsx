@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
-import Mousetrap from "mousetrap";
 import {
   queryScrapeMovieURL,
   useListMovieScrapers,
@@ -16,7 +15,7 @@ import {
 } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { Modal as BSModal, Form, Button, Col, Row } from "react-bootstrap";
-import { DurationUtils, FormUtils, ImageUtils } from "src/utils";
+import { DurationUtils, FormUtils, ImageUtils, useHotkeys } from "src/utils";
 import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { useFormik } from "formik";
 import { Prompt } from "react-router-dom";
@@ -115,35 +114,29 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
     encodingImage,
   ]);
 
-  function setRating(v: number) {
-    formik.setFieldValue("rating", v);
-  }
-
   // set up hotkeys
+  const hotkeys = useHotkeys();
   useEffect(() => {
-    Mousetrap.bind("r 0", () => setRating(NaN));
-    Mousetrap.bind("r 1", () => setRating(1));
-    Mousetrap.bind("r 2", () => setRating(2));
-    Mousetrap.bind("r 3", () => setRating(3));
-    Mousetrap.bind("r 4", () => setRating(4));
-    Mousetrap.bind("r 5", () => setRating(5));
-    // Mousetrap.bind("u", (e) => {
-    //   setStudioFocus()
-    //   e.preventDefault();
-    // });
-    Mousetrap.bind("s s", () => formik.handleSubmit());
+    function setRating(v: number | null) {
+      formik.setFieldValue("rating", v);
+    }
+
+    hotkeys.bind("r 0", () => setRating(null));
+    hotkeys.bind("r 1", () => setRating(1));
+    hotkeys.bind("r 2", () => setRating(2));
+    hotkeys.bind("r 3", () => setRating(3));
+    hotkeys.bind("r 4", () => setRating(4));
+    hotkeys.bind("r 5", () => setRating(5));
 
     return () => {
-      Mousetrap.unbind("r 0");
-      Mousetrap.unbind("r 1");
-      Mousetrap.unbind("r 2");
-      Mousetrap.unbind("r 3");
-      Mousetrap.unbind("r 4");
-      Mousetrap.unbind("r 5");
-      // Mousetrap.unbind("u");
-      Mousetrap.unbind("s s");
+      hotkeys.unbind("r 0");
+      hotkeys.unbind("r 1");
+      hotkeys.unbind("r 2");
+      hotkeys.unbind("r 3");
+      hotkeys.unbind("r 4");
+      hotkeys.unbind("r 5");
     };
-  });
+  }, [hotkeys, formik]);
 
   function showImageAlert(imageData: string) {
     setImageClipboard(imageData);
