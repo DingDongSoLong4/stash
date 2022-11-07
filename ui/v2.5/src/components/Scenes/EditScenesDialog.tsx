@@ -21,6 +21,7 @@ import {
 import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface IListOperationProps {
+  open: boolean;
   selected: GQL.SlimSceneDataFragment[];
   onClose: (applied: boolean) => void;
 }
@@ -48,7 +49,7 @@ export const EditScenesDialog: React.FC<IListOperationProps> = (
   );
   const [movieIds, setMovieIds] = useState<string[]>();
   const [existingMovieIds, setExistingMovieIds] = useState<string[]>();
-  const [organized, setOrganized] = useState<boolean | undefined>();
+  const [organized, setOrganized] = useState<boolean>();
 
   const [updateScenes] = useBulkSceneUpdate(getSceneInput());
 
@@ -244,12 +245,12 @@ export const EditScenesDialog: React.FC<IListOperationProps> = (
   function render() {
     return (
       <Modal
-        show
+        show={props.open}
         icon={faPencilAlt}
         header={intl.formatMessage(
           { id: "dialogs.edit_entity_title" },
           {
-            count: props?.selected?.length ?? 1,
+            count: props.selected.length,
             singularEntity: intl.formatMessage({ id: "scene" }),
             pluralEntity: intl.formatMessage({ id: "scenes" }),
           }

@@ -60,21 +60,26 @@ export const MovieList: React.FC<IMovieList> = ({ filterHook }) => {
   };
 
   function renderEditDialog(
+    open: boolean,
     selectedMovies: MovieDataFragment[],
     onClose: (applied: boolean) => void
   ) {
     return (
-      <>
-        <EditMoviesDialog selected={selectedMovies} onClose={onClose} />
-      </>
+      <EditMoviesDialog
+        open={open}
+        selected={selectedMovies}
+        onClose={onClose}
+      />
     );
   }
 
   const renderDeleteDialog = (
+    open: boolean,
     selectedMovies: SlimMovieDataFragment[],
     onClose: (confirmed: boolean) => void
   ) => (
     <DeleteEntityDialog
+      open={open}
       selected={selectedMovies}
       onClose={onClose}
       singularEntity={intl.formatMessage({ id: "movie" })}
@@ -113,7 +118,7 @@ export const MovieList: React.FC<IMovieList> = ({ filterHook }) => {
         singleResult.data.findMovies &&
         singleResult.data.findMovies.movies.length === 1
       ) {
-        const { id } = singleResult!.data!.findMovies!.movies[0];
+        const { id } = singleResult.data.findMovies.movies[0];
         // navigate to the movie page
         history.push(`/movies/${id}`);
       }
@@ -130,26 +135,6 @@ export const MovieList: React.FC<IMovieList> = ({ filterHook }) => {
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderMovieExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              movies: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   function renderContent(
     result: FindMoviesQueryResult,
     filter: ListFilterModel,
@@ -161,7 +146,18 @@ export const MovieList: React.FC<IMovieList> = ({ filterHook }) => {
     if (filter.displayMode === DisplayMode.Grid) {
       return (
         <>
-          {maybeRenderMovieExportDialog(selectedIds)}
+          <ExportDialog
+            open={isExportDialogOpen}
+            exportInput={{
+              movies: {
+                ids: Array.from(selectedIds.values()),
+                all: isExportAll,
+              },
+            }}
+            onClose={() => {
+              setIsExportDialogOpen(false);
+            }}
+          />
           <div className="row justify-content-center">
             {result.data.findMovies.movies.map((p) => (
               <MovieCard

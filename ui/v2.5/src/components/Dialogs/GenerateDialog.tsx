@@ -13,11 +13,13 @@ import { SettingSection } from "../Settings/SettingSection";
 import { faCogs, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 
 interface ISceneGenerateDialog {
+  open: boolean;
   selectedIds?: string[];
   onClose: () => void;
 }
 
 export const GenerateDialog: React.FC<ISceneGenerateDialog> = ({
+  open,
   selectedIds,
   onClose,
 }) => {
@@ -42,7 +44,6 @@ export const GenerateDialog: React.FC<ISceneGenerateDialog> = ({
   );
   const [configRead, setConfigRead] = useState(false);
   const [showManual, setShowManual] = useState(false);
-  const [animation, setAnimation] = useState(true);
 
   const intl = useIntl();
   const Toast = useToast();
@@ -152,58 +153,49 @@ export const GenerateDialog: React.FC<ISceneGenerateDialog> = ({
     }
   }
 
-  function onShowManual() {
-    setAnimation(false);
-    setShowManual(true);
-  }
-
-  if (showManual) {
-    return (
+  return (
+    <>
       <Manual
-        animation={false}
-        show
+        show={open && showManual}
         onClose={() => setShowManual(false)}
         defaultActiveTab="Tasks.md"
       />
-    );
-  }
-
-  return (
-    <Modal
-      show
-      modalProps={{ animation, size: "lg" }}
-      icon={faCogs}
-      header={intl.formatMessage({ id: "actions.generate" })}
-      accept={{
-        onClick: onGenerate,
-        text: intl.formatMessage({ id: "actions.generate" }),
-      }}
-      cancel={{
-        onClick: () => onClose(),
-        text: intl.formatMessage({ id: "actions.cancel" }),
-        variant: "secondary",
-      }}
-      leftFooterButtons={
-        <Button
-          title="Help"
-          className="minimal help-button"
-          onClick={() => onShowManual()}
-        >
-          <Icon icon={faQuestionCircle} />
-        </Button>
-      }
-    >
-      <Form>
-        {selectionStatus}
-        <SettingSection>
-          <GenerateOptions
-            options={options}
-            setOptions={setOptions}
-            selection
-          />
-        </SettingSection>
-      </Form>
-    </Modal>
+      <Modal
+        show={open}
+        modalProps={{ size: "lg" }}
+        icon={faCogs}
+        header={intl.formatMessage({ id: "actions.generate" })}
+        accept={{
+          onClick: onGenerate,
+          text: intl.formatMessage({ id: "actions.generate" }),
+        }}
+        cancel={{
+          onClick: () => onClose(),
+          text: intl.formatMessage({ id: "actions.cancel" }),
+          variant: "secondary",
+        }}
+        leftFooterButtons={
+          <Button
+            title="Help"
+            className="minimal help-button"
+            onClick={() => setShowManual(true)}
+          >
+            <Icon icon={faQuestionCircle} />
+          </Button>
+        }
+      >
+        <Form>
+          {selectionStatus}
+          <SettingSection>
+            <GenerateOptions
+              options={options}
+              setOptions={setOptions}
+              selection
+            />
+          </SettingSection>
+        </Form>
+      </Modal>
+    </>
   );
 };
 

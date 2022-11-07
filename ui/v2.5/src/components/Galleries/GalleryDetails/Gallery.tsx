@@ -99,17 +99,6 @@ export const GalleryPage: React.FC<IProps> = ({ gallery }) => {
     }
   }
 
-  function maybeRenderDeleteDialog() {
-    if (isDeleteAlertOpen && gallery) {
-      return (
-        <DeleteGalleriesDialog
-          selected={[{ ...gallery, image_count: NaN }]}
-          onClose={onDeleteDialogClosed}
-        />
-      );
-    }
-  }
-
   function renderOperations() {
     return (
       <Dropdown>
@@ -279,7 +268,11 @@ export const GalleryPage: React.FC<IProps> = ({ gallery }) => {
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      {maybeRenderDeleteDialog()}
+      <DeleteGalleriesDialog
+        open={isDeleteAlertOpen}
+        selected={[{ ...gallery, image_count: NaN }]}
+        onClose={onDeleteDialogClosed}
+      />
       <div className="gallery-tabs">
         <div className="d-none d-xl-block">
           {gallery.studio && (

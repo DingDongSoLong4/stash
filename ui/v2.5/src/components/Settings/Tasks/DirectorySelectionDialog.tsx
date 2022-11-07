@@ -11,6 +11,7 @@ import { FolderSelect } from "src/components/Shared/FolderSelect/FolderSelect";
 import { ConfigurationContext } from "src/hooks/Config";
 
 interface IDirectorySelectionDialogProps {
+  open: boolean;
   animation?: boolean;
   initialPaths?: string[];
   allowEmpty?: boolean;
@@ -18,6 +19,7 @@ interface IDirectorySelectionDialogProps {
 }
 
 export const DirectorySelectionDialog: React.FC<IDirectorySelectionDialogProps> = ({
+  open,
   animation,
   allowEmpty = false,
   initialPaths = [],
@@ -43,7 +45,7 @@ export const DirectorySelectionDialog: React.FC<IDirectorySelectionDialogProps> 
 
   return (
     <Modal
-      show
+      show={open}
       modalProps={{ animation }}
       disabled={!allowEmpty && paths.length === 0}
       icon={faPencilAlt}

@@ -76,42 +76,27 @@ export const PerformerList: React.FC<IPerformerList> = ({
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderPerformerExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              performers: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   function renderEditPerformersDialog(
+    open: boolean,
     selectedPerformers: SlimPerformerDataFragment[],
     onClose: (applied: boolean) => void
   ) {
     return (
-      <>
-        <EditPerformersDialog selected={selectedPerformers} onClose={onClose} />
-      </>
+      <EditPerformersDialog
+        open={open}
+        selected={selectedPerformers}
+        onClose={onClose}
+      />
     );
   }
 
   const renderDeleteDialog = (
+    open: boolean,
     selectedPerformers: SlimPerformerDataFragment[],
     onClose: (confirmed: boolean) => void
   ) => (
     <DeleteEntityDialog
+      open={open}
       selected={selectedPerformers}
       onClose={onClose}
       singularEntity={intl.formatMessage({ id: "performer" })}
@@ -165,7 +150,16 @@ export const PerformerList: React.FC<IPerformerList> = ({
     if (filter.displayMode === DisplayMode.Grid) {
       return (
         <>
-          {maybeRenderPerformerExportDialog(selectedIds)}
+          <ExportDialog
+            open={isExportDialogOpen}
+            exportInput={{
+              performers: {
+                ids: Array.from(selectedIds.values()),
+                all: isExportAll,
+              },
+            }}
+            onClose={() => setIsExportDialogOpen(false)}
+          />
           <div className="row justify-content-center">
             {result.data.findPerformers.performers.map((p) => (
               <PerformerCard

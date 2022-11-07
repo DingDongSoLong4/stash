@@ -14,26 +14,32 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 interface ISourceEditor {
-  isNew: boolean;
+  editing: boolean;
   availableSources: IScraperSource[];
-  source: IScraperSource;
+  source?: IScraperSource;
   saveSource: (s?: IScraperSource) => void;
   defaultOptions: GQL.IdentifyMetadataOptionsInput;
 }
 
 export const SourcesEditor: React.FC<ISourceEditor> = ({
-  isNew,
+  editing,
   availableSources,
   source: initialSource,
   saveSource,
   defaultOptions,
 }) => {
-  const [source, setSource] = useState<IScraperSource>(initialSource);
+  const [source, setSource] = useState<IScraperSource>();
   const [editingField, setEditingField] = useState(false);
+
+  // update current source if initial source changes
+  useEffect(() => {
+    setSource(initialSource ?? availableSources[0]);
+  }, [availableSources, initialSource]);
 
   const intl = useIntl();
 
-  // if id is empty, then we are adding a new source
+  // if no initialSource then we are adding a new source
+  const isNew = !initialSource;
   const headerMsgId = isNew ? "actions.add" : "dialogs.edit_entity_title";
   const acceptMsgId = isNew ? "actions.add" : "actions.confirm";
 
@@ -52,11 +58,17 @@ export const SourcesEditor: React.FC<ISourceEditor> = ({
     });
   }
 
+  function setOptions(o: GQL.IdentifyMetadataOptionsInput) {
+    if (source) {
+      setSource({ ...source, options: o });
+    }
+  }
+
   return (
     <Modal
       dialogClassName="identify-source-editor"
-      modalProps={{ animation: false, size: "lg" }}
-      show
+      modalProps={{ size: "lg" }}
+      show={editing}
       icon={isNew ? faPlus : faPencilAlt}
       header={intl.formatMessage(
         { id: headerMsgId },
@@ -76,7 +88,7 @@ export const SourcesEditor: React.FC<ISourceEditor> = ({
         variant: "secondary",
       }}
       disabled={
-        (!source.scraper_id && !source.stash_box_endpoint) || editingField
+        (!source?.scraper_id && !source?.stash_box_endpoint) || editingField
       }
     >
       <Form>
@@ -87,7 +99,7 @@ export const SourcesEditor: React.FC<ISourceEditor> = ({
             </h5>
             <Form.Control
               as="select"
-              value={source.id}
+              value={source?.id}
               className="input-control"
               onChange={handleSourceSelect}
             >
@@ -100,8 +112,8 @@ export const SourcesEditor: React.FC<ISourceEditor> = ({
           </Form.Group>
         )}
         <OptionsEditor
-          options={source.options ?? {}}
-          setOptions={(o) => setSource({ ...source, options: o })}
+          options={source?.options ?? {}}
+          setOptions={setOptions}
           source={source}
           setEditingField={(v) => setEditingField(v)}
           defaultOptions={defaultOptions}

@@ -9,6 +9,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface IDeleteGalleryDialogProps {
+  open: boolean;
   selected: GQL.SlimGalleryDataFragment[];
   onClose: (confirmed: boolean) => void;
 }
@@ -50,7 +51,7 @@ export const DeleteGalleriesDialog: React.FC<IDeleteGalleryDialogProps> = (
 
   function getGalleriesDeleteInput(): GQL.GalleryDestroyInput {
     return {
-      ids: props.selected.map((gallery) => gallery.id!),
+      ids: props.selected.map((gallery) => gallery.id),
       delete_file: deleteFile,
       delete_generated: deleteGenerated,
     };
@@ -120,7 +121,7 @@ export const DeleteGalleriesDialog: React.FC<IDeleteGalleryDialogProps> = (
 
   return (
     <Modal
-      show
+      show={props.open}
       icon={faTrashAlt}
       header={header}
       accept={{

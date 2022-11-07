@@ -275,45 +275,31 @@ export const ImageList: React.FC<IImageList> = ({
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderImageExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              images: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   function renderEditImagesDialog(
+    open: boolean,
     selectedImages: SlimImageDataFragment[],
     onClose: (applied: boolean) => void
   ) {
     return (
-      <>
-        <EditImagesDialog selected={selectedImages} onClose={onClose} />
-      </>
+      <EditImagesDialog
+        open={open}
+        selected={selectedImages}
+        onClose={onClose}
+      />
     );
   }
 
   function renderDeleteImagesDialog(
+    open: boolean,
     selectedImages: SlimImageDataFragment[],
     onClose: (confirmed: boolean) => void
   ) {
     return (
-      <>
-        <DeleteImagesDialog selected={selectedImages} onClose={onClose} />
-      </>
+      <DeleteImagesDialog
+        open={open}
+        selected={selectedImages}
+        onClose={onClose}
+      />
     );
   }
 
@@ -355,7 +341,16 @@ export const ImageList: React.FC<IImageList> = ({
   ) {
     return (
       <>
-        {maybeRenderImageExportDialog(selectedIds)}
+        <ExportDialog
+          open={isExportDialogOpen}
+          exportInput={{
+            images: {
+              ids: Array.from(selectedIds.values()),
+              all: isExportAll,
+            },
+          }}
+          onClose={() => setIsExportDialogOpen(false)}
+        />
         {renderImages(result, filter, selectedIds, onChangePage, pageCount)}
       </>
     );

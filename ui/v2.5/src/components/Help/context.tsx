@@ -36,13 +36,11 @@ export const ManualProvider: React.FC = ({ children }) => {
       }}
     >
       <Suspense fallback={<></>}>
-        {showManual && (
-          <Manual
-            show={showManual}
-            onClose={() => setShowManual(false)}
-            defaultActiveTab={manualLink}
-          />
-        )}
+        <Manual
+          show={showManual}
+          onClose={() => setShowManual(false)}
+          defaultActiveTab={manualLink}
+        />
       </Suspense>
       {children}
     </ManualStateContext.Provider>

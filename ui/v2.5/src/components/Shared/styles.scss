@@ -306,3 +306,14 @@ button.collapse-button.btn-primary:not(:disabled):not(.disabled):active {
   }
   /* stylelint-enable */
 }
+
+// correct z-index for multiple modals
+@for $i from 2 through 12 {
+  $z: #{1039 + $i};
+  div.modal-backdrop:nth-of-type(#{$i}) {
+    z-index: $z;
+  }
+  div[role="dialog"][aria-modal="true"]:nth-of-type(#{$i}) {
+    z-index: $z;
+  }
+}

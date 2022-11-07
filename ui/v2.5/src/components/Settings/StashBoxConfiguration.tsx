@@ -6,14 +6,15 @@ import * as GQL from "src/core/generated-graphql";
 import { SettingModal } from "./Inputs";
 
 export interface IStashBoxModal {
+  show: boolean;
   value: GQL.StashBoxInput;
   close: (v?: GQL.StashBoxInput) => void;
 }
 
-export const StashBoxModal: React.FC<IStashBoxModal> = ({ value, close }) => {
+export const StashBoxModal: React.FC<IStashBoxModal> = ({ show, value, close }) => {
   const intl = useIntl();
-  const endpoint = useRef<HTMLInputElement | null>(null);
-  const apiKey = useRef<HTMLInputElement | null>(null);
+  const endpoint = useRef<HTMLInputElement>(null);
+  const apiKey = useRef<HTMLInputElement>(null);
 
   const [validate, { data, loading }] = GQL.useValidateStashBoxLazyQuery({
     fetchPolicy: "network-only",
@@ -33,6 +34,7 @@ export const StashBoxModal: React.FC<IStashBoxModal> = ({ value, close }) => {
 
   return (
     <SettingModal<GQL.StashBoxInput>
+      show={show}
       headingID="config.stashbox.title"
       value={value}
       renderField={(v, setValue) => (
@@ -130,11 +132,12 @@ export const StashBoxSetting: React.FC<IStashBoxSetting> = ({
   value,
   onChange,
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | undefined>();
+  const [showModal, setShowModal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
 
   function onEdit(index: number) {
     setEditingIndex(index);
+    setShowModal(true);
   }
 
   function onDelete(index: number) {
@@ -142,7 +145,32 @@ export const StashBoxSetting: React.FC<IStashBoxSetting> = ({
   }
 
   function onNew() {
-    setIsCreating(true);
+    setEditingIndex(-1);
+    setShowModal(true);
+  }
+
+  function getEditingValue() {
+    return value[editingIndex] ?? {
+      endpoint: "",
+      api_key: "",
+      name: "",
+    };
+  }
+
+  function onClose(v: GQL.StashBoxInput) {
+    if (editingIndex !== -1) {
+      onChange(
+        value.map((vv, index) => {
+          if (index === editingIndex) {
+            return v;
+          }
+          return vv;
+        })
+      );
+    } else {
+      onChange([...value, v]);
+    }
+    setEditingIndex(-1);
   }
 
   return (
@@ -151,37 +179,14 @@ export const StashBoxSetting: React.FC<IStashBoxSetting> = ({
       headingID="config.stashbox.title"
       subHeadingID="config.stashbox.description"
     >
-      {isCreating ? (
-        <StashBoxModal
-          value={{
-            endpoint: "",
-            api_key: "",
-            name: "",
-          }}
-          close={(v) => {
-            if (v) onChange([...value, v]);
-            setIsCreating(false);
-          }}
-        />
-      ) : undefined}
-
-      {editingIndex !== undefined ? (
-        <StashBoxModal
-          value={value[editingIndex]}
-          close={(v) => {
-            if (v)
-              onChange(
-                value.map((vv, index) => {
-                  if (index === editingIndex) {
-                    return v;
-                  }
-                  return vv;
-                })
-              );
-            setEditingIndex(undefined);
-          }}
-        />
-      ) : undefined}
+      <StashBoxModal
+        show={showModal}
+        value={getEditingValue()}
+        close={(v) => {
+          if (v) onClose(v);
+          setShowModal(false);
+        }}
+      />
 
       {value.map((b, index) => (
         // eslint-disable-next-line react/no-array-index-key

@@ -241,6 +241,7 @@ export const ChangeButtonSetting = <T extends {}>(props: IDialogSetting<T>) => {
 };
 
 export interface ISettingModal<T> {
+  show: boolean;
   heading?: string;
   headingID?: string;
   subHeadingID?: string;
@@ -253,6 +254,7 @@ export interface ISettingModal<T> {
 
 export const SettingModal = <T extends {}>(props: ISettingModal<T>) => {
   const {
+    show,
     heading,
     headingID,
     subHeading,
@@ -267,7 +269,13 @@ export const SettingModal = <T extends {}>(props: ISettingModal<T>) => {
   const [currentValue, setCurrentValue] = useState<T | undefined>(value);
 
   return (
-    <Modal show onHide={() => close()} id="setting-dialog" {...modalProps}>
+    <Modal
+      show={show}
+      onShow={() => setCurrentValue(value)}
+      onHide={() => close()}
+      id="setting-dialog"
+      {...modalProps}
+    >
       <Form
         onSubmit={(e) => {
           close(currentValue);
@@ -335,21 +343,19 @@ export const ModalSetting = <T extends {}>(props: IModalSetting<T>) => {
 
   return (
     <>
-      {showModal ? (
-        <SettingModal<T>
-          headingID={headingID}
-          subHeadingID={subHeadingID}
-          subHeading={subHeading}
-          value={value}
-          renderField={renderField}
-          close={(v) => {
-            if (v !== undefined) onChange(v);
-            setShowModal(false);
-          }}
-          {...modalProps}
-        />
-      ) : undefined}
-
+      <SettingModal<T>
+        show={showModal}
+        headingID={headingID}
+        subHeadingID={subHeadingID}
+        subHeading={subHeading}
+        value={value}
+        renderField={renderField}
+        close={(v) => {
+          if (v !== undefined) onChange(v);
+          setShowModal(false);
+        }}
+        {...modalProps}
+      />
       <ChangeButtonSetting<T>
         id={id}
         className={className}

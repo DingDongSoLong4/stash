@@ -10,6 +10,7 @@ import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { objectPath } from "src/core/files";
 
 interface IDeleteSceneDialogProps {
+  open: boolean;
   selected: GQL.SlimSceneDataFragment[];
   onClose: (confirmed: boolean) => void;
 }
@@ -127,7 +128,7 @@ export const DeleteScenesDialog: React.FC<IDeleteSceneDialogProps> = (
 
   return (
     <Modal
-      show
+      show={props.open}
       icon={faTrashAlt}
       header={header}
       accept={{

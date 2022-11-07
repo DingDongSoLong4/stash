@@ -20,6 +20,7 @@ import {
 import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface IListOperationProps {
+  open: boolean;
   selected: GQL.SlimGalleryDataFragment[];
   onClose: (applied: boolean) => void;
 }
@@ -229,7 +230,7 @@ export const EditGalleriesDialog: React.FC<IListOperationProps> = (
   function render() {
     return (
       <Modal
-        show
+        show={props.open}
         icon={faPencilAlt}
         header={intl.formatMessage(
           { id: "dialogs.edit_entity_title" },

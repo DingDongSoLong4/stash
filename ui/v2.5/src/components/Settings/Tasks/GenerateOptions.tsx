@@ -61,9 +61,6 @@ export const GenerateOptions: React.FC<IGenerateOptions> = ({
           renderField={(value, setValue) => (
             <VideoPreviewInput value={value ?? {}} setValue={setValue} />
           )}
-          renderValue={() => {
-            return <></>;
-          }}
         />
       ) : undefined}
 

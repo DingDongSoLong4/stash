@@ -29,11 +29,13 @@ import {
 const autoTagScraperID = "builtin_autotag";
 
 interface IIdentifyDialogProps {
+  open: boolean;
   selectedIds?: string[];
   onClose: () => void;
 }
 
 export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
+  open,
   selectedIds,
   onClose,
 }) => {
@@ -57,13 +59,9 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
     getDefaultOptions()
   );
   const [sources, setSources] = useState<IScraperSource[]>([]);
-  const [editingSource, setEditingSource] = useState<
-    IScraperSource | undefined
-  >();
+  const [editingSource, setEditingSource] = useState<IScraperSource>();
   const [paths, setPaths] = useState<string[]>([]);
-  const [showManual, setShowManual] = useState(false);
-  const [settingPaths, setSettingPaths] = useState(false);
-  const [animation, setAnimation] = useState(true);
+  const [openDialog, setOpenDialog] = useState("");
   const [editingField, setEditingField] = useState(false);
   const [savingDefaults, setSavingDefaults] = useState(false);
 
@@ -106,6 +104,13 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
 
     return ret;
   }, [configData, scraperData]);
+
+  const availableSources = useMemo(() => {
+    // only include scrapers not already present
+    return (
+      allSources?.filter((s) => !sources.some((ss) => ss.id === s.id)) ?? []
+    );
+  }, [allSources, sources]);
 
   const selectionStatus = useMemo(() => {
     if (selectedIds) {
@@ -158,11 +163,6 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
       </span>
     );
 
-    function onClick() {
-      setAnimation(false);
-      setSettingPaths(true);
-    }
-
     return (
       <Form.Group className="dialog-selected-folders">
         <div>
@@ -170,7 +170,7 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
           <div>
             <Button
               title={intl.formatMessage({ id: "actions.select_folders" })}
-              onClick={() => onClick()}
+              onClick={() => setOpenDialog("select_folders")}
             >
               <Icon icon={faFolderOpen} />
             </Button>
@@ -292,33 +292,9 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
     }
   }
 
-  function getAvailableSources() {
-    // only include scrapers not already present
-    return !editingSource?.id === undefined
-      ? []
-      : allSources?.filter((s) => {
-          return !sources.some((ss) => ss.id === s.id);
-        }) ?? [];
-  }
-
   function onEditSource(s?: IScraperSource) {
-    setAnimation(false);
-
-    // if undefined, then set a dummy source to create a new one
-    if (!s) {
-      setEditingSource(getAvailableSources()[0]);
-    } else {
-      setEditingSource(s);
-    }
-  }
-
-  function onShowManual() {
-    setAnimation(false);
-    setShowManual(true);
-  }
-
-  function isNewSource() {
-    return !!editingSource && !sources.includes(editingSource);
+    setEditingSource(s);
+    setOpenDialog("edit_source");
   }
 
   function onSaveSource(s?: IScraperSource) {
@@ -338,7 +314,7 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
 
       setSources(newSources);
     }
-    setEditingSource(undefined);
+    setOpenDialog("");
   }
 
   async function setAsDefault() {
@@ -365,95 +341,81 @@ export const IdentifyDialog: React.FC<IIdentifyDialogProps> = ({
     }
   }
 
-  if (editingSource) {
-    return (
+  return (
+    <>
       <SourcesEditor
-        availableSources={getAvailableSources()}
+        editing={open && openDialog === "edit_source"}
+        availableSources={availableSources}
         source={editingSource}
         saveSource={onSaveSource}
-        isNew={isNewSource()}
         defaultOptions={options}
       />
-    );
-  }
-
-  if (settingPaths) {
-    return (
       <DirectorySelectionDialog
-        animation={false}
+        open={open && openDialog === "select_folders"}
         allowEmpty
         initialPaths={paths}
         onClose={(p) => {
           if (p) {
             setPaths(p);
           }
-          setSettingPaths(false);
+          setOpenDialog("");
         }}
       />
-    );
-  }
-
-  if (showManual) {
-    return (
       <Manual
-        animation={false}
-        show
-        onClose={() => setShowManual(false)}
+        show={open && openDialog === "manual"}
+        onClose={() => setOpenDialog("")}
         defaultActiveTab="Identify.md"
       />
-    );
-  }
-
-  return (
-    <Modal
-      modalProps={{ animation, size: "lg" }}
-      show
-      icon={faCogs}
-      header={intl.formatMessage({ id: "actions.identify" })}
-      accept={{
-        onClick: onIdentify,
-        text: intl.formatMessage({ id: "actions.identify" }),
-      }}
-      cancel={{
-        onClick: () => onClose(),
-        text: intl.formatMessage({ id: "actions.cancel" }),
-        variant: "secondary",
-      }}
-      disabled={editingField || savingDefaults || sources.length === 0}
-      footerButtons={
-        <OperationButton
-          variant="secondary"
-          disabled={editingField || savingDefaults}
-          operation={setAsDefault}
-        >
-          <FormattedMessage id="actions.set_as_default" />
-        </OperationButton>
-      }
-      leftFooterButtons={
-        <Button
-          title="Help"
-          className="minimal help-button"
-          onClick={() => onShowManual()}
-        >
-          <Icon icon={faQuestionCircle} />
-        </Button>
-      }
-    >
-      <Form>
-        {selectionStatus}
-        <SourcesList
-          sources={sources}
-          setSources={(s) => setSources(s)}
-          editSource={onEditSource}
-          canAdd={sources.length < allSources.length}
-        />
-        <OptionsEditor
-          options={options}
-          setOptions={(o) => setOptions(o)}
-          setEditingField={(v) => setEditingField(v)}
-        />
-      </Form>
-    </Modal>
+      <Modal
+        modalProps={{ size: "lg" }}
+        show={open}
+        icon={faCogs}
+        header={intl.formatMessage({ id: "actions.identify" })}
+        accept={{
+          onClick: onIdentify,
+          text: intl.formatMessage({ id: "actions.identify" }),
+        }}
+        cancel={{
+          onClick: () => onClose(),
+          text: intl.formatMessage({ id: "actions.cancel" }),
+          variant: "secondary",
+        }}
+        disabled={editingField || savingDefaults || sources.length === 0}
+        footerButtons={
+          <OperationButton
+            variant="secondary"
+            disabled={editingField || savingDefaults}
+            operation={setAsDefault}
+          >
+            <FormattedMessage id="actions.set_as_default" />
+          </OperationButton>
+        }
+        leftFooterButtons={
+          <Button
+            title="Help"
+            className="minimal help-button"
+            onClick={() => setOpenDialog("manual")}
+          >
+            <Icon icon={faQuestionCircle} />
+          </Button>
+        }
+      >
+        <Form>
+          {selectionStatus}
+          <SourcesList
+            sources={sources}
+            setSources={(s) => setSources(s)}
+            editSource={onEditSource}
+            canAdd={sources.length < allSources.length}
+          />
+          <OptionsEditor
+            options={options}
+            setOptions={(o) => setOptions(o)}
+            setEditingField={(v) => setEditingField(v)}
+          />
+        </Form>
+      </Modal>
+    </>
   );
 };
 

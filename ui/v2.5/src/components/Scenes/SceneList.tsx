@@ -91,9 +91,16 @@ export const SceneList: React.FC<ISceneList> = ({
   };
 
   const renderDeleteDialog = (
+    open: boolean,
     selectedScenes: SlimSceneDataFragment[],
     onClose: (confirmed: boolean) => void
-  ) => <DeleteScenesDialog selected={selectedScenes} onClose={onClose} />;
+  ) => (
+    <DeleteScenesDialog
+      open={open}
+      selected={selectedScenes}
+      onClose={onClose}
+    />
+  );
 
   const listData = useScenesList({
     zoomable: true,
@@ -176,64 +183,17 @@ export const SceneList: React.FC<ISceneList> = ({
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderSceneGenerateDialog(selectedIds: Set<string>) {
-    if (isGenerateDialogOpen) {
-      return (
-        <>
-          <GenerateDialog
-            selectedIds={Array.from(selectedIds.values())}
-            onClose={() => {
-              setIsGenerateDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
-  function maybeRenderSceneIdentifyDialog(selectedIds: Set<string>) {
-    if (isIdentifyDialogOpen) {
-      return (
-        <>
-          <IdentifyDialog
-            selectedIds={Array.from(selectedIds.values())}
-            onClose={() => {
-              setIsIdentifyDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
-  function maybeRenderSceneExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              scenes: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   function renderEditScenesDialog(
+    open: boolean,
     selectedScenes: SlimSceneDataFragment[],
     onClose: (applied: boolean) => void
   ) {
     return (
-      <>
-        <EditScenesDialog selected={selectedScenes} onClose={onClose} />
-      </>
+      <EditScenesDialog
+        open={open}
+        selected={selectedScenes}
+        onClose={onClose}
+      />
     );
   }
 
@@ -290,9 +250,26 @@ export const SceneList: React.FC<ISceneList> = ({
   ) {
     return (
       <>
-        {maybeRenderSceneGenerateDialog(selectedIds)}
-        {maybeRenderSceneIdentifyDialog(selectedIds)}
-        {maybeRenderSceneExportDialog(selectedIds)}
+        <GenerateDialog
+          open={isGenerateDialogOpen}
+          selectedIds={Array.from(selectedIds.values())}
+          onClose={() => setIsGenerateDialogOpen(false)}
+        />
+        <IdentifyDialog
+          open={isIdentifyDialogOpen}
+          selectedIds={Array.from(selectedIds.values())}
+          onClose={() => setIsIdentifyDialogOpen(false)}
+        />
+        <ExportDialog
+          open={isExportDialogOpen}
+          exportInput={{
+            scenes: {
+              ids: Array.from(selectedIds.values()),
+              all: isExportAll,
+            },
+          }}
+          onClose={() => setIsExportDialogOpen(false)}
+        />
         {renderScenes(result, filter, selectedIds)}
       </>
     );

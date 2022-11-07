@@ -135,10 +135,12 @@ interface IListHookOptions<T, E> {
     pageCount: number
   ) => React.ReactNode;
   renderEditDialog?: (
+    open: boolean,
     selected: E[],
     onClose: (applied: boolean) => void
   ) => React.ReactNode;
   renderDeleteDialog?: (
+    open: boolean,
     selected: E[],
     onClose: (confirmed: boolean) => void
   ) => React.ReactNode;
@@ -551,15 +553,15 @@ const useRenderList = <
       {newCriterion &&
         filterDialog &&
         filterDialog(filter.criteria, (c) => updateCriteria(c))}
-      {isEditDialogOpen &&
-        renderEditDialog &&
+      {renderEditDialog &&
         renderEditDialog(
+          isEditDialogOpen,
           getSelectedData(getData(result), selectedIds),
           (applied) => onEditDialogClosed(applied)
         )}
-      {isDeleteDialogOpen &&
-        renderDeleteDialog &&
+      {renderDeleteDialog &&
         renderDeleteDialog(
+          isDeleteDialogOpen,
           getSelectedData(getData(result), selectedIds),
           (deleted) => onDeleteDialogClosed(deleted)
         )}

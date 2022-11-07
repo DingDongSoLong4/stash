@@ -189,9 +189,9 @@ export const App: React.FC = () => {
     );
   }
 
-  function maybeRenderReleaseNotes() {
+  function getReleaseNotes() {
     if (setupMatch || config.loading || config.error) {
-      return;
+      return [];
     }
 
     const lastNoteSeen = (config.data?.configuration.ui as IUIConfig)
@@ -200,8 +200,11 @@ export const App: React.FC = () => {
       return !lastNoteSeen || n.date > lastNoteSeen;
     });
 
-    if (notes.length === 0) return;
+    return notes;
+  }
 
+  function renderReleaseNotes() {
+    const notes = getReleaseNotes();
     return (
       <ReleaseNotesDialog
         notes={notes.map((n) => n.content)}
@@ -231,7 +234,7 @@ export const App: React.FC = () => {
             configuration={config.data?.configuration}
             loading={config.loading}
           >
-            {maybeRenderReleaseNotes()}
+            {renderReleaseNotes()}
             <ToastProvider>
               <Suspense fallback={<LoadingIndicator />}>
                 <LightboxProvider>

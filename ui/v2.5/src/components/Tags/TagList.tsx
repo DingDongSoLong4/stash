@@ -110,31 +110,13 @@ export const TagList: React.FC<ITagList> = ({ filterHook }) => {
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              tags: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   const renderDeleteDialog = (
+    open: boolean,
     selectedTags: GQL.TagDataFragment[],
     onClose: (confirmed: boolean) => void
   ) => (
     <DeleteEntityDialog
+      open={open}
       selected={selectedTags}
       onClose={onClose}
       singularEntity={intl.formatMessage({ id: "tag" })}
@@ -365,7 +347,16 @@ export const TagList: React.FC<ITagList> = ({ filterHook }) => {
   ) {
     return (
       <>
-        {maybeRenderExportDialog(selectedIds)}
+        <ExportDialog
+          open={isExportDialogOpen}
+          exportInput={{
+            tags: {
+              ids: Array.from(selectedIds.values()),
+              all: isExportAll,
+            },
+          }}
+          onClose={() => setIsExportDialogOpen(false)}
+        />
         {renderTags(result, filter, selectedIds)}
       </>
     );

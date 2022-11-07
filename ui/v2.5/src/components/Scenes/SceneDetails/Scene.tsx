@@ -228,27 +228,6 @@ const ScenePage: React.FC<IProps> = ({
     }
   }
 
-  function maybeRenderDeleteDialog() {
-    if (isDeleteAlertOpen) {
-      return (
-        <DeleteScenesDialog selected={[scene]} onClose={onDeleteDialogClosed} />
-      );
-    }
-  }
-
-  function maybeRenderSceneGenerateDialog() {
-    if (isGenerateDialogOpen) {
-      return (
-        <GenerateDialog
-          selectedIds={[scene.id]}
-          onClose={() => {
-            setIsGenerateDialogOpen(false);
-          }}
-        />
-      );
-    }
-  }
-
   const renderOperations = () => (
     <Dropdown>
       <Dropdown.Toggle
@@ -467,8 +446,16 @@ const ScenePage: React.FC<IProps> = ({
       <Helmet>
         <title>{title}</title>
       </Helmet>
-      {maybeRenderSceneGenerateDialog()}
-      {maybeRenderDeleteDialog()}
+      <GenerateDialog
+        open={isGenerateDialogOpen}
+        selectedIds={[scene.id]}
+        onClose={() => setIsGenerateDialogOpen(false)}
+      />
+      <DeleteScenesDialog
+        open={isDeleteAlertOpen}
+        selected={[scene]}
+        onClose={onDeleteDialogClosed}
+      />
       <div
         className={`scene-tabs order-xl-first order-last ${
           collapsed ? "collapsed" : ""

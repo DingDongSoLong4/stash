@@ -170,14 +170,6 @@ export const LibraryTasks: React.FC = () => {
     });
   }
 
-  function renderScanDialog() {
-    if (!dialogOpen.scan) {
-      return;
-    }
-
-    return <DirectorySelectionDialog onClose={onScanDialogClosed} />;
-  }
-
   function onScanDialogClosed(paths?: string[]) {
     if (paths) {
       runScan(paths);
@@ -210,14 +202,6 @@ export const LibraryTasks: React.FC = () => {
     } catch (e) {
       Toast.error(e);
     }
-  }
-
-  function renderAutoTagDialog() {
-    if (!dialogOpen.autoTag) {
-      return;
-    }
-
-    return <DirectorySelectionDialog onClose={onAutoTagDialogClosed} />;
   }
 
   function onAutoTagDialogClosed(paths?: string[]) {
@@ -254,14 +238,6 @@ export const LibraryTasks: React.FC = () => {
     }
   }
 
-  function maybeRenderIdentifyDialog() {
-    if (!dialogOpen.identify) return;
-
-    return (
-      <IdentifyDialog onClose={() => setDialogOpen({ identify: false })} />
-    );
-  }
-
   async function onGenerateClicked() {
     try {
       configureDefaults({
@@ -286,10 +262,18 @@ export const LibraryTasks: React.FC = () => {
 
   return (
     <Form.Group>
-      {renderScanDialog()}
-      {renderAutoTagDialog()}
-      {maybeRenderIdentifyDialog()}
-
+      <DirectorySelectionDialog
+        open={dialogOpen.scan}
+        onClose={onScanDialogClosed}
+      />
+      <DirectorySelectionDialog
+        open={dialogOpen.autoTag}
+        onClose={onAutoTagDialogClosed}
+      />
+      <IdentifyDialog
+        open={dialogOpen.identify}
+        onClose={() => setDialogOpen({ identify: false })}
+      />
       <SettingSection headingID="library">
         <SettingGroup
           settingProps={{

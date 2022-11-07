@@ -442,9 +442,6 @@ export const SettingsInterfacePanel: React.FC = () => {
               className="text-input code"
             />
           )}
-          renderValue={() => {
-            return <></>;
-          }}
         />
       </SettingSection>
       <SettingSection headingID="config.ui.custom_locales.heading">
@@ -472,9 +469,6 @@ export const SettingsInterfacePanel: React.FC = () => {
               className="text-input code"
             />
           )}
-          renderValue={() => {
-            return <></>;
-          }}
         />
       </SettingSection>
 

@@ -77,7 +77,7 @@ export const StudioList: React.FC<IStudioList> = ({
         singleResult.data.findStudios &&
         singleResult.data.findStudios.studios.length === 1
       ) {
-        const { id } = singleResult!.data!.findStudios!.studios[0];
+        const { id } = singleResult.data.findStudios.studios[0];
         // navigate to the studio page
         history.push(`/studios/${id}`);
       }
@@ -94,31 +94,13 @@ export const StudioList: React.FC<IStudioList> = ({
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              studios: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   const renderDeleteDialog = (
+    open: boolean,
     selectedStudios: SlimStudioDataFragment[],
     onClose: (confirmed: boolean) => void
   ) => (
     <DeleteEntityDialog
+      open={open}
       selected={selectedStudios}
       onClose={onClose}
       singularEntity={intl.formatMessage({ id: "studio" })}
@@ -177,7 +159,16 @@ export const StudioList: React.FC<IStudioList> = ({
   ) {
     return (
       <>
-        {maybeRenderExportDialog(selectedIds)}
+        <ExportDialog
+          open={isExportDialogOpen}
+          exportInput={{
+            studios: {
+              ids: Array.from(selectedIds.values()),
+              all: isExportAll,
+            },
+          }}
+          onClose={() => setIsExportDialogOpen(false)}
+        />
         {renderStudios(result, filter, selectedIds)}
       </>
     );

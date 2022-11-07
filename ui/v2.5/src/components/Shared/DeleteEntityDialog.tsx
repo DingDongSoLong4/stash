@@ -16,6 +16,7 @@ type DestroyMutation = (input: {
 }) => [() => Promise<FetchResult>, {}];
 
 interface IDeleteEntityDialogProps {
+  open: boolean;
   selected: IDeletionEntity[];
   onClose: (confirmed: boolean) => void;
   singularEntity: string;
@@ -40,6 +41,7 @@ const messages = defineMessages({
 });
 
 const DeleteEntityDialog: React.FC<IDeleteEntityDialogProps> = ({
+  open,
   selected,
   onClose,
   singularEntity,
@@ -78,7 +80,7 @@ const DeleteEntityDialog: React.FC<IDeleteEntityDialogProps> = ({
 
   return (
     <Modal
-      show
+      show={open}
       icon={faTrashAlt}
       header={intl.formatMessage(messages.deleteHeader, {
         count,

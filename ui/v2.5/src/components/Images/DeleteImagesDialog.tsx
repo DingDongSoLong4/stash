@@ -9,6 +9,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface IDeleteImageDialogProps {
+  open: boolean;
   selected: GQL.SlimImageDataFragment[];
   onClose: (confirmed: boolean) => void;
 }
@@ -113,7 +114,7 @@ export const DeleteImagesDialog: React.FC<IDeleteImageDialogProps> = (
 
   return (
     <Modal
-      show
+      show={props.open}
       icon={faTrashAlt}
       header={header}
       accept={{

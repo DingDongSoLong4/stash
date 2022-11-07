@@ -23,6 +23,7 @@ import { BulkUpdateTextInput } from "../Shared/BulkUpdateTextInput";
 import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 
 interface IListOperationProps {
+  open: boolean;
   selected: GQL.SlimPerformerDataFragment[];
   onClose: (applied: boolean) => void;
 }
@@ -183,7 +184,7 @@ export const EditPerformersDialog: React.FC<IListOperationProps> = (
   function render() {
     return (
       <Modal
-        show
+        show={props.open}
         icon={faPencilAlt}
         header={intl.formatMessage(
           { id: "actions.edit_entity" },

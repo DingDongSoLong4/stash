@@ -79,9 +79,7 @@ export const SceneDuplicateChecker: React.FC = () => {
     },
   });
 
-  const [selectedScenes, setSelectedScenes] = useState<
-    GQL.SlimSceneDataFragment[] | null
-  >(null);
+  const [selectedScenes, setSelectedScenes] = useState<GQL.SlimSceneDataFragment[]>([]);
 
   if (loading) return <LoadingIndicator />;
   if (!data) return <ErrorMessage error="Error searching for duplicates." />;
@@ -107,7 +105,7 @@ export const SceneDuplicateChecker: React.FC = () => {
   function onDeleteDialogClosed(deleted: boolean) {
     setDeletingScenes(false);
     if (deleted) {
-      setSelectedScenes(null);
+      setSelectedScenes([]);
       refetch();
       if (isMultiDelete) setCheckedScenes({});
     }
@@ -156,17 +154,6 @@ export const SceneDuplicateChecker: React.FC = () => {
           Missing phashes for {missingPhashes} scenes. Please run the phash
           generation task.
         </p>
-      );
-    }
-  }
-
-  function maybeRenderEdit() {
-    if (editingScenes && selectedScenes) {
-      return (
-        <EditScenesDialog
-          selected={selectedScenes}
-          onClose={() => setEditingScenes(false)}
-        />
       );
     }
   }
@@ -393,13 +380,16 @@ export const SceneDuplicateChecker: React.FC = () => {
   return (
     <Card id="scene-duplicate-checker" className="col col-xl-10 mx-auto">
       <div className={CLASSNAME}>
-        {deletingScenes && selectedScenes && (
-          <DeleteScenesDialog
-            selected={selectedScenes}
-            onClose={onDeleteDialogClosed}
-          />
-        )}
-        {maybeRenderEdit()}
+        <DeleteScenesDialog
+          open={deletingScenes}
+          selected={selectedScenes}
+          onClose={onDeleteDialogClosed}
+        />
+        <EditScenesDialog
+          open={editingScenes}
+          selected={selectedScenes}
+          onClose={() => setEditingScenes(false)}
+        />
         <h4>
           <FormattedMessage id="dupe_check.title" />
         </h4>

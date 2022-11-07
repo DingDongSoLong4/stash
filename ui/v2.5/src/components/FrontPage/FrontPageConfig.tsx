@@ -18,9 +18,10 @@ import {
 } from "src/core/config";
 
 interface IAddSavedFilterModalProps {
+  show: boolean;
   onClose: (content?: FrontPageContent) => void;
   existingSavedFilterIDs: string[];
-  candidates: FindSavedFiltersQuery;
+  candidates?: FindSavedFiltersQuery;
 }
 
 const FilterModeToMessageID = {
@@ -41,6 +42,7 @@ function filterTitle(intl: IntlShape, f: Pick<SavedFilter, "mode" | "name">) {
 }
 
 const AddContentModal: React.FC<IAddSavedFilterModalProps> = ({
+  show,
   onClose,
   existingSavedFilterIDs,
   candidates,
@@ -87,6 +89,8 @@ const AddContentModal: React.FC<IAddSavedFilterModalProps> = ({
   }
 
   const savedFilterOptions = useMemo(() => {
+    if (!candidates) return [];
+
     const ret = [
       {
         value: "",
@@ -176,7 +180,7 @@ const AddContentModal: React.FC<IAddSavedFilterModalProps> = ({
         <Form.Control
           as="select"
           value={savedFilter}
-          onChange={(e) => setSavedFilter(e.target.value)}
+          onChange={(e) => setSavedFilter(e.target.value || undefined)}
           className="btn-secondary"
         >
           {savedFilterOptions.map((c) => (
@@ -206,7 +210,7 @@ const AddContentModal: React.FC<IAddSavedFilterModalProps> = ({
   }
 
   return (
-    <Modal show onHide={() => onClose()}>
+    <Modal show={show} onHide={() => onClose()}>
       <Modal.Header>
         <FormattedMessage id="actions.add" />
       </Modal.Header>
@@ -356,13 +360,12 @@ export const FrontPageConfig: React.FC<IFrontPageConfigProps> = ({
 
   return (
     <>
-      {isAdd && allFilters && (
-        <AddContentModal
-          candidates={allFilters}
-          existingSavedFilterIDs={existingSavedFilterIDs}
-          onClose={addSavedFilter}
-        />
-      )}
+      <AddContentModal
+        show={isAdd}
+        candidates={allFilters}
+        existingSavedFilterIDs={existingSavedFilterIDs}
+        onClose={addSavedFilter}
+      />
       <div className="recommendations-container recommendations-container-edit">
         <div onDragOver={onDragOverDefault}>
           {currentContent.map((content, index) => (

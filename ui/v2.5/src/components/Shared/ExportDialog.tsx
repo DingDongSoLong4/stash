@@ -9,6 +9,7 @@ import { useIntl } from "react-intl";
 import { faCogs } from "@fortawesome/free-solid-svg-icons";
 
 interface IExportDialogProps {
+  open: boolean;
   exportInput: ExportObjectsInput;
   onClose: () => void;
 }
@@ -47,7 +48,7 @@ export const ExportDialog: React.FC<IExportDialogProps> = (
 
   return (
     <Modal
-      show
+      show={props.open}
       icon={faCogs}
       header={intl.formatMessage({ id: "dialogs.export_title" })}
       accept={{

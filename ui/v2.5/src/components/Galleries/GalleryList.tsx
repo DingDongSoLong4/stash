@@ -106,45 +106,31 @@ export const GalleryList: React.FC<IGalleryList> = ({
     setIsExportDialogOpen(true);
   }
 
-  function maybeRenderGalleryExportDialog(selectedIds: Set<string>) {
-    if (isExportDialogOpen) {
-      return (
-        <>
-          <ExportDialog
-            exportInput={{
-              galleries: {
-                ids: Array.from(selectedIds.values()),
-                all: isExportAll,
-              },
-            }}
-            onClose={() => {
-              setIsExportDialogOpen(false);
-            }}
-          />
-        </>
-      );
-    }
-  }
-
   function renderEditGalleriesDialog(
+    open: boolean,
     selectedImages: SlimGalleryDataFragment[],
     onClose: (applied: boolean) => void
   ) {
     return (
-      <>
-        <EditGalleriesDialog selected={selectedImages} onClose={onClose} />
-      </>
+      <EditGalleriesDialog
+        open={open}
+        selected={selectedImages}
+        onClose={onClose}
+      />
     );
   }
 
   function renderDeleteGalleriesDialog(
+    open: boolean,
     selectedImages: SlimGalleryDataFragment[],
     onClose: (confirmed: boolean) => void
   ) {
     return (
-      <>
-        <DeleteGalleriesDialog selected={selectedImages} onClose={onClose} />
-      </>
+      <DeleteGalleriesDialog
+        open={open}
+        selected={selectedImages}
+        onClose={onClose}
+      />
     );
   }
 
@@ -231,7 +217,16 @@ export const GalleryList: React.FC<IGalleryList> = ({
   ) {
     return (
       <>
-        {maybeRenderGalleryExportDialog(selectedIds)}
+        <ExportDialog
+          open={isExportDialogOpen}
+          exportInput={{
+            galleries: {
+              ids: Array.from(selectedIds.values()),
+              all: isExportAll,
+            },
+          }}
+          onClose={() => setIsExportDialogOpen(false)}
+        />
         {renderGalleries(result, filter, selectedIds)}
       </>
     );

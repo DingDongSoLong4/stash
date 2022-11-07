@@ -116,14 +116,6 @@ export const Image: React.FC = () => {
     }
   }
 
-  function maybeRenderDeleteDialog() {
-    if (isDeleteAlertOpen && image) {
-      return (
-        <DeleteImagesDialog selected={[image]} onClose={onDeleteDialogClosed} />
-      );
-    }
-  }
-
   function renderOperations() {
     return (
       <Dropdown>
@@ -259,7 +251,11 @@ export const Image: React.FC = () => {
         <title>{title}</title>
       </Helmet>
 
-      {maybeRenderDeleteDialog()}
+      <DeleteImagesDialog
+        open={isDeleteAlertOpen}
+        selected={[image]}
+        onClose={onDeleteDialogClosed}
+      />
       <div className="image-tabs order-xl-first order-last">
         <div className="d-none d-xl-block">
           {image.studio && (
