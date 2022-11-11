@@ -49,7 +49,6 @@ const isScraper = (
 
 interface IPerformerDetails {
   performer: Partial<GQL.PerformerDataFragment>;
-  isNew?: boolean;
   isVisible: boolean;
   onImageChange?: (image?: string | null) => void;
   onImageEncoding?: (loading?: boolean) => void;
@@ -58,7 +57,6 @@ interface IPerformerDetails {
 
 export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
   performer,
-  isNew,
   isVisible,
   onImageChange,
   onImageEncoding,
@@ -67,8 +65,10 @@ export const PerformerEditPanel: React.FC<IPerformerDetails> = ({
   const Toast = useToast();
   const history = useHistory();
 
+  const isNew = performer.id === undefined;
+
   // Editing state
-  const [scraper, setScraper] = useState<GQL.Scraper | IStashBox | undefined>();
+  const [scraper, setScraper] = useState<GQL.Scraper | IStashBox>();
   const [newTags, setNewTags] = useState<GQL.ScrapedTag[]>();
   const [isScraperModalOpen, setIsScraperModalOpen] = useState<boolean>(false);
 

@@ -206,7 +206,6 @@ export const GalleryPage: React.FC<IProps> = ({ gallery }) => {
           <Tab.Pane eventKey="gallery-edit-panel">
             <GalleryEditPanel
               isVisible={activeTabKey === "gallery-edit-panel"}
-              isNew={false}
               gallery={gallery}
               onDelete={() => setIsDeleteAlertOpen(true)}
             />
