@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "homepage": "./",
-  "sideEffects": false,
   "scripts": {
     "start": "vite",
     "build": "vite build",
@@ -18,10 +17,7 @@
     "extract": "NODE_ENV=development extract-messages -l=en,de -o src/locale -d en --flat false 'src/**/!(*.test).tsx'"
   },
   "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
+    ">0.5% and supports es6-module-dynamic-import"
   ],
   "dependencies": {
     "@ant-design/react-slick": "^0.29.2",
