@@ -8,14 +8,13 @@ import React, {
 } from "react";
 import videojs, { VideoJsPlayer, VideoJsPlayerOptions } from "video.js";
 import "videojs-seek-buttons";
-import "videojs-landscape-fullscreen";
+import "videojs-mobile-ui";
 import "./live";
 import "./PlaylistButtons";
 import "./source-selector";
 import "./persist-volume";
 import "./markers";
 import "./vtt-thumbnails";
-import "./big-buttons";
 import cx from "classnames";
 
 import * as GQL from "src/core/generated-graphql";
@@ -232,12 +231,23 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = ({
         markers: {},
         sourceSelector: {},
         persistVolume: {},
-        bigButtons: {},
         seekButtons: {
           forward: 10,
           back: 10,
         },
         skipButtons: {},
+        mobileUi: {
+          fullscreen: {
+            enterOnRotate: true,
+            exitOnRotate: true,
+            lockOnRotate: true,
+          },
+          touchControls: {
+            seekSeconds: 10,
+            tapTimeout: 500,
+            disableOnEnd: false,
+          },
+        },
       },
     };
 
@@ -379,19 +389,6 @@ export const ScenePlayer: React.FC<IScenePlayerProps> = ({
     // always stop the interactive client on initialisation
     interactiveClient.pause();
     interactiveReady.current = false;
-
-    const isLandscape = file.height && file.width && file.width > file.height;
-
-    if (isLandscape) {
-      player.landscapeFullscreen({
-        fullscreen: {
-          enterOnRotate: true,
-          exitOnRotate: true,
-          alwaysInLandscapeMode: true,
-          iOS: false,
-        },
-      });
-    }
 
     const { duration } = file;
     const sourceSelector = player.sourceSelector();
