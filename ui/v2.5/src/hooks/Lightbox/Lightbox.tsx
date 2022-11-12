@@ -117,10 +117,8 @@ export const LightboxComponent: React.FC<IProps> = ({
   const Toast = useToast();
   const intl = useIntl();
   const { configuration: config } = React.useContext(ConfigurationContext);
-  const [
-    interfaceLocalForage,
-    setInterfaceLocalForage,
-  ] = useInterfaceLocalForage();
+  const [interfaceLocalForage, setInterfaceLocalForage] =
+    useInterfaceLocalForage();
 
   const lightboxSettings = interfaceLocalForage.data?.imageLightbox;
 
@@ -184,10 +182,8 @@ export const LightboxComponent: React.FC<IProps> = ({
     null
   );
 
-  const [
-    displayedSlideshowInterval,
-    setDisplayedSlideshowInterval,
-  ] = useState<string>((slideshowDelay / SECONDS_TO_MS).toString());
+  const [displayedSlideshowInterval, setDisplayedSlideshowInterval] =
+    useState<string>((slideshowDelay / SECONDS_TO_MS).toString());
 
   useEffect(() => {
     if (images !== oldImages.current && isSwitchingPage) {

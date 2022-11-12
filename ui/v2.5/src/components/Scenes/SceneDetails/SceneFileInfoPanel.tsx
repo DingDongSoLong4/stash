@@ -166,12 +166,9 @@ export const SceneFileInfoPanel: React.FC<ISceneFileInfoPanelProps> = (
   const Toast = useToast();
 
   const [loading, setLoading] = useState(false);
-  const [deletingFile, setDeletingFile] = useState<
-    GQL.VideoFileDataFragment | undefined
-  >();
-  const [reassigningFile, setReassigningFile] = useState<
-    GQL.VideoFileDataFragment | undefined
-  >();
+  const [deletingFile, setDeletingFile] = useState<GQL.VideoFileDataFragment>();
+  const [reassigningFile, setReassigningFile] =
+    useState<GQL.VideoFileDataFragment>();
 
   function renderStashIDs() {
     if (!props.scene.stash_ids.length) {

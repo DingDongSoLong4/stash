@@ -201,9 +201,8 @@ const useRenderList = <
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastClickedId, setLastClickedId] = useState<string>();
 
-  const [editingCriterion, setEditingCriterion] = useState<
-    Criterion<CriterionValue>
-  >();
+  const [editingCriterion, setEditingCriterion] =
+    useState<Criterion<CriterionValue>>();
   const [newCriterion, setNewCriterion] = useState(false);
 
   const result = useData(filter);
@@ -631,10 +630,8 @@ const useList = <QueryResult extends IQueryResult, QueryData extends IDataItem>(
     [persistanceKey, setInterfaceState]
   );
 
-  const {
-    data: defaultFilter,
-    loading: defaultFilterLoading,
-  } = useFindDefaultFilter(options.filterMode);
+  const { data: defaultFilter, loading: defaultFilterLoading } =
+    useFindDefaultFilter(options.filterMode);
 
   const updateQueryParams = useCallback(
     (newFilter: ListFilterModel) => {

@@ -124,7 +124,7 @@ const SceneMergeDetails: React.FC<ISceneMergeDetailsProps> = ({
       setLoading(true);
 
       const destData = await ImageUtils.imageToDataURL(dest.paths.screenshot);
-      const srcData = await ImageUtils.imageToDataURL(src.paths!.screenshot!);
+      const srcData = await ImageUtils.imageToDataURL(src.paths.screenshot!);
 
       // keep destination image by default
       const useNewValue = false;
