@@ -19,11 +19,11 @@ import {
   ErrorMessage,
   Icon,
   LoadingIndicator,
+  RatingStars,
 } from "src/components/Shared";
 import { useLightbox, useToast } from "src/hooks";
 import { ConfigurationContext } from "src/hooks/Config";
 import { TextUtils } from "src/utils";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { PerformerDetailsPanel } from "./PerformerDetailsPanel";
 import { PerformerScenesPanel } from "./PerformerScenesPanel";
 import { PerformerGalleriesPanel } from "./PerformerGalleriesPanel";

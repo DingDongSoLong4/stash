@@ -39,3 +39,5 @@ export const OrganizedButton: React.FC<IOrganizedButtonProps> = (
     </Button>
   );
 };
+
+export default OrganizedButton;

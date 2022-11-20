@@ -206,10 +206,10 @@ $galleryTabWidth: 450px;
     }
   }
 
-  .RatingStars {
+  .rating-stars-overlay {
     position: absolute;
-    right: 1rem;
-    top: 1rem;
+    right: 0.9rem;
+    top: 0.9rem;
 
     &-unfilled {
       display: none;

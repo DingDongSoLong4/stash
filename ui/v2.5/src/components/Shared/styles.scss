@@ -204,7 +204,7 @@ button.collapse-button.btn-primary:not(:disabled):not(.disabled):active {
   }
 }
 
-.RatingStars {
+.rating-stars-overlay {
   &-unfilled {
     path {
       fill: white;
@@ -215,6 +215,10 @@ button.collapse-button.btn-primary:not(:disabled):not(.disabled):active {
     path {
       fill: gold;
     }
+  }
+
+  .fa-icon {
+    margin: 0 0.1rem;
   }
 }
 

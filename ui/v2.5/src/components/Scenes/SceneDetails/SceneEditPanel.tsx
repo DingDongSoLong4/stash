@@ -24,22 +24,22 @@ import {
 import {
   PerformerSelect,
   TagSelect,
+  MovieSelect,
   StudioSelect,
   GallerySelect,
   Icon,
   LoadingIndicator,
   ImageInput,
   URLField,
+  RatingStars,
 } from "src/components/Shared";
 import useToast from "src/hooks/Toast";
 import { ImageUtils, FormUtils, getStashIDs } from "src/utils";
-import { MovieSelect } from "src/components/Shared/Select";
 import { useFormik } from "formik";
 import { Prompt, useHistory } from "react-router-dom";
 import { ConfigurationContext } from "src/hooks/Config";
 import { stashboxDisplayName } from "src/utils/stashbox";
 import { SceneMovieTable } from "./SceneMovieTable";
-import { RatingStars } from "./RatingStars";
 import {
   faSearch,
   faSyncAlt,

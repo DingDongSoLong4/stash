@@ -3,11 +3,10 @@ import { Form, Col, Row } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useBulkPerformerUpdate } from "src/core/StashService";
 import * as GQL from "src/core/generated-graphql";
-import { Modal } from "src/components/Shared";
+import { Modal, RatingStars } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { FormUtils } from "src/utils";
 import MultiSet from "../Shared/MultiSet";
-import { RatingStars } from "../Scenes/SceneDetails/RatingStars";
 import {
   getAggregateInputValue,
   getAggregateState,

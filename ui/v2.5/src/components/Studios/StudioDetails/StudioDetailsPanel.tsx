@@ -3,7 +3,7 @@ import { Badge } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
 import * as GQL from "src/core/generated-graphql";
 import { TextUtils } from "src/utils";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
+import { RatingStars } from "src/components/Shared";
 import { TextField, URLField } from "src/utils/field";
 
 interface IStudioDetailsPanel {

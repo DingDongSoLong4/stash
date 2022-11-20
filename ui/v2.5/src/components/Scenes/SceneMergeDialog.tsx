@@ -8,6 +8,7 @@ import {
   Modal,
   SceneSelect,
   StringListSelect,
+  RatingStars,
 } from "src/components/Shared";
 import { FormUtils, ImageUtils } from "src/utils";
 import { mutateSceneMerge, queryFindScenesByID } from "src/core/StashService";
@@ -31,7 +32,6 @@ import {
   ScrapedTagsRow,
 } from "./SceneDetails/SceneScrapeDialog";
 import { galleryTitle } from "src/core/galleries";
-import { RatingStars } from "./SceneDetails/RatingStars";
 
 interface IStashIDsField {
   values: GQL.StashId[];

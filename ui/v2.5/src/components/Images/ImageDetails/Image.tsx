@@ -11,11 +11,15 @@ import {
   useImageUpdate,
   mutateMetadataScan,
 } from "src/core/StashService";
-import { ErrorMessage, LoadingIndicator, Icon } from "src/components/Shared";
+import {
+  ErrorMessage,
+  LoadingIndicator,
+  Icon,
+  OCounterButton,
+  OrganizedButton,
+} from "src/components/Shared";
 import { useToast } from "src/hooks";
 import * as Mousetrap from "mousetrap";
-import { OCounterButton } from "src/components/Scenes/SceneDetails/OCounterButton";
-import { OrganizedButton } from "src/components/Scenes/SceneDetails/OrganizedButton";
 import { ImageFileInfoPanel } from "./ImageFileInfoPanel";
 import { ImageEditPanel } from "./ImageEditPanel";
 import { ImageDetailPanel } from "./ImageDetailPanel";

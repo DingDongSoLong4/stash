@@ -3,9 +3,8 @@ import { Link } from "react-router-dom";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import * as GQL from "src/core/generated-graphql";
 import { TextUtils } from "src/utils";
-import { TagLink, TruncatedText } from "src/components/Shared";
+import { TagLink, TruncatedText, RatingStars } from "src/components/Shared";
 import { PerformerCard } from "src/components/Performers/PerformerCard";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { sortPerformers } from "src/core/performers";
 import { galleryTitle } from "src/core/galleries";
 

@@ -3,10 +3,14 @@ import { FormattedMessage, useIntl } from "react-intl";
 import * as GQL from "src/core/generated-graphql";
 import * as yup from "yup";
 import Mousetrap from "mousetrap";
-import { Icon, StudioSelect, DetailsEditNavbar } from "src/components/Shared";
+import {
+  Icon,
+  StudioSelect,
+  DetailsEditNavbar,
+  RatingStars,
+} from "src/components/Shared";
 import { Button, Form, Col, Row } from "react-bootstrap";
 import { FormUtils, ImageUtils, getStashIDs } from "src/utils";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { useFormik } from "formik";
 import { Prompt } from "react-router-dom";
 import { StringListInput } from "../../Shared/StringListInput";

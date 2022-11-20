@@ -13,11 +13,11 @@ import {
   DetailsEditNavbar,
   DurationInput,
   URLField,
+  RatingStars,
 } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { Modal as BSModal, Form, Button, Col, Row } from "react-bootstrap";
 import { DurationUtils, FormUtils, ImageUtils } from "src/utils";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { useFormik } from "formik";
 import { Prompt } from "react-router-dom";
 import { MovieScrapeDialog } from "./MovieScrapeDialog";

@@ -78,3 +78,5 @@ export const OCounterButton: React.FC<IOCounterButtonProps> = (
     </ButtonGroup>
   );
 };
+
+export default OCounterButton;

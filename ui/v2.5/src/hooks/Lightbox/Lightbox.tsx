@@ -12,14 +12,17 @@ import cx from "classnames";
 import Mousetrap from "mousetrap";
 import debounce from "lodash-es/debounce";
 
-import { Icon, LoadingIndicator } from "src/components/Shared";
+import {
+  Icon,
+  LoadingIndicator,
+  OCounterButton,
+  RatingStars,
+} from "src/components/Shared";
 import { useInterval, usePageVisibility, useToast } from "src/hooks";
 import { FormattedMessage, useIntl } from "react-intl";
 import { LightboxImage } from "./LightboxImage";
 import { ConfigurationContext } from "../Config";
 import { Link } from "react-router-dom";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
-import { OCounterButton } from "src/components/Scenes/SceneDetails/OCounterButton";
 import {
   useImageUpdate,
   mutateImageIncrementO,

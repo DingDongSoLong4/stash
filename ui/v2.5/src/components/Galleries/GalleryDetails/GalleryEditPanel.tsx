@@ -28,11 +28,11 @@ import {
   Icon,
   LoadingIndicator,
   URLField,
+  RatingStars,
 } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { useFormik } from "formik";
 import { FormUtils } from "src/utils";
-import { RatingStars } from "src/components/Scenes/SceneDetails/RatingStars";
 import { GalleryScrapeDialog } from "./GalleryScrapeDialog";
 import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
 import { galleryTitle } from "src/core/galleries";

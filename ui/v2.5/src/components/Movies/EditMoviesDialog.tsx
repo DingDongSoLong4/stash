@@ -3,10 +3,9 @@ import { Form, Col, Row } from "react-bootstrap";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useBulkMovieUpdate } from "src/core/StashService";
 import * as GQL from "src/core/generated-graphql";
-import { Modal, StudioSelect } from "src/components/Shared";
+import { Modal, StudioSelect, RatingStars } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { FormUtils } from "src/utils";
-import { RatingStars } from "../Scenes/SceneDetails/RatingStars";
 import {
   getAggregateInputValue,
   getAggregateRating,

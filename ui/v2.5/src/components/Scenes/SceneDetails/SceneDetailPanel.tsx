@@ -7,7 +7,7 @@ import { TagLink } from "src/components/Shared/TagLink";
 import TruncatedText from "src/components/Shared/TruncatedText";
 import { PerformerCard } from "src/components/Performers/PerformerCard";
 import { sortPerformers } from "src/core/performers";
-import { RatingStars } from "./RatingStars";
+import { RatingStars } from "src/components/Shared";
 import { objectTitle } from "src/core/files";
 
 interface ISceneDetailProps {

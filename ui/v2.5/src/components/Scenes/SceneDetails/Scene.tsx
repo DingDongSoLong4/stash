@@ -23,13 +23,11 @@ import {
   queryFindScenesByID,
 } from "src/core/StashService";
 
-import Icon from "src/components/Shared/Icon";
+import { Icon, OCounterButton, OrganizedButton } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import SceneQueue, { QueuedScene } from "src/models/sceneQueue";
 import { ListFilterModel } from "src/models/list-filter/filter";
 import Mousetrap from "mousetrap";
-import { OCounterButton } from "./OCounterButton";
-import { OrganizedButton } from "./OrganizedButton";
 import { ConfigurationContext } from "src/hooks/Config";
 import { getPlayerPosition } from "src/components/ScenePlayer/util";
 import { faEllipsisV } from "@fortawesome/free-solid-svg-icons";

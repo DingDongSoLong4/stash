@@ -15,7 +15,8 @@ export { default as SuccessIcon } from "./SuccessIcon";
 export { default as ErrorMessage } from "./ErrorMessage";
 export { default as TruncatedText } from "./TruncatedText";
 export { GridCard } from "./GridCard";
-export { RatingStars } from "./RatingStars";
+export { default as RatingStars } from "./RatingStars";
+export { default as RatingStarsOverlay } from "./RatingStarsOverlay";
 export { ExportDialog } from "./ExportDialog";
 export { default as DeleteEntityDialog } from "./DeleteEntityDialog";
 export { IndeterminateCheckbox } from "./IndeterminateCheckbox";
@@ -23,5 +24,7 @@ export { OperationButton } from "./OperationButton";
 export { URLField } from "./URLField";
 export { default as CountrySelect } from "./CountrySelect";
 export { default as CountryLabel } from "./CountryLabel";
+export { default as OCounterButton } from "./OCounterButton";
+export { default as OrganizedButton } from "./OrganizedButton";
 
 export const TITLE_SUFFIX = " | Stash";
