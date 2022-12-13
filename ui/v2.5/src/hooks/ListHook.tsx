@@ -165,7 +165,7 @@ interface IQuery<T extends IQueryResult, T2 extends IDataItem> {
   useData: (filter?: ListFilterModel) => T;
   getData: (data: T) => T2[];
   getCount: (data: T) => number;
-  getMetadataByline: (data: T) => React.ReactNode;
+  getMetadataByline?: (data: T) => React.ReactNode;
 }
 
 interface IRenderListProps {
@@ -210,9 +210,17 @@ const useRenderList = <
   const [newCriterion, setNewCriterion] = useState(false);
 
   const result = useData(filter);
-  const totalCount = getCount(result);
-  const metadataByline = getMetadataByline(result);
-  const items = getData(result);
+  const [totalCount, setTotalCount] = useState(0);
+  const [metadataByline, setMetadataByline] = useState<React.ReactNode>();
+  const items = useMemo(() => getData(result), [getData, result]);
+
+  useEffect(() => {
+    if (filter === undefined || result.loading) return;
+    console.log("reload", { filter, result });
+
+    setTotalCount(getCount(result));
+    setMetadataByline(getMetadataByline?.(result));
+  }, [filter, getCount, getMetadataByline, result]);
 
   // handle case where page is more than there are pages
   useEffect(() => {
@@ -428,20 +436,16 @@ const useRenderList = <
   );
 
   const maybeRenderContent = () => {
-    if (result.loading || result.error) {
-      return;
+    if (result.loading) {
+      return <LoadingIndicator />;
+    }
+    if (result.error) {
+      return <h1>{result.error.message}</h1>;
     }
 
     const pages = Math.ceil(totalCount / filter.itemsPerPage);
     return (
       <>
-        {renderPagination()}
-        <PaginationIndex
-          itemsPerPage={filter.itemsPerPage}
-          currentPage={filter.currentPage}
-          totalItems={totalCount}
-          metadataByline={metadataByline}
-        />
         {renderContent(result, filter, selectedIds, onChangePage, pages)}
         <PaginationIndex
           itemsPerPage={filter.itemsPerPage}
@@ -565,8 +569,13 @@ const useRenderList = <
           getSelectedData(getData(result), selectedIds),
           (deleted) => onDeleteDialogClosed(deleted)
         )}
-      {result.loading ? <LoadingIndicator /> : undefined}
-      {result.error ? <h1>{result.error.message}</h1> : undefined}
+      {renderPagination()}
+      <PaginationIndex
+        itemsPerPage={filter.itemsPerPage}
+        currentPage={filter.currentPage}
+        totalItems={totalCount}
+        metadataByline={metadataByline}
+      />
       {maybeRenderContent()}
     </div>
   );
@@ -753,13 +762,12 @@ const useList = <QueryResult extends IQueryResult, QueryData extends IDataItem>(
     [filter, updateFilter]
   );
 
+  const { filterHook } = options;
   const renderFilter = useMemo(() => {
     if (filterInitialised) {
-      return options.filterHook
-        ? options.filterHook(cloneDeep(filter))
-        : filter;
+      return filterHook ? filterHook(cloneDeep(filter)) : filter;
     }
-  }, [filterInitialised, filter, options]);
+  }, [filterInitialised, filter, filterHook]);
 
   const renderList = useRenderList({
     ...options,
@@ -791,183 +799,259 @@ const useList = <QueryResult extends IQueryResult, QueryData extends IDataItem>(
 
 export const useScenesList = (
   props: IListHookOptions<FindScenesQueryResult, SlimSceneDataFragment>
-) =>
-  useList<FindScenesQueryResult, SlimSceneDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindScenesQueryResult) => result.data?.findScenes?.scenes ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindScenesQueryResult) => result.data?.findScenes?.count ?? 0,
+    []
+  );
+
+  const getMetadataByline = useCallback((result: FindScenesQueryResult) => {
+    const duration = result.data?.findScenes?.duration;
+    const size = result.data?.findScenes?.filesize;
+    const filesize = size ? TextUtils.fileSize(size) : undefined;
+
+    if (!duration && !size) {
+      return;
+    }
+
+    const separator = duration && size ? " - " : "";
+
+    return (
+      <span className="scenes-stats">
+        &nbsp;(
+        {duration ? (
+          <span className="scenes-duration">
+            {TextUtils.secondsAsTimeString(duration, 3)}
+          </span>
+        ) : undefined}
+        {separator}
+        {size && filesize ? (
+          <span className="scenes-size">
+            <FormattedNumber
+              value={filesize.size}
+              maximumFractionDigits={TextUtils.fileSizeFractionalDigits(
+                filesize.unit
+              )}
+            />
+            {` ${TextUtils.formatFileSizeUnit(filesize.unit)}`}
+          </span>
+        ) : undefined}
+        )
+      </span>
+    );
+  }, []);
+
+  return useList<FindScenesQueryResult, SlimSceneDataFragment>({
     ...props,
     filterMode: FilterMode.Scenes,
     useData: useFindScenes,
-    getData: (result: FindScenesQueryResult) =>
-      result?.data?.findScenes?.scenes ?? [],
-    getCount: (result: FindScenesQueryResult) =>
-      result?.data?.findScenes?.count ?? 0,
-    getMetadataByline: (result: FindScenesQueryResult) => {
-      const duration = result?.data?.findScenes?.duration;
-      const size = result?.data?.findScenes?.filesize;
-      const filesize = size ? TextUtils.fileSize(size) : undefined;
-
-      if (!duration && !size) {
-        return;
-      }
-
-      const separator = duration && size ? " - " : "";
-
-      return (
-        <span className="scenes-stats">
-          &nbsp;(
-          {duration ? (
-            <span className="scenes-duration">
-              {TextUtils.secondsAsTimeString(duration, 3)}
-            </span>
-          ) : undefined}
-          {separator}
-          {size && filesize ? (
-            <span className="scenes-size">
-              <FormattedNumber
-                value={filesize.size}
-                maximumFractionDigits={TextUtils.fileSizeFractionalDigits(
-                  filesize.unit
-                )}
-              />
-              {` ${TextUtils.formatFileSizeUnit(filesize.unit)}`}
-            </span>
-          ) : undefined}
-          )
-        </span>
-      );
-    },
+    getData,
+    getCount,
+    getMetadataByline,
   });
+};
 
 export const useSceneMarkersList = (
   props: IListHookOptions<FindSceneMarkersQueryResult, SceneMarkerDataFragment>
-) =>
-  useList<FindSceneMarkersQueryResult, SceneMarkerDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindSceneMarkersQueryResult) =>
+      result.data?.findSceneMarkers?.scene_markers ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindSceneMarkersQueryResult) =>
+      result.data?.findSceneMarkers?.count ?? 0,
+    []
+  );
+
+  return useList<FindSceneMarkersQueryResult, SceneMarkerDataFragment>({
     ...props,
     filterMode: FilterMode.SceneMarkers,
     useData: useFindSceneMarkers,
-    getData: (result: FindSceneMarkersQueryResult) =>
-      result?.data?.findSceneMarkers?.scene_markers ?? [],
-    getCount: (result: FindSceneMarkersQueryResult) =>
-      result?.data?.findSceneMarkers?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const useImagesList = (
   props: IListHookOptions<FindImagesQueryResult, SlimImageDataFragment>
-) =>
-  useList<FindImagesQueryResult, SlimImageDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindImagesQueryResult) => result.data?.findImages?.images ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindImagesQueryResult) => result.data?.findImages?.count ?? 0,
+    []
+  );
+
+  const getMetadataByline = useCallback((result: FindImagesQueryResult) => {
+    const megapixels = result.data?.findImages?.megapixels;
+    const size = result.data?.findImages?.filesize;
+    const filesize = size ? TextUtils.fileSize(size) : undefined;
+
+    if (!megapixels && !size) {
+      return;
+    }
+
+    const separator = megapixels && size ? " - " : "";
+
+    return (
+      <span className="images-stats">
+        &nbsp;(
+        {megapixels ? (
+          <span className="images-megapixels">
+            <FormattedNumber value={megapixels} /> Megapixels
+          </span>
+        ) : undefined}
+        {separator}
+        {size && filesize ? (
+          <span className="images-size">
+            <FormattedNumber
+              value={filesize.size}
+              maximumFractionDigits={TextUtils.fileSizeFractionalDigits(
+                filesize.unit
+              )}
+            />
+            {` ${TextUtils.formatFileSizeUnit(filesize.unit)}`}
+          </span>
+        ) : undefined}
+        )
+      </span>
+    );
+  }, []);
+
+  return useList<FindImagesQueryResult, SlimImageDataFragment>({
     ...props,
     filterMode: FilterMode.Images,
     useData: useFindImages,
-    getData: (result: FindImagesQueryResult) =>
-      result?.data?.findImages?.images ?? [],
-    getCount: (result: FindImagesQueryResult) =>
-      result?.data?.findImages?.count ?? 0,
-    getMetadataByline: (result: FindImagesQueryResult) => {
-      const megapixels = result?.data?.findImages?.megapixels;
-      const size = result?.data?.findImages?.filesize;
-      const filesize = size ? TextUtils.fileSize(size) : undefined;
-
-      if (!megapixels && !size) {
-        return;
-      }
-
-      const separator = megapixels && size ? " - " : "";
-
-      return (
-        <span className="images-stats">
-          &nbsp;(
-          {megapixels ? (
-            <span className="images-megapixels">
-              <FormattedNumber value={megapixels} /> Megapixels
-            </span>
-          ) : undefined}
-          {separator}
-          {size && filesize ? (
-            <span className="images-size">
-              <FormattedNumber
-                value={filesize.size}
-                maximumFractionDigits={TextUtils.fileSizeFractionalDigits(
-                  filesize.unit
-                )}
-              />
-              {` ${TextUtils.formatFileSizeUnit(filesize.unit)}`}
-            </span>
-          ) : undefined}
-          )
-        </span>
-      );
-    },
+    getData,
+    getCount,
+    getMetadataByline,
   });
+};
 
 export const useGalleriesList = (
   props: IListHookOptions<FindGalleriesQueryResult, SlimGalleryDataFragment>
-) =>
-  useList<FindGalleriesQueryResult, SlimGalleryDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindGalleriesQueryResult) =>
+      result.data?.findGalleries?.galleries ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindGalleriesQueryResult) =>
+      result.data?.findGalleries?.count ?? 0,
+    []
+  );
+
+  return useList<FindGalleriesQueryResult, SlimGalleryDataFragment>({
     ...props,
     filterMode: FilterMode.Galleries,
     useData: useFindGalleries,
-    getData: (result: FindGalleriesQueryResult) =>
-      result?.data?.findGalleries?.galleries ?? [],
-    getCount: (result: FindGalleriesQueryResult) =>
-      result?.data?.findGalleries?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const useStudiosList = (
   props: IListHookOptions<FindStudiosQueryResult, StudioDataFragment>
-) =>
-  useList<FindStudiosQueryResult, StudioDataFragment>({
+) => {
+  const getCount = useCallback(
+    (result: FindStudiosQueryResult) => result.data?.findStudios?.count ?? 0,
+    []
+  );
+
+  const getData = useCallback(
+    (result: FindStudiosQueryResult) => result.data?.findStudios?.studios ?? [],
+    []
+  );
+
+  return useList<FindStudiosQueryResult, StudioDataFragment>({
     ...props,
     filterMode: FilterMode.Studios,
     useData: useFindStudios,
-    getData: (result: FindStudiosQueryResult) =>
-      result?.data?.findStudios?.studios ?? [],
-    getCount: (result: FindStudiosQueryResult) =>
-      result?.data?.findStudios?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const usePerformersList = (
   props: IListHookOptions<FindPerformersQueryResult, PerformerDataFragment>
-) =>
-  useList<FindPerformersQueryResult, PerformerDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindPerformersQueryResult) =>
+      result.data?.findPerformers?.performers ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindPerformersQueryResult) =>
+      result.data?.findPerformers?.count ?? 0,
+    []
+  );
+
+  return useList<FindPerformersQueryResult, PerformerDataFragment>({
     ...props,
     filterMode: FilterMode.Performers,
     useData: useFindPerformers,
-    getData: (result: FindPerformersQueryResult) =>
-      result?.data?.findPerformers?.performers ?? [],
-    getCount: (result: FindPerformersQueryResult) =>
-      result?.data?.findPerformers?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const useMoviesList = (
   props: IListHookOptions<FindMoviesQueryResult, MovieDataFragment>
-) =>
-  useList<FindMoviesQueryResult, MovieDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindMoviesQueryResult) => result.data?.findMovies?.movies ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindMoviesQueryResult) => result.data?.findMovies?.count ?? 0,
+    []
+  );
+
+  return useList<FindMoviesQueryResult, MovieDataFragment>({
     ...props,
     filterMode: FilterMode.Movies,
     useData: useFindMovies,
-    getData: (result: FindMoviesQueryResult) =>
-      result?.data?.findMovies?.movies ?? [],
-    getCount: (result: FindMoviesQueryResult) =>
-      result?.data?.findMovies?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const useTagsList = (
   props: IListHookOptions<FindTagsQueryResult, TagDataFragment>
-) =>
-  useList<FindTagsQueryResult, TagDataFragment>({
+) => {
+  const getData = useCallback(
+    (result: FindTagsQueryResult) => result.data?.findTags?.tags ?? [],
+    []
+  );
+
+  const getCount = useCallback(
+    (result: FindTagsQueryResult) => result.data?.findTags?.count ?? 0,
+    []
+  );
+
+  return useList<FindTagsQueryResult, TagDataFragment>({
     ...props,
     filterMode: FilterMode.Tags,
     useData: useFindTags,
-    getData: (result: FindTagsQueryResult) =>
-      result?.data?.findTags?.tags ?? [],
-    getCount: (result: FindTagsQueryResult) =>
-      result?.data?.findTags?.count ?? 0,
-    getMetadataByline: () => [],
+    getData,
+    getCount,
   });
+};
 
 export const showWhenSelected = <T extends IQueryResult>(
   _result: T,
