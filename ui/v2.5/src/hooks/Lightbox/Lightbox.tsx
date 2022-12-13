@@ -127,14 +127,10 @@ export const LightboxComponent: React.FC<IProps> = ({
   const lightboxSettings = interfaceLocalForage.data?.imageLightbox;
 
   function setLightboxSettings(v: Partial<GQL.ConfigImageLightboxInput>) {
-    setInterfaceLocalForage((prev) => {
-      return {
-        ...prev,
-        imageLightbox: {
-          ...prev.imageLightbox,
-          ...v,
-        },
-      };
+    setInterfaceLocalForage({
+      imageLightbox: {
+        ...v,
+      },
     });
   }
 

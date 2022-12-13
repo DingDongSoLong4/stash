@@ -40,6 +40,7 @@
     "base64-blob": "^1.4.1",
     "bootstrap": "^4.6.0",
     "classnames": "^2.2.6",
+    "deepmerge": "^4.2.2",
     "flag-icon-css": "^3.5.0",
     "flexbin": "^0.2.0",
     "formik": "^2.2.6",

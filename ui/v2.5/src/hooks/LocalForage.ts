@@ -1,12 +1,13 @@
 import localForage from "localforage";
 import isEqual from "lodash-es/isEqual";
-import React, { Dispatch, SetStateAction, useEffect } from "react";
+import deepmerge from "deepmerge";
+import { Dispatch, useEffect, useState } from "react";
 import { ConfigImageLightboxInput } from "src/core/generated-graphql";
 
 interface IInterfaceQueryConfig {
-  filter: string;
-  itemsPerPage: number;
-  currentPage: number;
+  disp?: number;
+  itemsPerPage?: number;
+  currentPage?: number;
 }
 
 type IQueryConfig = Record<string, IInterfaceQueryConfig>;
@@ -26,16 +27,24 @@ interface ILocalForage<T> {
   loading: boolean;
 }
 
-const Loading: Record<string, boolean> = {};
-const Cache: Record<string, {}> = {};
+type SetDataAction<T> = Partial<T> | ((prev: T) => Partial<T>);
 
-export function useLocalForage<T>(
+const Cache: Record<string, {} | undefined> = {};
+
+export function useLocalForage<T extends {}>(
   key: string,
   defaultValue: T = {} as T
-): [ILocalForage<T>, Dispatch<SetStateAction<T>>] {
-  const [error, setError] = React.useState<Error | null>(null);
-  const [data, setData] = React.useState<T>(Cache[key] as T);
-  const [loading, setLoading] = React.useState(Loading[key]);
+): [ILocalForage<T>, Dispatch<SetDataAction<T>>] {
+  const [error, setError] = useState<Error | null>(null);
+  const [data, _setData] = useState(() => {
+    const cachedData = Cache[key];
+    if (cachedData) {
+      return cachedData as T;
+    } else {
+      return defaultValue;
+    }
+  });
+  const [loading, setLoading] = useState<boolean>();
 
   useEffect(() => {
     async function runAsync() {
@@ -45,10 +54,10 @@ export function useLocalForage<T>(
           parsed = JSON.parse(parsed ?? "null");
         }
         if (parsed !== null) {
-          setData(parsed);
+          _setData(parsed);
           Cache[key] = parsed;
         } else {
-          setData(defaultValue);
+          _setData(defaultValue);
           Cache[key] = defaultValue;
         }
         setError(null);
@@ -56,29 +65,41 @@ export function useLocalForage<T>(
         if (err instanceof Error) setError(err);
         Cache[key] = defaultValue;
       } finally {
-        Loading[key] = false;
         setLoading(false);
       }
     }
 
-    if (!loading && !Cache[key]) {
-      Loading[key] = true;
+    // Only run once
+    if (loading === undefined) {
       setLoading(true);
       runAsync();
     }
   }, [loading, key, defaultValue]);
 
-  useEffect(() => {
-    if (!isEqual(Cache[key], data)) {
-      Cache[key] = {
-        ...Cache[key],
-        ...data,
-      };
-      localForage.setItem(key, Cache[key]);
-    }
-  });
-
   const isLoading = loading || loading === undefined;
+
+  function setData(value: SetDataAction<T>) {
+    if (isLoading) return;
+
+    let newValue;
+    if (typeof value === "function") {
+      newValue = value(data);
+    } else {
+      newValue = value;
+    }
+
+    // merge new value with previous value, overwriting arrays entirely
+    const newData = deepmerge(data, newValue, {
+      arrayMerge: (_, source) => source,
+    });
+    console.log({ data, newValue, newData });
+
+    if (!isEqual(Cache[key], newData)) {
+      _setData(newData);
+      Cache[key] = newData;
+      localForage.setItem(key, newData);
+    }
+  }
 
   return [{ data, error, loading: isLoading }, setData];
 }

@@ -190,12 +190,10 @@ export const TaggerContext: React.FC = ({ children }) => {
 
   function clearSubmissionQueue() {
     const endpoint = currentSource?.stashboxEndpoint;
-    if (!config || !endpoint) return;
+    if (!endpoint) return;
 
     setConfig({
-      ...config,
       fingerprintQueue: {
-        ...config.fingerprintQueue,
         [endpoint]: [],
       },
     });
@@ -206,11 +204,11 @@ export const TaggerContext: React.FC = ({ children }) => {
   ] = GQL.useSubmitStashBoxFingerprintsMutation();
 
   async function submitFingerprints() {
-    const endpoint = currentSource?.stashboxEndpoint;
+    const sceneIds = getPendingFingerprints();
     const stashBoxIndex =
       currentSource?.sourceInput.stash_box_index ?? undefined;
 
-    if (!config || !endpoint || stashBoxIndex === undefined) return;
+    if (sceneIds.length === 0 || stashBoxIndex === undefined) return;
 
     try {
       setLoading(true);
@@ -218,7 +216,7 @@ export const TaggerContext: React.FC = ({ children }) => {
         variables: {
           input: {
             stash_box_index: stashBoxIndex,
-            scene_ids: config.fingerprintQueue[endpoint],
+            scene_ids: sceneIds,
           },
         },
       });
@@ -235,12 +233,12 @@ export const TaggerContext: React.FC = ({ children }) => {
     const endpoint = currentSource?.stashboxEndpoint;
     if (!config || !endpoint) return;
 
-    setConfig({
-      ...config,
-      fingerprintQueue: {
-        ...config.fingerprintQueue,
-        [endpoint]: [...(config.fingerprintQueue[endpoint] ?? []), sceneId],
-      },
+    setConfig((prev) => {
+      return {
+        fingerprintQueue: {
+          [endpoint]: [...(prev.fingerprintQueue[endpoint] ?? []), sceneId],
+        },
+      };
     });
   }
 

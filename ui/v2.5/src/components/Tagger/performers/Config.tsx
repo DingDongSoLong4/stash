@@ -10,7 +10,7 @@ import PerformerFieldSelector from "../PerformerFieldSelector";
 interface IConfigProps {
   show: boolean;
   config: ITaggerConfig;
-  setConfig: Dispatch<ITaggerConfig>;
+  setConfig: Dispatch<Partial<ITaggerConfig>>;
 }
 
 const Config: React.FC<IConfigProps> = ({ show, config, setConfig }) => {
@@ -21,16 +21,13 @@ const Config: React.FC<IConfigProps> = ({ show, config, setConfig }) => {
 
   const handleInstanceSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedEndpoint = e.currentTarget.value;
-    setConfig({
-      ...config,
-      selectedEndpoint,
-    });
+    setConfig({ selectedEndpoint });
   };
 
   const stashBoxes = stashConfig?.general.stashBoxes ?? [];
 
   const handleFieldSelect = (fields: string[]) => {
-    setConfig({ ...config, excludedPerformerFields: fields });
+    setConfig({ excludedPerformerFields: fields });
     setShowExclusionModal(false);
   };
 

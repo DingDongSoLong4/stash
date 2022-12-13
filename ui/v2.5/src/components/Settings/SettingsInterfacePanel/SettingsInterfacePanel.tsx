@@ -75,15 +75,7 @@ export const SettingsInterfacePanel: React.FC = () => {
 
   function saveLightboxSettings(v: Partial<GQL.ConfigImageLightboxInput>) {
     // save in local forage as well for consistency
-    setInterfaceLocalForage((prev) => {
-      return {
-        ...prev,
-        imageLightbox: {
-          ...prev.imageLightbox,
-          ...v,
-        },
-      };
-    });
+    setInterfaceLocalForage({ imageLightbox: { ...v } });
 
     saveInterface({
       imageLightbox: {

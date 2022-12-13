@@ -45,12 +45,7 @@ const Changelog: React.FC = () => {
   const openState = data?.versions ?? {};
 
   const setVersionOpenState = (key: string, state: boolean) =>
-    setOpenState({
-      versions: {
-        ...openState,
-        [key]: state,
-      },
-    });
+    setOpenState({ versions: { [key]: state } });
 
   interface IStashRelease {
     version: string;
