@@ -33,7 +33,7 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
 }) => {
   const intl = useIntl();
 
-  const isNew = !studio || !studio.id;
+  const isNew = !studio.id;
 
   const imageEncoding = ImageUtils.usePasteImage(onImageLoad, true);
 
@@ -93,7 +93,7 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
       stash_ids: getStashIDs(values.stash_ids),
     };
 
-    if (studio && studio.id) {
+    if (studio.id) {
       (input as GQL.StudioUpdateInput).id = studio.id;
     }
     return input;
@@ -337,7 +337,7 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
       </Form.Group>
 
       <DetailsEditNavbar
-        objectName={studio?.name ?? intl.formatMessage({ id: "studio" })}
+        objectName={studio.name ?? intl.formatMessage({ id: "studio" })}
         isNew={isNew}
         isEditing
         onToggleEdit={onCancel}
@@ -345,7 +345,7 @@ export const StudioEditPanel: React.FC<IStudioEditPanel> = ({
         saveDisabled={!formik.dirty}
         onImageChange={onImageChangeHandler}
         onImageChangeURL={onImageChangeURL}
-        onClearImage={() => {
+        onImageClear={() => {
           formik.setFieldValue("image", null);
         }}
         onDelete={onDelete}

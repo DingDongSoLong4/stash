@@ -23,7 +23,9 @@ export const Settings: React.FC = () => {
   const intl = useIntl();
   const location = useLocation();
   const history = useHistory();
-  const defaultTab = queryString.parse(location.search).tab ?? "tasks";
+  const queryTab = queryString.parse(location.search).tab;
+  const defaultTab =
+    (Array.isArray(queryTab) ? queryTab[0] : queryTab) ?? "tasks";
 
   const onSelect = (val: string) => history.push(`?tab=${val}`);
 

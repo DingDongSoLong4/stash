@@ -37,33 +37,28 @@ import { GalleryScrapeDialog } from "./GalleryScrapeDialog";
 import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
 import { galleryTitle } from "src/core/galleries";
 
-interface IProps {
+interface IGalleryEditPanel {
+  gallery: Partial<GQL.GalleryDataFragment>;
   isVisible: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
 }
 
-interface INewProps {
-  isNew: true;
-  gallery?: Partial<GQL.GalleryDataFragment>;
-}
-
-interface IExistingProps {
-  isNew: false;
-  gallery: GQL.GalleryDataFragment;
-}
-
-export const GalleryEditPanel: React.FC<
-  IProps & (INewProps | IExistingProps)
-> = ({ gallery, isNew, isVisible, onDelete }) => {
+export const GalleryEditPanel: React.FC<IGalleryEditPanel> = ({
+  gallery,
+  isVisible,
+  onDelete,
+}) => {
   const intl = useIntl();
   const Toast = useToast();
   const history = useHistory();
   const [scenes, setScenes] = useState<{ id: string; title: string }[]>(
-    (gallery?.scenes ?? []).map((s) => ({
+    (gallery.scenes ?? []).map((s) => ({
       id: s.id,
       title: galleryTitle(s),
     }))
   );
+
+  const isNew = !gallery.id;
 
   const Scrapers = useListGalleryScrapers();
   const [queryableScrapers, setQueryableScrapers] = useState<GQL.Scraper[]>([]);
@@ -97,15 +92,15 @@ export const GalleryEditPanel: React.FC<
   });
 
   const initialValues = {
-    title: gallery?.title ?? "",
-    details: gallery?.details ?? "",
-    url: gallery?.url ?? "",
-    date: gallery?.date ?? "",
-    rating100: gallery?.rating100 ?? null,
-    studio_id: gallery?.studio?.id,
-    performer_ids: (gallery?.performers ?? []).map((p) => p.id),
-    tag_ids: (gallery?.tags ?? []).map((t) => t.id),
-    scene_ids: (gallery?.scenes ?? []).map((s) => s.id),
+    title: gallery.title ?? "",
+    details: gallery.details ?? "",
+    url: gallery.url ?? "",
+    date: gallery.date ?? "",
+    rating100: gallery.rating100 ?? null,
+    studio_id: gallery.studio?.id,
+    performer_ids: (gallery.performers ?? []).map((p) => p.id),
+    tag_ids: (gallery.tags ?? []).map((t) => t.id),
+    scene_ids: (gallery.scenes ?? []).map((s) => s.id),
   };
 
   type InputValues = typeof initialValues;
@@ -138,9 +133,11 @@ export const GalleryEditPanel: React.FC<
       Mousetrap.bind("s s", () => {
         formik.handleSubmit();
       });
-      Mousetrap.bind("d d", () => {
-        onDelete();
-      });
+      if (onDelete) {
+        Mousetrap.bind("d d", () => {
+          onDelete();
+        });
+      }
 
       // numeric keypresses get caught by jwplayer, so blur the element
       // if the rating sequence is started
@@ -168,7 +165,10 @@ export const GalleryEditPanel: React.FC<
 
       return () => {
         Mousetrap.unbind("s s");
-        Mousetrap.unbind("d d");
+
+        if (onDelete) {
+          Mousetrap.unbind("d d");
+        }
 
         Mousetrap.unbind("r");
       };
@@ -189,7 +189,7 @@ export const GalleryEditPanel: React.FC<
     input: InputValues
   ): GQL.GalleryCreateInput | GQL.GalleryUpdateInput {
     return {
-      id: isNew ? undefined : gallery?.id ?? "",
+      id: gallery.id,
       ...input,
     };
   }
@@ -245,7 +245,7 @@ export const GalleryEditPanel: React.FC<
   }
 
   async function onScrapeClicked(scraper: GQL.Scraper) {
-    if (!gallery || !gallery.id) return;
+    if (!gallery.id) return;
 
     setIsLoading(true);
     try {
@@ -443,13 +443,15 @@ export const GalleryEditPanel: React.FC<
             >
               <FormattedMessage id="actions.save" />
             </Button>
-            <Button
-              className="edit-button"
-              variant="danger"
-              onClick={() => onDelete()}
-            >
-              <FormattedMessage id="actions.delete" />
-            </Button>
+            {isNew || (
+              <Button
+                className="edit-button"
+                variant="danger"
+                onClick={onDelete}
+              >
+                <FormattedMessage id="actions.delete" />
+              </Button>
+            )}
           </div>
           <Col xs={6} className="text-right">
             {renderScraperMenu()}

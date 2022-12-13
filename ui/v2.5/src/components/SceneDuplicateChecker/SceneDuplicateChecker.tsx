@@ -12,7 +12,7 @@ import {
 } from "react-bootstrap";
 import { Link, useHistory } from "react-router-dom";
 import { FormattedMessage, FormattedNumber, useIntl } from "react-intl";
-import querystring from "query-string";
+import queryString from "query-string";
 
 import * as GQL from "src/core/generated-graphql";
 import {
@@ -47,18 +47,18 @@ const CLASSNAME = "duplicate-checker";
 export const SceneDuplicateChecker: React.FC = () => {
   const intl = useIntl();
   const history = useHistory();
-  const { page, size, distance } = querystring.parse(history.location.search);
+  const { page, size, distance } = queryString.parse(history.location.search);
   const currentPage = Number.parseInt(
-    Array.isArray(page) ? page[0] : page ?? "1",
+    (Array.isArray(page) ? page[0] : page) ?? "1",
     10
   );
   const pageSize = Number.parseInt(
-    Array.isArray(size) ? size[0] : size ?? "20",
+    (Array.isArray(size) ? size[0] : size) ?? "20",
     10
   );
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   const hashDistance = Number.parseInt(
-    Array.isArray(distance) ? distance[0] : distance ?? "0",
+    (Array.isArray(distance) ? distance[0] : distance) ?? "0",
     10
   );
   const [isMultiDelete, setIsMultiDelete] = useState(false);
@@ -108,8 +108,8 @@ export const SceneDuplicateChecker: React.FC = () => {
 
   const setQuery = (q: Record<string, string | number | undefined>) => {
     history.push({
-      search: querystring.stringify({
-        ...querystring.parse(history.location.search),
+      search: queryString.stringify({
+        ...queryString.parse(history.location.search),
         ...q,
       }),
     });
@@ -504,7 +504,7 @@ export const SceneDuplicateChecker: React.FC = () => {
                     page: undefined,
                   })
                 }
-                defaultValue={distance ?? 0}
+                defaultValue={hashDistance}
                 className="input-control ml-4"
               >
                 <option value={0}>

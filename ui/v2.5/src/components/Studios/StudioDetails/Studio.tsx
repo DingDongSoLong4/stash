@@ -202,7 +202,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
               onToggleEdit={onToggleEdit}
               onSave={() => {}}
               onImageChange={() => {}}
-              onClearImage={() => {}}
+              onImageClear={() => {}}
               onAutoTag={onAutoTag}
               onDelete={onDelete}
             />

@@ -11,14 +11,14 @@ interface IProps {
   onToggleEdit: () => void;
   onSave: () => void;
   saveDisabled?: boolean;
-  onDelete: () => void;
+  onDelete?: () => void;
   onAutoTag?: () => void;
-  onImageChange: (event: React.FormEvent<HTMLInputElement>) => void;
-  onBackImageChange?: (event: React.FormEvent<HTMLInputElement>) => void;
+  onImageChange?: (event: React.FormEvent<HTMLInputElement>) => void;
   onImageChangeURL?: (url: string) => void;
+  onImageClear?: () => void;
+  onBackImageChange?: (event: React.FormEvent<HTMLInputElement>) => void;
   onBackImageChangeURL?: (url: string) => void;
-  onClearImage?: () => void;
-  onClearBackImage?: () => void;
+  onBackImageClear?: () => void;
   acceptSVG?: boolean;
   customButtons?: JSX.Element;
   classNames?: string;
@@ -52,7 +52,7 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
         variant="success"
         className="save"
         disabled={props.saveDisabled}
-        onClick={() => props.onSave()}
+        onClick={props.onSave}
       >
         <FormattedMessage id="actions.save" />
       </Button>
@@ -72,17 +72,60 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
     );
   }
 
+  function renderFrontImageInput() {
+    if (!props.isEditing || !props.onImageChange) {
+      return;
+    }
+    return (
+      <>
+        <ImageInput
+          isEditing={props.isEditing}
+          text={intl.formatMessage({ id: "actions.set_front_image" })}
+          onImageChange={props.onImageChange}
+          onImageURL={props.onImageChangeURL}
+          acceptSVG={props.acceptSVG ?? false}
+        />
+        {props.onImageClear && (
+          <div>
+            <Button
+              className="mr-2"
+              variant="danger"
+              onClick={props.onImageClear}
+            >
+              {props.onBackImageClear
+                ? intl.formatMessage({ id: "actions.clear_front_image" })
+                : intl.formatMessage({ id: "actions.clear_image" })}
+            </Button>
+          </div>
+        )}
+      </>
+    );
+  }
+
   function renderBackImageInput() {
     if (!props.isEditing || !props.onBackImageChange) {
       return;
     }
     return (
-      <ImageInput
-        isEditing={props.isEditing}
-        text={intl.formatMessage({ id: "actions.set_back_image" })}
-        onImageChange={props.onBackImageChange}
-        onImageURL={props.onBackImageChangeURL}
-      />
+      <>
+        <ImageInput
+          isEditing={props.isEditing}
+          text={intl.formatMessage({ id: "actions.set_back_image" })}
+          onImageChange={props.onBackImageChange}
+          onImageURL={props.onBackImageChangeURL}
+        />
+        {props.onBackImageClear && (
+          <div>
+            <Button
+              className="mr-2"
+              variant="danger"
+              onClick={props.onBackImageClear}
+            >
+              {intl.formatMessage({ id: "actions.clear_back_image" })}
+            </Button>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -108,6 +151,8 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
   }
 
   function renderDeleteAlert() {
+    if (props.isNew || props.isEditing) return;
+
     return (
       <Modal show={isDeleteAlertOpen}>
         <Modal.Body>
@@ -134,42 +179,8 @@ export const DetailsEditNavbar: React.FC<IProps> = (props: IProps) => {
   return (
     <div className={cx("details-edit", props.classNames)}>
       {renderEditButton()}
-      <ImageInput
-        isEditing={props.isEditing}
-        text={
-          props.onBackImageChange
-            ? intl.formatMessage({ id: "actions.set_front_image" })
-            : undefined
-        }
-        onImageChange={props.onImageChange}
-        onImageURL={props.onImageChangeURL}
-        acceptSVG={props.acceptSVG ?? false}
-      />
-      {props.isEditing && props.onClearImage ? (
-        <div>
-          <Button
-            className="mr-2"
-            variant="danger"
-            onClick={() => props.onClearImage!()}
-          >
-            {props.onClearBackImage
-              ? intl.formatMessage({ id: "actions.clear_front_image" })
-              : intl.formatMessage({ id: "actions.clear_image" })}
-          </Button>
-        </div>
-      ) : null}
+      {renderFrontImageInput()}
       {renderBackImageInput()}
-      {props.isEditing && props.onClearBackImage ? (
-        <div>
-          <Button
-            className="mr-2"
-            variant="danger"
-            onClick={() => props.onClearBackImage!()}
-          >
-            {intl.formatMessage({ id: "actions.clear_back_image" })}
-          </Button>
-        </div>
-      ) : null}
       {renderAutoTagButton()}
       {props.customButtons}
       {renderSaveButton()}

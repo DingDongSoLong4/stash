@@ -10,6 +10,7 @@ import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { LinkContainer } from "react-router-bootstrap";
 import { Link, NavLink, useLocation, useHistory } from "react-router-dom";
 import Mousetrap from "mousetrap";
+import queryString from "query-string";
 
 import { SessionUtils } from "src/utils";
 import Icon from "src/components/Shared/Icon";
@@ -220,11 +221,10 @@ export const MainNavbar: React.FC = () => {
 
   const pathname = location.pathname.replace(/\/$/, "");
   let newPath = newPathsList.includes(pathname) ? `${pathname}/new` : null;
-  if (newPath != null) {
-    let queryParam = new URLSearchParams(location.search).get("q");
-    if (queryParam != null) {
-      newPath += "?name=" + encodeURIComponent(queryParam);
-    }
+  if (newPath !== null) {
+    let queryParam = queryString.parse(location.search).q;
+    if (queryParam !== null) {
+      newPath += "?" + queryString.stringify({ q: queryParam });
   }
 
   // set up hotkeys

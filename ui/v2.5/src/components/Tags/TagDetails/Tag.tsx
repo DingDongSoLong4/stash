@@ -289,7 +289,7 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
                 onToggleEdit={onToggleEdit}
                 onSave={() => {}}
                 onImageChange={() => {}}
-                onClearImage={() => {}}
+                onImageClear={() => {}}
                 onAutoTag={onAutoTag}
                 onDelete={onDelete}
                 classNames="mb-2"

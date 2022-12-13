@@ -23,12 +23,12 @@ import { Prompt } from "react-router-dom";
 import { MovieScrapeDialog } from "./MovieScrapeDialog";
 
 interface IMovieEditPanel {
-  movie?: Partial<GQL.MovieDataFragment>;
+  movie: Partial<GQL.MovieDataFragment>;
   onSubmit: (
     movie: Partial<GQL.MovieCreateInput | GQL.MovieUpdateInput>
   ) => void;
   onCancel: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   setFrontImage: (image?: string | null) => void;
   setBackImage: (image?: string | null) => void;
   onImageEncoding: (loading?: boolean) => void;
@@ -46,7 +46,7 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
   const intl = useIntl();
   const Toast = useToast();
 
-  const isNew = movie === undefined;
+  const isNew = !movie.id;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isImageAlertOpen, setIsImageAlertOpen] = useState<boolean>(false);
@@ -79,15 +79,15 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
   });
 
   const initialValues = {
-    name: movie?.name,
-    aliases: movie?.aliases,
-    duration: movie?.duration,
-    date: movie?.date,
-    rating100: movie?.rating100 ?? null,
-    studio_id: movie?.studio?.id,
-    director: movie?.director,
-    synopsis: movie?.synopsis,
-    url: movie?.url,
+    name: movie.name,
+    aliases: movie.aliases,
+    duration: movie.duration,
+    date: movie.date,
+    rating100: movie.rating100 ?? null,
+    studio_id: movie.studio?.id,
+    director: movie.director,
+    synopsis: movie.synopsis,
+    url: movie.url,
     front_image: undefined,
     back_image: undefined,
   };
@@ -168,7 +168,7 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
       studio_id: values.studio_id ?? null,
     };
 
-    if (movie && movie.id) {
+    if (movie.id) {
       (input as GQL.MovieUpdateInput).id = movie.id;
     }
     return input;
@@ -258,8 +258,8 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
     const currentMovie = getMovieInput(formik.values);
 
     // Get image paths for scrape gui
-    currentMovie.front_image = movie?.front_image_path;
-    currentMovie.back_image = movie?.back_image_path;
+    currentMovie.front_image = movie.front_image_path;
+    currentMovie.back_image = movie.back_image_path;
 
     return (
       <MovieScrapeDialog
@@ -469,7 +469,7 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
       </Form>
 
       <DetailsEditNavbar
-        objectName={movie?.name ?? intl.formatMessage({ id: "movie" })}
+        objectName={movie.name ?? intl.formatMessage({ id: "movie" })}
         isNew={isNew}
         isEditing={isEditing}
         onToggleEdit={onCancel}
@@ -477,12 +477,12 @@ export const MovieEditPanel: React.FC<IMovieEditPanel> = ({
         saveDisabled={!formik.dirty}
         onImageChange={onFrontImageChange}
         onImageChangeURL={(i) => formik.setFieldValue("front_image", i)}
-        onClearImage={() => {
+        onImageClear={() => {
           formik.setFieldValue("front_image", null);
         }}
         onBackImageChange={onBackImageChange}
         onBackImageChangeURL={(i) => formik.setFieldValue("back_image", i)}
-        onClearBackImage={() => {
+        onBackImageClear={() => {
           formik.setFieldValue("back_image", null);
         }}
         onDelete={onDelete}

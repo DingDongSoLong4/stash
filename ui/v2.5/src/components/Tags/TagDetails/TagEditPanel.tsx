@@ -6,12 +6,12 @@ import { DetailsEditNavbar, TagSelect } from "src/components/Shared";
 import { Form, Col, Row } from "react-bootstrap";
 import { FormUtils, ImageUtils } from "src/utils";
 import { useFormik } from "formik";
-import { Prompt, useHistory, useParams } from "react-router-dom";
+import { Prompt, useHistory } from "react-router-dom";
 import Mousetrap from "mousetrap";
 import { StringListInput } from "src/components/Shared/StringListInput";
 
 interface ITagEditPanel {
-  tag?: Partial<GQL.TagDataFragment>;
+  tag: Partial<GQL.TagDataFragment>;
   // returns id
   onSubmit: (
     tag: Partial<GQL.TagCreateInput | GQL.TagUpdateInput>
@@ -19,10 +19,6 @@ interface ITagEditPanel {
   onCancel: () => void;
   onDelete: () => void;
   setImage: (image?: string | null) => void;
-}
-
-interface ITagEditPanelParams {
-  id?: string;
 }
 
 export const TagEditPanel: React.FC<ITagEditPanel> = ({
@@ -35,10 +31,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
   const intl = useIntl();
   const history = useHistory();
 
-  const params = useParams<ITagEditPanelParams>();
-  const idParam = params.id;
-
-  const isNew = idParam === undefined;
+  const isNew = !tag.id;
 
   const labelXS = 3;
   const labelXL = 3;
@@ -65,12 +58,12 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
   });
 
   const initialValues = {
-    name: tag?.name,
-    description: tag?.description,
-    aliases: tag?.aliases,
-    parent_ids: (tag?.parents ?? []).map((t) => t.id),
-    child_ids: (tag?.children ?? []).map((t) => t.id),
-    ignore_auto_tag: tag?.ignore_auto_tag ?? false,
+    name: tag.name,
+    description: tag.description,
+    aliases: tag.aliases,
+    parent_ids: (tag.parents ?? []).map((t) => t.id),
+    child_ids: (tag.children ?? []).map((t) => t.id),
+    ignore_auto_tag: tag.ignore_auto_tag ?? false,
   };
 
   type InputValues = typeof initialValues;
@@ -104,7 +97,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
       ...values,
     };
 
-    if (tag && tag.id) {
+    if (tag.id) {
       (input as GQL.TagUpdateInput).id = tag.id;
     }
     return input;
@@ -131,7 +124,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
       <Prompt
         when={formik.dirty}
         message={(location) => {
-          if (!isNew && location.pathname.startsWith(`/tags/${tag?.id}`)) {
+          if (!isNew && location.pathname.startsWith(`/tags/${tag.id}`)) {
             return true;
           }
           return intl.formatMessage({ id: "dialogs.unsaved_changes" });
@@ -202,7 +195,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
                 )
               }
               ids={formik.values.parent_ids}
-              excludeIds={(tag?.id ? [tag.id] : []).concat(
+              excludeIds={(tag.id ? [tag.id] : []).concat(
                 ...formik.values.child_ids
               )}
               creatable={false}
@@ -229,7 +222,7 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
                 )
               }
               ids={formik.values.child_ids}
-              excludeIds={(tag?.id ? [tag.id] : []).concat(
+              excludeIds={(tag.id ? [tag.id] : []).concat(
                 ...formik.values.parent_ids
               )}
               creatable={false}
@@ -255,14 +248,14 @@ export const TagEditPanel: React.FC<ITagEditPanel> = ({
       </Form>
 
       <DetailsEditNavbar
-        objectName={tag?.name ?? intl.formatMessage({ id: "tag" })}
+        objectName={tag.name ?? intl.formatMessage({ id: "tag" })}
         isNew={isNew}
         isEditing={isEditing}
         onToggleEdit={onCancel}
         onSave={() => formik.handleSubmit()}
         onImageChange={onImageChange}
         onImageChangeURL={setImage}
-        onClearImage={() => {
+        onImageClear={() => {
           setImage(null);
         }}
         onDelete={onDelete}

@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import queryString from "query-string";
 import * as GQL from "src/core/generated-graphql";
 import { useMovieCreate } from "src/core/StashService";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import { LoadingIndicator } from "src/components/Shared";
 import { useToast } from "src/hooks";
 import { MovieEditPanel } from "./MovieEditPanel";
 
 const MovieCreate: React.FC = () => {
   const history = useHistory();
+  const location = useLocation();
   const Toast = useToast();
+
+  const query = useMemo(() => queryString.parse(location.search), [location]);
+  const movie = {
+    name: query.q ? String(query.q) : undefined,
+  };
 
   // Editing movie state
   const [frontImage, setFrontImage] = useState<string | undefined | null>(
@@ -84,9 +91,9 @@ const MovieCreate: React.FC = () => {
         </div>
 
         <MovieEditPanel
+          movie={movie}
           onSubmit={onSave}
           onCancel={() => history.push("/movies")}
-          onDelete={() => {}}
           setFrontImage={setFrontImage}
           setBackImage={setBackImage}
           onImageEncoding={onImageEncoding}
