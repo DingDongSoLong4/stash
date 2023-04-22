@@ -34,7 +34,6 @@ import {
   faSignOutAlt,
   faTrashAlt,
 } from "@fortawesome/free-solid-svg-icons";
-import { IUIConfig } from "src/core/config";
 
 interface IProps {
   tag: GQL.TagDataFragment;
@@ -53,8 +52,7 @@ const TagPage: React.FC<IProps> = ({ tag }) => {
 
   // Configuration settings
   const { configuration } = React.useContext(ConfigurationContext);
-  const abbreviateCounter =
-    (configuration?.ui as IUIConfig)?.abbreviateCounters ?? false;
+  const abbreviateCounter = configuration?.ui?.abbreviateCounters ?? false;
 
   const { tab = "scenes" } = useParams<ITabParams>();
 

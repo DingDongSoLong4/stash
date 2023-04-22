@@ -10,7 +10,6 @@ import { ConfigurationContext } from "src/hooks/Config";
 import {
   FrontPageContent,
   generateDefaultFrontPageContent,
-  IUIConfig,
 } from "src/core/config";
 
 const FrontPage: React.FC = () => {
@@ -55,7 +54,7 @@ const FrontPage: React.FC = () => {
     return <FrontPageConfig onClose={(content) => onUpdateConfig(content)} />;
   }
 
-  const ui = (configuration?.ui ?? {}) as IUIConfig;
+  const ui = configuration?.ui ?? {};
 
   if (!ui.frontPageContent) {
     const defaultContent = generateDefaultFrontPageContent(intl);

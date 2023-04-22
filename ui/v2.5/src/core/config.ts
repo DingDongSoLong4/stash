@@ -2,7 +2,11 @@ import { IntlShape } from "react-intl";
 import { ITypename } from "src/utils/data";
 import { ImageWallOptions } from "src/utils/imageWall";
 import { RatingSystemOptions } from "src/utils/rating";
-import { FilterMode, SortDirectionEnum } from "./generated-graphql";
+import {
+  ConfigDataFragment,
+  FilterMode,
+  SortDirectionEnum,
+} from "./generated-graphql";
 
 // NOTE: double capitals aren't converted correctly in the backend
 
@@ -28,6 +32,10 @@ export interface ICustomFilter extends ITypename {
 export type FrontPageContent = ISavedFilterRow | ICustomFilter;
 
 export const defaultMaxOptionsShown = 200;
+
+export interface IConfig extends ConfigDataFragment {
+  ui: IUIConfig;
+}
 
 export interface IUIConfig {
   frontPageContent?: FrontPageContent[];

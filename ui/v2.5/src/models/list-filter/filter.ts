@@ -1,5 +1,5 @@
+import { IConfig } from "src/core/config";
 import {
-  ConfigDataFragment,
   FilterMode,
   FindFilterType,
   SortDirectionEnum,
@@ -40,7 +40,7 @@ const DEFAULT_PARAMS = {
 // TODO: handle customCriteria
 export class ListFilterModel {
   public mode: FilterMode;
-  private config?: ConfigDataFragment;
+  private config?: IConfig;
   public searchTerm: string = "";
   public currentPage = DEFAULT_PARAMS.currentPage;
   public itemsPerPage = DEFAULT_PARAMS.itemsPerPage;
@@ -54,7 +54,7 @@ export class ListFilterModel {
 
   public constructor(
     mode: FilterMode,
-    config?: ConfigDataFragment,
+    config?: IConfig,
     defaultSort?: string,
     defaultDisplayMode?: DisplayMode,
     defaultZoomIndex?: number

@@ -29,7 +29,7 @@ import { useIntl } from "react-intl";
 import { objectTitle } from "src/core/files";
 import { galleryTitle } from "src/core/galleries";
 import { TagPopover } from "../Tags/TagPopover";
-import { defaultMaxOptionsShown, IUIConfig } from "src/core/config";
+import { defaultMaxOptionsShown } from "src/core/config";
 import { useDebouncedSetState } from "src/hooks/debounce";
 
 export type SelectObject = {
@@ -134,7 +134,7 @@ const LimitedSelectMenu = <T extends boolean>(
 ) => {
   const { configuration } = React.useContext(ConfigurationContext);
   const maxOptionsShown =
-    (configuration?.ui as IUIConfig).maxOptionsShown ?? defaultMaxOptionsShown;
+    configuration?.ui.maxOptionsShown ?? defaultMaxOptionsShown;
 
   const [hiddenCount, setHiddenCount] = useState<number>(0);
   const hiddenCountStyle = {

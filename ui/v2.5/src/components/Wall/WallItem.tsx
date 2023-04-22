@@ -8,6 +8,7 @@ import { SceneQueue } from "src/models/sceneQueue";
 import { ConfigurationContext } from "src/hooks/Config";
 import { markerTitle } from "src/core/markers";
 import { objectTitle } from "src/core/files";
+import { IConfig } from "src/core/config";
 
 interface IWallItemProps {
   index?: number;
@@ -32,7 +33,7 @@ interface IPreviews {
 
 const Preview: React.FC<{
   previews?: IPreviews;
-  config?: GQL.ConfigDataFragment;
+  config?: IConfig;
   active: boolean;
 }> = ({ previews, config, active }) => {
   const videoElement = useRef() as React.MutableRefObject<HTMLVideoElement>;

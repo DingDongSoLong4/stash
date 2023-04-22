@@ -53,12 +53,11 @@ import { CaptionCriterion } from "./captions";
 import { RatingCriterion } from "./rating";
 import { CountryCriterion } from "./country";
 import { StashIDCriterion } from "./stash-ids";
-import * as GQL from "src/core/generated-graphql";
-import { IUIConfig } from "src/core/config";
 import { defaultRatingSystemOptions } from "src/utils/rating";
+import { IConfig } from "src/core/config";
 
 export function makeCriteria(
-  config: GQL.ConfigDataFragment | undefined,
+  config: IConfig | undefined,
   type: CriterionType = "none"
 ) {
   switch (type) {
@@ -96,8 +95,7 @@ export function makeCriteria(
     case "rating100":
       return new RatingCriterion(
         new NullNumberCriterionOption("rating", type),
-        (config?.ui as IUIConfig)?.ratingSystemOptions ??
-          defaultRatingSystemOptions
+        config?.ui?.ratingSystemOptions ?? defaultRatingSystemOptions
       );
     case "resolution":
       return new ResolutionCriterion();

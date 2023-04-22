@@ -33,7 +33,6 @@ import { PerformerSubmitButton } from "./PerformerSubmitButton";
 import GenderIcon from "../GenderIcon";
 import { faHeart, faLink } from "@fortawesome/free-solid-svg-icons";
 import { faInstagram, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { IUIConfig } from "src/core/config";
 import { useRatingKeybinds } from "src/hooks/keybinds";
 
 interface IProps {
@@ -53,8 +52,7 @@ const PerformerPage: React.FC<IProps> = ({ performer }) => {
 
   // Configuration settings
   const { configuration } = React.useContext(ConfigurationContext);
-  const abbreviateCounter =
-    (configuration?.ui as IUIConfig)?.abbreviateCounters ?? false;
+  const abbreviateCounter = configuration?.ui?.abbreviateCounters ?? false;
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [image, setImage] = useState<string | null>();

@@ -3,7 +3,6 @@ import { StudiosCriterion } from "src/models/list-filter/criteria/studios";
 import { ListFilterModel } from "src/models/list-filter/filter";
 import React from "react";
 import { ConfigurationContext } from "src/hooks/Config";
-import { IUIConfig } from "./config";
 
 export const useStudioFilterHook = (studio: GQL.StudioDataFragment) => {
   const config = React.useContext(ConfigurationContext);
@@ -22,9 +21,7 @@ export const useStudioFilterHook = (studio: GQL.StudioDataFragment) => {
       studioCriterion = new StudiosCriterion();
       studioCriterion.value = {
         items: [studioValue],
-        depth: (config?.configuration?.ui as IUIConfig)?.showChildStudioContent
-          ? -1
-          : 0,
+        depth: config.configuration?.ui?.showChildStudioContent ? -1 : 0,
       };
       studioCriterion.modifier = GQL.CriterionModifier.Includes;
       filter.criteria.push(studioCriterion);

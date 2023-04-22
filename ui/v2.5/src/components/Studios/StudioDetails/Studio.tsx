@@ -28,7 +28,6 @@ import { StudioEditPanel } from "./StudioEditPanel";
 import { StudioDetailsPanel } from "./StudioDetailsPanel";
 import { StudioMoviesPanel } from "./StudioMoviesPanel";
 import { faTrashAlt } from "@fortawesome/free-solid-svg-icons";
-import { IUIConfig } from "src/core/config";
 
 interface IProps {
   studio: GQL.StudioDataFragment;
@@ -48,8 +47,7 @@ const StudioPage: React.FC<IProps> = ({ studio }) => {
 
   // Configuration settings
   const { configuration } = React.useContext(ConfigurationContext);
-  const abbreviateCounter =
-    (configuration?.ui as IUIConfig)?.abbreviateCounters ?? false;
+  const abbreviateCounter = configuration?.ui?.abbreviateCounters ?? false;
 
   // Editing state
   const [isEditing, setIsEditing] = useState<boolean>(false);

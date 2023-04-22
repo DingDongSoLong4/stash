@@ -10,7 +10,6 @@ import {
 } from "src/core/generated-graphql";
 import { ConfigurationContext } from "src/hooks/Config";
 import {
-  IUIConfig,
   ISavedFilterRow,
   ICustomFilter,
   FrontPageContent,
@@ -286,7 +285,7 @@ export const FrontPageConfig: React.FC<IFrontPageConfigProps> = ({
 }) => {
   const { configuration, loading } = React.useContext(ConfigurationContext);
 
-  const ui = configuration?.ui as IUIConfig;
+  const ui = configuration?.ui;
 
   const { data: allFilters, loading: loading2 } = useFindSavedFilters();
 

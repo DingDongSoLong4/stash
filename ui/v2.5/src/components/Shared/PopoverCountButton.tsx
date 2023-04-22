@@ -9,7 +9,6 @@ import React, { useMemo } from "react";
 import { Button } from "react-bootstrap";
 import { FormattedNumber, useIntl } from "react-intl";
 import { Link } from "react-router-dom";
-import { IUIConfig } from "src/core/config";
 import { ConfigurationContext } from "src/hooks/Config";
 import TextUtils from "src/utils/text";
 import { Icon } from "./Icon";
@@ -30,8 +29,7 @@ export const PopoverCountButton: React.FC<IProps> = ({
   count,
 }) => {
   const { configuration } = React.useContext(ConfigurationContext);
-  const abbreviateCounter =
-    (configuration?.ui as IUIConfig)?.abbreviateCounters ?? false;
+  const abbreviateCounter = configuration?.ui?.abbreviateCounters ?? false;
 
   const intl = useIntl();
 

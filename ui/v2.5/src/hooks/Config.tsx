@@ -1,8 +1,8 @@
 import React from "react";
-import * as GQL from "src/core/generated-graphql";
+import { IConfig } from "src/core/config";
 
 export interface IContext {
-  configuration?: GQL.ConfigDataFragment;
+  configuration?: IConfig;
   loading?: boolean;
 }
 
