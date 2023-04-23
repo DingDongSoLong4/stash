@@ -264,6 +264,7 @@ export const ListFilter: React.FC<IListFilterProps> = ({
           <Dropdown>
             <OverlayTrigger
               placement="top"
+              flip
               overlay={
                 <Tooltip id="filter-tooltip">
                   <FormattedMessage id="search_filter.saved_filters" />
@@ -281,6 +282,7 @@ export const ListFilter: React.FC<IListFilterProps> = ({
           </Dropdown>
           <OverlayTrigger
             placement="top"
+            flip
             overlay={
               <Tooltip id="filter-tooltip">
                 <FormattedMessage id="search_filter.name" />
@@ -303,6 +305,7 @@ export const ListFilter: React.FC<IListFilterProps> = ({
             {renderSortByOptions()}
           </Dropdown.Menu>
           <OverlayTrigger
+            flip
             overlay={
               <Tooltip id="sort-direction-tooltip">
                 {filter.sortDirection === SortDirectionEnum.Asc
@@ -323,6 +326,7 @@ export const ListFilter: React.FC<IListFilterProps> = ({
           </OverlayTrigger>
           {filter.sortBy === "random" && (
             <OverlayTrigger
+              flip
               overlay={
                 <Tooltip id="sort-reshuffle-tooltip">
                   {intl.formatMessage({ id: "actions.reshuffle" })}

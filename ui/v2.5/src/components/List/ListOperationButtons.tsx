@@ -103,6 +103,7 @@ export const ListOperationButtons: React.FC<IListOperationButtonsProps> = ({
           {buttons.map((button) => {
             return (
               <OverlayTrigger
+                flip
                 overlay={<Tooltip id="edit">{button.text}</Tooltip>}
                 key={button.text}
               >

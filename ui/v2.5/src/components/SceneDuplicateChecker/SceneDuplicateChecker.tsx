@@ -359,6 +359,7 @@ export const SceneDuplicateChecker: React.FC = () => {
         {checkCount > 0 && (
           <ButtonGroup>
             <OverlayTrigger
+              flip
               overlay={
                 <Tooltip id="edit">
                   {intl.formatMessage({ id: "actions.edit" })}
@@ -370,6 +371,7 @@ export const SceneDuplicateChecker: React.FC = () => {
               </Button>
             </OverlayTrigger>
             <OverlayTrigger
+              flip
               overlay={
                 <Tooltip id="delete">
                   {intl.formatMessage({ id: "actions.delete" })}

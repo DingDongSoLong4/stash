@@ -1,8 +1,7 @@
 import React, { useRef, useState } from "react";
-import { Overlay, Tooltip } from "react-bootstrap";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { Placement } from "react-bootstrap/Overlay";
 import cx from "classnames";
-import { useDebounce } from "src/hooks/debounce";
 
 const CLASSNAME = "TruncatedText";
 const CLASSNAME_TOOLTIP = `${CLASSNAME}-tooltip`;
@@ -23,50 +22,46 @@ export const TruncatedText: React.FC<ITruncatedTextProps> = ({
   delay = 1000,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const target = useRef(null);
+  const target = useRef<HTMLDivElement>(null);
 
-  const startShowingTooltip = useDebounce(
-    () => setShowTooltip(true),
-    [],
-    delay
-  );
+  if (!text) return null;
 
-  if (!text) return <></>;
+  function onToggle(nextShow: boolean) {
+    const element = target.current;
 
-  const handleFocus = (element: HTMLElement) => {
     // Check if visible size is smaller than the content size
     if (
-      element.offsetWidth < element.scrollWidth ||
-      element.offsetHeight + 10 < element.scrollHeight
-    )
-      startShowingTooltip();
-  };
-
-  const handleBlur = () => {
-    startShowingTooltip.cancel();
-    setShowTooltip(false);
-  };
-
-  const overlay = (
-    <Overlay target={target.current} show={showTooltip} placement={placement}>
-      <Tooltip id={CLASSNAME} className={CLASSNAME_TOOLTIP}>
-        {text}
-      </Tooltip>
-    </Overlay>
-  );
+      element && (
+        element.offsetWidth < element.scrollWidth ||
+        element.offsetHeight + 10 < element.scrollHeight
+      )
+    ) {
+      setShowTooltip(nextShow);
+    } else {
+      setShowTooltip(false);
+    }
+  }
 
   return (
-    <div
-      className={cx(CLASSNAME, className)}
-      style={{ WebkitLineClamp: lineCount }}
-      ref={target}
-      onMouseEnter={(e) => handleFocus(e.currentTarget)}
-      onFocus={(e) => handleFocus(e.currentTarget)}
-      onMouseLeave={handleBlur}
-      onBlur={handleBlur}
+    <OverlayTrigger
+      show={showTooltip}
+      placement={placement}
+      flip
+      delay={{ show: delay, hide: 0 }}
+      onToggle={onToggle}
+      overlay={
+        <Tooltip id={CLASSNAME} className={CLASSNAME_TOOLTIP}>
+          {text}
+        </Tooltip>
+      }
     >
-      {text}
-      {overlay}
-    </div>
+      <div
+        className={cx(CLASSNAME, className)}
+        style={{ WebkitLineClamp: lineCount }}
+        ref={target}
+      >
+        {text}
+      </div>
+    </OverlayTrigger>
   );
 };

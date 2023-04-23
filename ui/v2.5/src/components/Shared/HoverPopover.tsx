@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Overlay, Popover, OverlayProps } from "react-bootstrap";
+import React from "react";
+import { Popover, OverlayProps, OverlayTrigger } from "react-bootstrap";
 
 interface IHoverPopover {
   enterDelay?: number;
@@ -21,57 +21,34 @@ export const HoverPopover: React.FC<IHoverPopover> = ({
   onOpen,
   onClose,
 }) => {
-  const [show, setShow] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
-  const enterTimer = useRef<number>();
-  const leaveTimer = useRef<number>();
-
-  const handleMouseEnter = useCallback(() => {
-    window.clearTimeout(leaveTimer.current);
-    enterTimer.current = window.setTimeout(() => {
-      setShow(true);
+  function onToggle(nextShow: boolean) {
+    if (nextShow) {
       onOpen?.();
-    }, enterDelay);
-  }, [enterDelay, onOpen]);
-
-  const handleMouseLeave = useCallback(() => {
-    window.clearTimeout(enterTimer.current);
-    leaveTimer.current = window.setTimeout(() => {
-      setShow(false);
+    } else {
       onClose?.();
-    }, leaveDelay);
-  }, [leaveDelay, onClose]);
-
-  useEffect(
-    () => () => {
-      window.clearTimeout(enterTimer.current);
-      window.clearTimeout(leaveTimer.current);
-    },
-    []
-  );
+    }
+  }
 
   return (
-    <>
+    <OverlayTrigger
+      placement={placement}
+      delay={{show: enterDelay, hide: leaveDelay}}
+      flip
+      overlay={(
+        <Popover
+          id="popover"
+          className="hover-popover-content"
+        >
+          {content}
+        </Popover>
+      )}
+      onToggle={onToggle}
+    >
       <div
         className={className}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        ref={triggerRef}
       >
         {children}
       </div>
-      {triggerRef.current && (
-        <Overlay show={show} placement={placement} target={triggerRef.current}>
-          <Popover
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            id="popover"
-            className="hover-popover-content"
-          >
-            {content}
-          </Popover>
-        </Overlay>
-      )}
-    </>
+    </OverlayTrigger>
   );
 };

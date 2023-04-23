@@ -333,6 +333,7 @@ export const SavedFilterList: React.FC<ISavedFilterListProps> = ({
         <InputGroup.Append>
           <OverlayTrigger
             placement="top"
+            flip
             overlay={
               <Tooltip id="filter-tooltip">
                 <FormattedMessage id="actions.save_filter" />

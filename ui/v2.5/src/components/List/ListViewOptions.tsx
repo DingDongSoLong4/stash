@@ -114,6 +114,7 @@ export const ListViewOptions: React.FC<IListViewOptionsProps> = ({
         {displayModeOptions.map((option) => (
           <OverlayTrigger
             key={option}
+            flip
             overlay={
               <Tooltip id="display-mode-tooltip">{getLabel(option)}</Tooltip>
             }
