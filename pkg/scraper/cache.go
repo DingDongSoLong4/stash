@@ -15,7 +15,6 @@ import (
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/match"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/txn"
 )
@@ -52,11 +51,6 @@ func isCDPPathWS(c GlobalConfig) bool {
 	return strings.HasPrefix(c.GetScraperCDPPath(), "ws://")
 }
 
-type SceneFinder interface {
-	scene.IDFinder
-	models.URLLoader
-}
-
 type PerformerFinder interface {
 	match.PerformerAutoTagQueryer
 	match.PerformerFinder
@@ -78,7 +72,7 @@ type GalleryFinder interface {
 }
 
 type Repository struct {
-	SceneFinder     SceneFinder
+	SceneFinder     models.SceneReader
 	GalleryFinder   GalleryFinder
 	TagFinder       TagFinder
 	PerformerFinder PerformerFinder

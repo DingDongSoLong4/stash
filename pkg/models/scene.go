@@ -150,14 +150,18 @@ type SceneFinder interface {
 
 type SceneReader interface {
 	SceneFinder
-	// TODO - remove this in another PR
 	Find(ctx context.Context, id int) (*Scene, error)
+	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*Scene, error)
 	FindByChecksum(ctx context.Context, checksum string) ([]*Scene, error)
 	FindByOSHash(ctx context.Context, oshash string) ([]*Scene, error)
 	FindByPath(ctx context.Context, path string) ([]*Scene, error)
+	FindByFileID(ctx context.Context, fileID file.ID) ([]*Scene, error)
+	FindByPrimaryFileID(ctx context.Context, fileID file.ID) ([]*Scene, error)
 	FindByPerformerID(ctx context.Context, performerID int) ([]*Scene, error)
 	FindByGalleryID(ctx context.Context, performerID int) ([]*Scene, error)
+	FindByMovieID(ctx context.Context, movieID int) ([]*Scene, error)
 	FindDuplicates(ctx context.Context, distance int, durationDiff float64) ([][]*Scene, error)
+	Query(ctx context.Context, options SceneQueryOptions) (*SceneQueryResult, error)
 
 	URLLoader
 	GalleryIDLoader
@@ -166,28 +170,27 @@ type SceneReader interface {
 	SceneMovieLoader
 	StashIDLoader
 	VideoFileLoader
+	BulkFileLoader
 
-	CountByPerformerID(ctx context.Context, performerID int) (int, error)
-	OCountByPerformerID(ctx context.Context, performerID int) (int, error)
-	OCount(ctx context.Context) (int, error)
-	// FindByStudioID(studioID int) ([]*Scene, error)
-	FindByMovieID(ctx context.Context, movieID int) ([]*Scene, error)
-	CountByMovieID(ctx context.Context, movieID int) (int, error)
 	Count(ctx context.Context) (int, error)
-	PlayCount(ctx context.Context) (int, error)
-	UniqueScenePlayCount(ctx context.Context) (int, error)
-	Size(ctx context.Context) (float64, error)
-	Duration(ctx context.Context) (float64, error)
-	PlayDuration(ctx context.Context) (float64, error)
-	// SizeCount() (string, error)
+	CountByPerformerID(ctx context.Context, performerID int) (int, error)
+	CountByMovieID(ctx context.Context, movieID int) (int, error)
+	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
 	CountByStudioID(ctx context.Context, studioID int) (int, error)
 	CountByTagID(ctx context.Context, tagID int) (int, error)
 	CountMissingChecksum(ctx context.Context) (int, error)
 	CountMissingOSHash(ctx context.Context) (int, error)
-	Wall(ctx context.Context, q *string) ([]*Scene, error)
-	All(ctx context.Context) ([]*Scene, error)
-	Query(ctx context.Context, options SceneQueryOptions) (*SceneQueryResult, error)
+	OCountByPerformerID(ctx context.Context, performerID int) (int, error)
 	QueryCount(ctx context.Context, sceneFilter *SceneFilterType, findFilter *FindFilterType) (int, error)
+	OCount(ctx context.Context) (int, error)
+	PlayCount(ctx context.Context) (int, error)
+	UniqueScenePlayCount(ctx context.Context) (int, error)
+
+	All(ctx context.Context) ([]*Scene, error)
+	Wall(ctx context.Context, q *string) ([]*Scene, error)
+	Size(ctx context.Context) (float64, error)
+	Duration(ctx context.Context) (float64, error)
+	PlayDuration(ctx context.Context) (float64, error)
 	GetCover(ctx context.Context, sceneID int) ([]byte, error)
 	HasCover(ctx context.Context, sceneID int) (bool, error)
 }
@@ -196,12 +199,16 @@ type SceneWriter interface {
 	Create(ctx context.Context, newScene *Scene, fileIDs []file.ID) error
 	Update(ctx context.Context, updatedScene *Scene) error
 	UpdatePartial(ctx context.Context, id int, updatedScene ScenePartial) (*Scene, error)
+	Destroy(ctx context.Context, id int) error
+
+	AddFileID(ctx context.Context, id int, fileID file.ID) error
+	AddGalleryIDs(ctx context.Context, sceneID int, galleryIDs []int) error
+	AssignFiles(ctx context.Context, sceneID int, fileID []file.ID) error
 	IncrementOCounter(ctx context.Context, id int) (int, error)
 	DecrementOCounter(ctx context.Context, id int) (int, error)
 	ResetOCounter(ctx context.Context, id int) (int, error)
 	SaveActivity(ctx context.Context, id int, resumeTime *float64, playDuration *float64) (bool, error)
 	IncrementWatchCount(ctx context.Context, id int) (int, error)
-	Destroy(ctx context.Context, id int) error
 	UpdateCover(ctx context.Context, sceneID int, cover []byte) error
 }
 

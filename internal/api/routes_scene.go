@@ -22,14 +22,6 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type SceneFinder interface {
-	manager.SceneCoverGetter
-
-	scene.IDFinder
-	FindByChecksum(ctx context.Context, checksum string) ([]*models.Scene, error)
-	FindByOSHash(ctx context.Context, oshash string) ([]*models.Scene, error)
-}
-
 type SceneMarkerFinder interface {
 	Find(ctx context.Context, id int) (*models.SceneMarker, error)
 	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
@@ -41,7 +33,7 @@ type CaptionFinder interface {
 
 type sceneRoutes struct {
 	txnManager        txn.Manager
-	sceneFinder       SceneFinder
+	sceneFinder       models.SceneReader
 	fileFinder        file.Finder
 	captionFinder     CaptionFinder
 	sceneMarkerFinder SceneMarkerFinder

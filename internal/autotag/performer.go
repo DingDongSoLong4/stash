@@ -12,12 +12,6 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type SceneQueryPerformerUpdater interface {
-	scene.Queryer
-	models.PerformerIDLoader
-	scene.PartialUpdater
-}
-
 type ImageQueryPerformerUpdater interface {
 	image.Queryer
 	models.PerformerIDLoader
@@ -53,7 +47,7 @@ func getPerformerTaggers(p *models.Performer, cache *match.Cache) []tagger {
 
 // PerformerScenes searches for scenes whose path matches the provided performer name and tags the scene with the performer.
 // Performer aliases must be loaded.
-func (tagger *Tagger) PerformerScenes(ctx context.Context, p *models.Performer, paths []string, rw SceneQueryPerformerUpdater) error {
+func (tagger *Tagger) PerformerScenes(ctx context.Context, p *models.Performer, paths []string, rw models.SceneReaderWriter) error {
 	t := getPerformerTaggers(p, tagger.Cache)
 
 	for _, tt := range t {

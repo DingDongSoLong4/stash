@@ -104,15 +104,6 @@ func (d *FileDeleter) MarkMarkerFiles(scene *models.Scene, seconds int) error {
 	return d.Files(files)
 }
 
-type Destroyer interface {
-	Destroy(ctx context.Context, id int) error
-}
-
-type MarkerDestroyer interface {
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
-	Destroy(ctx context.Context, id int) error
-}
-
 // Destroy deletes a scene and its associated relationships from the
 // database.
 func (s *Service) Destroy(ctx context.Context, scene *models.Scene, fileDeleter *FileDeleter, deleteGenerated, deleteFile bool) error {

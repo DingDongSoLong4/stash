@@ -17,15 +17,9 @@ type MigrateSceneScreenshotsInput struct {
 	OverwriteExisting bool `json:"overwriteExisting"`
 }
 
-type HashFinderCoverUpdater interface {
-	FindByChecksum(ctx context.Context, checksum string) ([]*models.Scene, error)
-	FindByOSHash(ctx context.Context, oshash string) ([]*models.Scene, error)
-	CoverUpdater
-}
-
 type ScreenshotMigrator struct {
 	Options      MigrateSceneScreenshotsInput
-	SceneUpdater HashFinderCoverUpdater
+	SceneUpdater models.SceneReaderWriter
 	TxnManager   txn.Manager
 }
 

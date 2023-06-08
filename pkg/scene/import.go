@@ -17,14 +17,8 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type FullCreatorUpdater interface {
-	CreatorUpdater
-	Update(ctx context.Context, updatedScene *models.Scene) error
-	Updater
-}
-
 type Importer struct {
-	ReaderWriter        FullCreatorUpdater
+	ReaderWriter        models.SceneReaderWriter
 	FileFinder          file.Getter
 	StudioWriter        studio.NameFinderCreator
 	GalleryFinder       gallery.Finder

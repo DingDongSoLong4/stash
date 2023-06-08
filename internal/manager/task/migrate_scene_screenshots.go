@@ -10,6 +10,7 @@ import (
 
 	"github.com/stashapp/stash/pkg/job"
 	"github.com/stashapp/stash/pkg/logger"
+	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/txn"
 )
@@ -17,7 +18,7 @@ import (
 type MigrateSceneScreenshotsJob struct {
 	ScreenshotsPath string
 	Input           scene.MigrateSceneScreenshotsInput
-	SceneRepo       scene.HashFinderCoverUpdater
+	SceneRepo       models.SceneReaderWriter
 	TxnManager      txn.Manager
 }
 

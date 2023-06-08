@@ -21,12 +21,6 @@ type FinderCreatorUpdater interface {
 	models.FileLoader
 }
 
-type SceneFinderUpdater interface {
-	FindByPath(ctx context.Context, p string) ([]*models.Scene, error)
-	Update(ctx context.Context, updatedScene *models.Scene) error
-	AddGalleryIDs(ctx context.Context, sceneID int, galleryIDs []int) error
-}
-
 type ImageFinderUpdater interface {
 	FindByZipFileID(ctx context.Context, zipFileID file.ID) ([]*models.Image, error)
 	UpdatePartial(ctx context.Context, id int, partial models.ImagePartial) (*models.Image, error)
@@ -34,7 +28,7 @@ type ImageFinderUpdater interface {
 
 type ScanHandler struct {
 	CreatorUpdater     FullCreatorUpdater
-	SceneFinderUpdater SceneFinderUpdater
+	SceneFinderUpdater models.SceneReaderWriter
 	ImageFinderUpdater ImageFinderUpdater
 	PluginCache        *plugin.Cache
 }

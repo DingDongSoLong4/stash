@@ -38,6 +38,10 @@ type FileLoader interface {
 	GetFiles(ctx context.Context, relatedID int) ([]file.File, error)
 }
 
+type BulkFileLoader interface {
+	GetManyFileIDs(ctx context.Context, ids []int) ([][]file.ID, error)
+}
+
 type AliasLoader interface {
 	GetAliases(ctx context.Context, relatedID int) ([]string, error)
 }

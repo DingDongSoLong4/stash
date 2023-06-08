@@ -29,13 +29,9 @@ func KillRunningStreams(scene *models.Scene, fileNamingAlgo models.HashAlgorithm
 	instance.ReadLockManager.Cancel(transcodePath)
 }
 
-type SceneCoverGetter interface {
-	GetCover(ctx context.Context, sceneID int) ([]byte, error)
-}
-
 type SceneServer struct {
 	TxnManager       txn.Manager
-	SceneCoverGetter SceneCoverGetter
+	SceneCoverGetter models.SceneReader
 }
 
 func (s *SceneServer) StreamSceneDirect(scene *models.Scene, w http.ResponseWriter, r *http.Request) {

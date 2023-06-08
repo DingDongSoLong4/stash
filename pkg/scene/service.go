@@ -7,39 +7,30 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/plugin"
+	"github.com/stashapp/stash/pkg/tag"
 )
 
-type FinderByFile interface {
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*models.Scene, error)
+type MarkerTagFinder interface {
+	tag.Finder
+	TagFinder
+	FindBySceneMarkerID(ctx context.Context, sceneMarkerID int) ([]*models.Tag, error)
 }
 
-type FileAssigner interface {
-	AssignFiles(ctx context.Context, sceneID int, fileID []file.ID) error
+type MarkerFinder interface {
+	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
 }
 
-type Creator interface {
-	Create(ctx context.Context, newScene *models.Scene, fileIDs []file.ID) error
+type TagFinder interface {
+	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Tag, error)
 }
 
-type CoverUpdater interface {
-	HasCover(ctx context.Context, sceneID int) (bool, error)
-	UpdateCover(ctx context.Context, sceneID int, cover []byte) error
+type MarkerDestroyer interface {
+	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
+	Destroy(ctx context.Context, id int) error
 }
 
 type Config interface {
 	GetVideoFileNamingAlgorithm() models.HashAlgorithm
-}
-
-type Repository interface {
-	IDFinder
-	FinderByFile
-	Creator
-	PartialUpdater
-	Destroyer
-	models.VideoFileLoader
-	FileAssigner
-	CoverUpdater
-	models.SceneReader
 }
 
 type MarkerRepository interface {
@@ -51,7 +42,7 @@ type MarkerRepository interface {
 
 type Service struct {
 	File             file.Store
-	Repository       Repository
+	Repository       models.SceneReaderWriter
 	MarkerRepository MarkerRepository
 	PluginCache      *plugin.Cache
 

@@ -104,16 +104,11 @@ type galleryFinder interface {
 	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*models.Gallery, error)
 }
 
-type sceneFinder interface {
-	fileCounter
-	FindByPrimaryFileID(ctx context.Context, fileID file.ID) ([]*models.Scene, error)
-}
-
 // handlerRequiredFilter returns true if a File's handler needs to be executed despite the file not being updated.
 type handlerRequiredFilter struct {
 	extensionConfig
 	txnManager     txn.Manager
-	SceneFinder    sceneFinder
+	SceneFinder    models.SceneReader
 	ImageFinder    fileCounter
 	GalleryFinder  galleryFinder
 	CaptionUpdater video.CaptionUpdater

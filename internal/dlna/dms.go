@@ -48,14 +48,8 @@ import (
 
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/txn"
 )
-
-type SceneFinder interface {
-	scene.Queryer
-	scene.IDFinder
-}
 
 type StudioFinder interface {
 	All(ctx context.Context) ([]*models.Studio, error)

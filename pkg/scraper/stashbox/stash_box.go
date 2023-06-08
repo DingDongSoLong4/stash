@@ -31,12 +31,6 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type SceneReader interface {
-	Find(ctx context.Context, id int) (*models.Scene, error)
-	models.StashIDLoader
-	models.VideoFileLoader
-}
-
 type PerformerReader interface {
 	match.PerformerFinder
 	Find(ctx context.Context, id int) (*models.Performer, error)
@@ -57,7 +51,7 @@ type TagFinder interface {
 }
 
 type Repository struct {
-	Scene     SceneReader
+	Scene     models.SceneReader
 	Performer PerformerReader
 	Tag       TagFinder
 	Studio    StudioReader

@@ -19,21 +19,12 @@ var (
 	ErrNotVideoFile = errors.New("not a video file")
 )
 
-type CreatorUpdater interface {
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*models.Scene, error)
-	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*models.Scene, error)
-	Creator
-	UpdatePartial(ctx context.Context, id int, updatedScene models.ScenePartial) (*models.Scene, error)
-	AddFileID(ctx context.Context, id int, fileID file.ID) error
-	models.VideoFileLoader
-}
-
 type ScanGenerator interface {
 	Generate(ctx context.Context, s *models.Scene, f *file.VideoFile) error
 }
 
 type ScanHandler struct {
-	CreatorUpdater CreatorUpdater
+	CreatorUpdater models.SceneReaderWriter
 
 	ScanGenerator  ScanGenerator
 	CaptionUpdater video.CaptionUpdater

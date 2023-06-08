@@ -12,12 +12,6 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type SceneQueryTagUpdater interface {
-	scene.Queryer
-	models.TagIDLoader
-	scene.PartialUpdater
-}
-
 type ImageQueryTagUpdater interface {
 	image.Queryer
 	models.TagIDLoader
@@ -51,7 +45,7 @@ func getTagTaggers(p *models.Tag, aliases []string, cache *match.Cache) []tagger
 }
 
 // TagScenes searches for scenes whose path matches the provided tag name and tags the scene with the tag.
-func (tagger *Tagger) TagScenes(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw SceneQueryTagUpdater) error {
+func (tagger *Tagger) TagScenes(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw models.SceneReaderWriter) error {
 	t := getTagTaggers(p, aliases, tagger.Cache)
 
 	for _, tt := range t {

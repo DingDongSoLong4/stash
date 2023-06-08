@@ -20,7 +20,7 @@ func (p *scenePager) getPageID(page int) string {
 	return p.parentID + "/page/" + strconv.Itoa(page)
 }
 
-func (p *scenePager) getPages(ctx context.Context, r scene.Queryer, total int) ([]interface{}, error) {
+func (p *scenePager) getPages(ctx context.Context, r models.SceneReader, total int) ([]interface{}, error) {
 	var objs []interface{}
 
 	// get the first scene of each page to set an appropriate title
@@ -60,7 +60,7 @@ func (p *scenePager) getPages(ctx context.Context, r scene.Queryer, total int) (
 	return objs, nil
 }
 
-func (p *scenePager) getPageVideos(ctx context.Context, r SceneFinder, f file.Finder, page int, host string, sort string, direction models.SortDirectionEnum) ([]interface{}, error) {
+func (p *scenePager) getPageVideos(ctx context.Context, r models.SceneReader, f file.Finder, page int, host string, sort string, direction models.SortDirectionEnum) ([]interface{}, error) {
 	var objs []interface{}
 
 	findFilter := &models.FindFilterType{

@@ -11,21 +11,11 @@ import (
 
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/sliceutil"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
 	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/utils"
 )
-
-type SceneReaderUpdater interface {
-	GetCover(ctx context.Context, sceneID int) ([]byte, error)
-	scene.Updater
-	models.PerformerIDLoader
-	models.TagIDLoader
-	models.StashIDLoader
-	models.URLLoader
-}
 
 type TagCreatorFinder interface {
 	Create(ctx context.Context, newTag *models.Tag) error
@@ -33,7 +23,7 @@ type TagCreatorFinder interface {
 }
 
 type sceneRelationships struct {
-	sceneReader              SceneReaderUpdater
+	sceneReader              models.SceneReader
 	studioCreator            StudioCreator
 	performerCreator         PerformerCreator
 	tagCreatorFinder         TagCreatorFinder

@@ -43,7 +43,7 @@ type ScraperSource struct {
 }
 
 type SceneIdentifier struct {
-	SceneReaderUpdater SceneReaderUpdater
+	SceneReaderUpdater models.SceneReaderWriter
 	StudioCreator      StudioCreator
 	PerformerCreator   PerformerCreator
 	TagCreatorFinder   TagCreatorFinder

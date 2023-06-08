@@ -12,32 +12,13 @@ import (
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
 	"github.com/stashapp/stash/pkg/studio"
-	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/utils"
 )
-
-type CoverGetter interface {
-	GetCover(ctx context.Context, sceneID int) ([]byte, error)
-}
-
-type MarkerTagFinder interface {
-	tag.Finder
-	TagFinder
-	FindBySceneMarkerID(ctx context.Context, sceneMarkerID int) ([]*models.Tag, error)
-}
-
-type MarkerFinder interface {
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
-}
-
-type TagFinder interface {
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Tag, error)
-}
 
 // ToBasicJSON converts a scene object into its JSON object equivalent. It
 // does not convert the relationships to other objects, with the exception
 // of cover image.
-func ToBasicJSON(ctx context.Context, reader CoverGetter, scene *models.Scene) (*jsonschema.Scene, error) {
+func ToBasicJSON(ctx context.Context, reader models.SceneReader, scene *models.Scene) (*jsonschema.Scene, error) {
 	newSceneJSON := jsonschema.Scene{
 		Title:     scene.Title,
 		Code:      scene.Code,
