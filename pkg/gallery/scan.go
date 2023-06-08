@@ -13,15 +13,10 @@ import (
 	"github.com/stashapp/stash/pkg/plugin"
 )
 
-type ImageFinderUpdater interface {
-	FindByZipFileID(ctx context.Context, zipFileID file.ID) ([]*models.Image, error)
-	UpdatePartial(ctx context.Context, id int, partial models.ImagePartial) (*models.Image, error)
-}
-
 type ScanHandler struct {
 	CreatorUpdater     models.GalleryReaderWriter
 	SceneFinderUpdater models.SceneReaderWriter
-	ImageFinderUpdater ImageFinderUpdater
+	ImageFinderUpdater models.ImageReaderWriter
 	PluginCache        *plugin.Cache
 }
 

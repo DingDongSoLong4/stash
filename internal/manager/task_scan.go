@@ -104,7 +104,7 @@ type handlerRequiredFilter struct {
 	extensionConfig
 	txnManager     txn.Manager
 	SceneFinder    models.SceneReader
-	ImageFinder    fileCounter
+	ImageFinder    models.ImageReader
 	GalleryFinder  models.GalleryReader
 	CaptionUpdater video.CaptionUpdater
 

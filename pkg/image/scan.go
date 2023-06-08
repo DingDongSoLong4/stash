@@ -21,17 +21,6 @@ var (
 	ErrNotImageFile = errors.New("not an image file")
 )
 
-type FinderCreatorUpdater interface {
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*models.Image, error)
-	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*models.Image, error)
-	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*models.Image, error)
-	Create(ctx context.Context, newImage *models.ImageCreateInput) error
-	UpdatePartial(ctx context.Context, id int, updatedImage models.ImagePartial) (*models.Image, error)
-	AddFileID(ctx context.Context, id int, fileID file.ID) error
-	models.GalleryIDLoader
-	models.FileLoader
-}
-
 type ScanConfig interface {
 	GetCreateGalleriesFromFolders() bool
 }
@@ -41,7 +30,7 @@ type ScanGenerator interface {
 }
 
 type ScanHandler struct {
-	CreatorUpdater FinderCreatorUpdater
+	CreatorUpdater models.ImageReaderWriter
 	GalleryFinder  models.GalleryReaderWriter
 
 	ScanGenerator ScanGenerator

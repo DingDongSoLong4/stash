@@ -14,13 +14,8 @@ import (
 	"github.com/stashapp/stash/pkg/tag"
 )
 
-type FullCreatorUpdater interface {
-	FinderCreatorUpdater
-	Update(ctx context.Context, updatedImage *models.Image) error
-}
-
 type Importer struct {
-	ReaderWriter        FullCreatorUpdater
+	ReaderWriter        models.ImageReaderWriter
 	FileFinder          file.Getter
 	StudioWriter        studio.NameFinderCreator
 	GalleryFinder       models.GalleryReader

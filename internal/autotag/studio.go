@@ -3,7 +3,6 @@ package autotag
 import (
 	"context"
 
-	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/match"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/txn"
@@ -29,7 +28,7 @@ func addSceneStudio(ctx context.Context, sceneWriter models.SceneReaderWriter, o
 	return true, nil
 }
 
-func addImageStudio(ctx context.Context, imageWriter image.PartialUpdater, i *models.Image, studioID int) (bool, error) {
+func addImageStudio(ctx context.Context, imageWriter models.ImageReaderWriter, i *models.Image, studioID int) (bool, error) {
 	// don't set if already set
 	if i.StudioID != nil {
 		return false, nil
@@ -113,14 +112,8 @@ func (tagger *Tagger) StudioScenes(ctx context.Context, p *models.Studio, paths 
 	return nil
 }
 
-type ImageFinderUpdater interface {
-	image.Queryer
-	Find(ctx context.Context, id int) (*models.Image, error)
-	UpdatePartial(ctx context.Context, id int, partial models.ImagePartial) (*models.Image, error)
-}
-
 // StudioImages searches for images whose path matches the provided studio name and tags the image with the studio, if studio is not already set on the image.
-func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw ImageFinderUpdater) error {
+func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw models.ImageReaderWriter) error {
 	t := getStudioTagger(p, aliases, tagger.Cache)
 
 	for _, tt := range t {

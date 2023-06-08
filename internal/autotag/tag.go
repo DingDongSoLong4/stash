@@ -12,12 +12,6 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type ImageQueryTagUpdater interface {
-	image.Queryer
-	models.TagIDLoader
-	image.PartialUpdater
-}
-
 func getTagTaggers(p *models.Tag, aliases []string, cache *match.Cache) []tagger {
 	ret := []tagger{{
 		ID:    p.ID,
@@ -68,7 +62,7 @@ func (tagger *Tagger) TagScenes(ctx context.Context, p *models.Tag, paths []stri
 }
 
 // TagImages searches for images whose path matches the provided tag name and tags the image with the tag.
-func (tagger *Tagger) TagImages(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw ImageQueryTagUpdater) error {
+func (tagger *Tagger) TagImages(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw models.ImageReaderWriter) error {
 	t := getTagTaggers(p, aliases, tagger.Cache)
 
 	for _, tt := range t {

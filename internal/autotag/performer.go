@@ -12,12 +12,6 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type ImageQueryPerformerUpdater interface {
-	image.Queryer
-	models.PerformerIDLoader
-	image.PartialUpdater
-}
-
 func getPerformerTaggers(p *models.Performer, cache *match.Cache) []tagger {
 	ret := []tagger{{
 		ID:    p.ID,
@@ -70,7 +64,7 @@ func (tagger *Tagger) PerformerScenes(ctx context.Context, p *models.Performer, 
 }
 
 // PerformerImages searches for images whose path matches the provided performer name and tags the image with the performer.
-func (tagger *Tagger) PerformerImages(ctx context.Context, p *models.Performer, paths []string, rw ImageQueryPerformerUpdater) error {
+func (tagger *Tagger) PerformerImages(ctx context.Context, p *models.Performer, paths []string, rw models.ImageReaderWriter) error {
 	t := getPerformerTaggers(p, tagger.Cache)
 
 	for _, tt := range t {

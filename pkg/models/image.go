@@ -1,6 +1,10 @@
 package models
 
-import "context"
+import (
+	"context"
+
+	"github.com/stashapp/stash/pkg/file"
+)
 
 type ImageFilterType struct {
 	And   *ImageFilterType      `json:"AND"`
@@ -103,31 +107,41 @@ type ImageFinder interface {
 
 type ImageReader interface {
 	ImageFinder
-	// TODO - remove this in another PR
 	Find(ctx context.Context, id int) (*Image, error)
+	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*Image, error)
 	FindByChecksum(ctx context.Context, checksum string) ([]*Image, error)
+	FindByFileID(ctx context.Context, fileID file.ID) ([]*Image, error)
+	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*Image, error)
+	FindByZipFileID(ctx context.Context, zipFileID file.ID) ([]*Image, error)
 	FindByGalleryID(ctx context.Context, galleryID int) ([]*Image, error)
-	CountByGalleryID(ctx context.Context, galleryID int) (int, error)
-	OCountByPerformerID(ctx context.Context, performerID int) (int, error)
-	Count(ctx context.Context) (int, error)
-	Size(ctx context.Context) (float64, error)
-	All(ctx context.Context) ([]*Image, error)
 	Query(ctx context.Context, options ImageQueryOptions) (*ImageQueryResult, error)
-	QueryCount(ctx context.Context, imageFilter *ImageFilterType, findFilter *FindFilterType) (int, error)
 
 	GalleryIDLoader
 	PerformerIDLoader
 	TagIDLoader
+	FileLoader
+	BulkFileLoader
+
+	Count(ctx context.Context) (int, error)
+	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
+	CountByGalleryID(ctx context.Context, galleryID int) (int, error)
+	OCountByPerformerID(ctx context.Context, performerID int) (int, error)
+	QueryCount(ctx context.Context, imageFilter *ImageFilterType, findFilter *FindFilterType) (int, error)
+
+	All(ctx context.Context) ([]*Image, error)
+	Size(ctx context.Context) (float64, error)
 }
 
 type ImageWriter interface {
 	Create(ctx context.Context, newImage *ImageCreateInput) error
 	Update(ctx context.Context, updatedImage *Image) error
 	UpdatePartial(ctx context.Context, id int, partial ImagePartial) (*Image, error)
+	Destroy(ctx context.Context, id int) error
+
+	AddFileID(ctx context.Context, id int, fileID file.ID) error
 	IncrementOCounter(ctx context.Context, id int) (int, error)
 	DecrementOCounter(ctx context.Context, id int) (int, error)
 	ResetOCounter(ctx context.Context, id int) (int, error)
-	Destroy(ctx context.Context, id int) error
 }
 
 type ImageReaderWriter interface {

@@ -21,14 +21,9 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type ImageFinder interface {
-	Find(ctx context.Context, id int) (*models.Image, error)
-	FindByChecksum(ctx context.Context, checksum string) ([]*models.Image, error)
-}
-
 type imageRoutes struct {
 	txnManager  txn.Manager
-	imageFinder ImageFinder
+	imageFinder models.ImageReader
 	fileFinder  file.Finder
 }
 
