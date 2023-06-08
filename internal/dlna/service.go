@@ -19,7 +19,7 @@ type Repository struct {
 	FileFinder      file.Finder
 	StudioFinder    StudioFinder
 	TagFinder       TagFinder
-	PerformerFinder PerformerFinder
+	PerformerFinder models.PerformerReader
 	MovieFinder     MovieFinder
 }
 

@@ -31,15 +31,6 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type PerformerReader interface {
-	match.PerformerFinder
-	Find(ctx context.Context, id int) (*models.Performer, error)
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Performer, error)
-	models.AliasLoader
-	models.StashIDLoader
-	GetImage(ctx context.Context, performerID int) ([]byte, error)
-}
-
 type StudioReader interface {
 	match.StudioFinder
 	studio.Finder
@@ -52,7 +43,7 @@ type TagFinder interface {
 
 type Repository struct {
 	Scene     models.SceneReader
-	Performer PerformerReader
+	Performer models.PerformerReader
 	Tag       TagFinder
 	Studio    StudioReader
 }

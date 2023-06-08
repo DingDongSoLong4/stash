@@ -20,7 +20,7 @@ type Cache struct {
 // against. This means that performers with single-letter words in their names could potentially
 // be missed.
 // This query is expensive, so it's queried once and cached, if the cache if provided.
-func getSingleLetterPerformers(ctx context.Context, c *Cache, reader PerformerAutoTagQueryer) ([]*models.Performer, error) {
+func getSingleLetterPerformers(ctx context.Context, c *Cache, reader models.PerformerReader) ([]*models.Performer, error) {
 	if c == nil {
 		c = &Cache{}
 	}

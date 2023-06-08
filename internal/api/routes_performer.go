@@ -14,14 +14,9 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type PerformerFinder interface {
-	Find(ctx context.Context, id int) (*models.Performer, error)
-	GetImage(ctx context.Context, performerID int) ([]byte, error)
-}
-
 type performerRoutes struct {
 	txnManager      txn.Manager
-	performerFinder PerformerFinder
+	performerFinder models.PerformerReader
 }
 
 func (rs performerRoutes) Routes() chi.Router {

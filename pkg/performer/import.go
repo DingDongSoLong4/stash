@@ -14,14 +14,8 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type NameFinderCreatorUpdater interface {
-	NameFinderCreator
-	Update(ctx context.Context, updatedPerformer *models.Performer) error
-	UpdateImage(ctx context.Context, performerID int, image []byte) error
-}
-
 type Importer struct {
-	ReaderWriter        NameFinderCreatorUpdater
+	ReaderWriter        models.PerformerReaderWriter
 	TagWriter           tag.NameFinderCreator
 	Input               jsonschema.Performer
 	MissingRefBehaviour models.ImportMissingRefEnum

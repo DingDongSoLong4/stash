@@ -20,14 +20,14 @@ const (
 type autotagScraper struct {
 	// repository   models.Repository
 	txnManager      txn.Manager
-	performerReader match.PerformerAutoTagQueryer
+	performerReader models.PerformerReader
 	studioReader    match.StudioAutoTagQueryer
 	tagReader       match.TagAutoTagQueryer
 
 	globalConfig GlobalConfig
 }
 
-func autotagMatchPerformers(ctx context.Context, path string, performerReader match.PerformerAutoTagQueryer, trimExt bool) ([]*models.ScrapedPerformer, error) {
+func autotagMatchPerformers(ctx context.Context, path string, performerReader models.PerformerReader, trimExt bool) ([]*models.ScrapedPerformer, error) {
 	p, err := match.PathToPerformers(ctx, path, performerReader, nil, trimExt)
 	if err != nil {
 		return nil, fmt.Errorf("error matching performers: %w", err)

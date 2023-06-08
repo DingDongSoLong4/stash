@@ -481,7 +481,7 @@ func (p *SceneFilenameParser) initWhiteSpaceRegex() {
 
 type SceneFilenameParserRepository struct {
 	Scene     models.SceneReader
-	Performer PerformerNamesFinder
+	Performer models.PerformerReader
 	Studio    studio.Queryer
 	Movie     MovieNameFinder
 	Tag       tag.Queryer
@@ -547,11 +547,7 @@ func (p SceneFilenameParser) replaceWhitespaceCharacters(value string) string {
 	return value
 }
 
-type PerformerNamesFinder interface {
-	FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Performer, error)
-}
-
-func (p *SceneFilenameParser) queryPerformer(ctx context.Context, qb PerformerNamesFinder, performerName string) *models.Performer {
+func (p *SceneFilenameParser) queryPerformer(ctx context.Context, qb models.PerformerReader, performerName string) *models.Performer {
 	// massage the performer name
 	performerName = delimiterRE.ReplaceAllString(performerName, " ")
 
@@ -640,7 +636,7 @@ func (p *SceneFilenameParser) queryTag(ctx context.Context, qb tag.Queryer, tagN
 	return ret
 }
 
-func (p *SceneFilenameParser) setPerformers(ctx context.Context, qb PerformerNamesFinder, h sceneHolder, result *SceneParserResult) {
+func (p *SceneFilenameParser) setPerformers(ctx context.Context, qb models.PerformerReader, h sceneHolder, result *SceneParserResult) {
 	// query for each performer
 	performersSet := make(map[int]bool)
 	for _, performerName := range h.performers {

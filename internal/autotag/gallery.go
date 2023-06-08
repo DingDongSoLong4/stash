@@ -29,7 +29,7 @@ func getGalleryFileTagger(s *models.Gallery, cache *match.Cache) tagger {
 }
 
 // GalleryPerformers tags the provided gallery with performers whose name matches the gallery's path.
-func GalleryPerformers(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, performerReader match.PerformerAutoTagQueryer, cache *match.Cache) error {
+func GalleryPerformers(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, performerReader models.PerformerReader, cache *match.Cache) error {
 	t := getGalleryFileTagger(s, cache)
 
 	return t.tagPerformers(ctx, performerReader, func(subjectID, otherID int) (bool, error) {

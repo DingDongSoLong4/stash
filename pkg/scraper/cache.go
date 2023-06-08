@@ -51,11 +51,6 @@ func isCDPPathWS(c GlobalConfig) bool {
 	return strings.HasPrefix(c.GetScraperCDPPath(), "ws://")
 }
 
-type PerformerFinder interface {
-	match.PerformerAutoTagQueryer
-	match.PerformerFinder
-}
-
 type StudioFinder interface {
 	match.StudioAutoTagQueryer
 	match.StudioFinder
@@ -70,7 +65,7 @@ type Repository struct {
 	SceneFinder     models.SceneReader
 	GalleryFinder   models.GalleryReader
 	TagFinder       TagFinder
-	PerformerFinder PerformerFinder
+	PerformerFinder models.PerformerReader
 	MovieFinder     match.MovieNamesFinder
 	StudioFinder    StudioFinder
 }

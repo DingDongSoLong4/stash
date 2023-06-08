@@ -12,14 +12,8 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type ImageAliasStashIDGetter interface {
-	GetImage(ctx context.Context, performerID int) ([]byte, error)
-	models.AliasLoader
-	models.StashIDLoader
-}
-
 // ToJSON converts a Performer object into its JSON equivalent.
-func ToJSON(ctx context.Context, reader ImageAliasStashIDGetter, performer *models.Performer) (*jsonschema.Performer, error) {
+func ToJSON(ctx context.Context, reader models.PerformerReader, performer *models.Performer) (*jsonschema.Performer, error) {
 	newPerformerJSON := jsonschema.Performer{
 		Name:           performer.Name,
 		Disambiguation: performer.Disambiguation,

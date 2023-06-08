@@ -51,7 +51,7 @@ func (t *tagger) addLog(otherType, otherName string) {
 	logger.Infof("Added %s '%s' to %s '%s'", otherType, otherName, t.Type, t.Name)
 }
 
-func (t *tagger) tagPerformers(ctx context.Context, performerReader match.PerformerAutoTagQueryer, addFunc addLinkFunc) error {
+func (t *tagger) tagPerformers(ctx context.Context, performerReader models.PerformerReader, addFunc addLinkFunc) error {
 	others, err := match.PathToPerformers(ctx, t.Path, performerReader, t.cache, t.trimExt)
 	if err != nil {
 		return err

@@ -12,12 +12,7 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type PerformerCreator interface {
-	Create(ctx context.Context, newPerformer *models.Performer) error
-	UpdateImage(ctx context.Context, performerID int, image []byte) error
-}
-
-func getPerformerID(ctx context.Context, endpoint string, w PerformerCreator, p *models.ScrapedPerformer, createMissing bool, skipSingleNamePerformers bool) (*int, error) {
+func getPerformerID(ctx context.Context, endpoint string, w models.PerformerReaderWriter, p *models.ScrapedPerformer, createMissing bool, skipSingleNamePerformers bool) (*int, error) {
 	if p.StoredID != nil {
 		// existing performer, just add it
 		performerID, err := strconv.Atoi(*p.StoredID)
@@ -37,7 +32,7 @@ func getPerformerID(ctx context.Context, endpoint string, w PerformerCreator, p 
 	return nil, nil
 }
 
-func createMissingPerformer(ctx context.Context, endpoint string, w PerformerCreator, p *models.ScrapedPerformer) (*int, error) {
+func createMissingPerformer(ctx context.Context, endpoint string, w models.PerformerReaderWriter, p *models.ScrapedPerformer) (*int, error) {
 	performerInput := scrapedToPerformerInput(p)
 	if endpoint != "" && p.RemoteSiteID != nil {
 		performerInput.StashIDs = models.NewRelatedStashIDs([]models.StashID{

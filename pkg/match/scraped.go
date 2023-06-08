@@ -9,18 +9,13 @@ import (
 	"github.com/stashapp/stash/pkg/tag"
 )
 
-type PerformerFinder interface {
-	FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Performer, error)
-	FindByStashID(ctx context.Context, stashID models.StashID) ([]*models.Performer, error)
-}
-
 type MovieNamesFinder interface {
 	FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Movie, error)
 }
 
 // ScrapedPerformer matches the provided performer with the
 // performers in the database and sets the ID field if one is found.
-func ScrapedPerformer(ctx context.Context, qb PerformerFinder, p *models.ScrapedPerformer, stashBoxEndpoint *string) error {
+func ScrapedPerformer(ctx context.Context, qb models.PerformerReader, p *models.ScrapedPerformer, stashBoxEndpoint *string) error {
 	if p.StoredID != nil || p.Name == nil {
 		return nil
 	}

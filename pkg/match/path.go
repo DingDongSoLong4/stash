@@ -28,12 +28,6 @@ const (
 
 var separatorRE = regexp.MustCompile(separatorPattern)
 
-type PerformerAutoTagQueryer interface {
-	Query(ctx context.Context, performerFilter *models.PerformerFilterType, findFilter *models.FindFilterType) ([]*models.Performer, int, error)
-	QueryForAutoTag(ctx context.Context, words []string) ([]*models.Performer, error)
-	models.AliasLoader
-}
-
 type StudioAutoTagQueryer interface {
 	QueryForAutoTag(ctx context.Context, words []string) ([]*models.Studio, error)
 	studio.Queryer
@@ -146,7 +140,7 @@ func regexpMatchesPath(r *regexp.Regexp, path string) int {
 	return found[len(found)-1][0]
 }
 
-func getPerformers(ctx context.Context, words []string, performerReader PerformerAutoTagQueryer, cache *Cache) ([]*models.Performer, error) {
+func getPerformers(ctx context.Context, words []string, performerReader models.PerformerReader, cache *Cache) ([]*models.Performer, error) {
 	performers, err := performerReader.QueryForAutoTag(ctx, words)
 	if err != nil {
 		return nil, err
@@ -160,7 +154,7 @@ func getPerformers(ctx context.Context, words []string, performerReader Performe
 	return append(performers, swPerformers...), nil
 }
 
-func PathToPerformers(ctx context.Context, path string, reader PerformerAutoTagQueryer, cache *Cache, trimExt bool) ([]*models.Performer, error) {
+func PathToPerformers(ctx context.Context, path string, reader models.PerformerReader, cache *Cache, trimExt bool) ([]*models.Performer, error) {
 	words := getPathWords(path, trimExt)
 
 	performers, err := getPerformers(ctx, words, reader, cache)

@@ -25,7 +25,7 @@ type TagCreatorFinder interface {
 type sceneRelationships struct {
 	sceneReader              models.SceneReader
 	studioCreator            StudioCreator
-	performerCreator         PerformerCreator
+	performerCreator         models.PerformerReaderWriter
 	tagCreatorFinder         TagCreatorFinder
 	scene                    *models.Scene
 	result                   *scrapeResult

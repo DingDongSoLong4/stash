@@ -195,31 +195,35 @@ type PerformerFilterType struct {
 }
 
 type PerformerFinder interface {
+	// TODO - rename this to Find and remove existing method
 	FindMany(ctx context.Context, ids []int) ([]*Performer, error)
 }
 
 type PerformerReader interface {
-	Find(ctx context.Context, id int) (*Performer, error)
 	PerformerFinder
+	Find(ctx context.Context, id int) (*Performer, error)
 	FindBySceneID(ctx context.Context, sceneID int) ([]*Performer, error)
 	FindByImageID(ctx context.Context, imageID int) ([]*Performer, error)
 	FindByGalleryID(ctx context.Context, galleryID int) ([]*Performer, error)
-	FindByNames(ctx context.Context, names []string, nocase bool) ([]*Performer, error)
 	FindByStashID(ctx context.Context, stashID StashID) ([]*Performer, error)
 	FindByStashIDStatus(ctx context.Context, hasStashID bool, stashboxEndpoint string) ([]*Performer, error)
-	CountByTagID(ctx context.Context, tagID int) (int, error)
-	Count(ctx context.Context) (int, error)
-	All(ctx context.Context) ([]*Performer, error)
+	FindByNames(ctx context.Context, names []string, nocase bool) ([]*Performer, error)
+	Query(ctx context.Context, performerFilter *PerformerFilterType, findFilter *FindFilterType) ([]*Performer, int, error)
 	// TODO - this interface is temporary until the filter schema can fully
 	// support the query needed
 	QueryForAutoTag(ctx context.Context, words []string) ([]*Performer, error)
-	Query(ctx context.Context, performerFilter *PerformerFilterType, findFilter *FindFilterType) ([]*Performer, int, error)
-	QueryCount(ctx context.Context, galleryFilter *PerformerFilterType, findFilter *FindFilterType) (int, error)
+
 	AliasLoader
-	GetImage(ctx context.Context, performerID int) ([]byte, error)
-	HasImage(ctx context.Context, performerID int) (bool, error)
 	StashIDLoader
 	TagIDLoader
+
+	Count(ctx context.Context) (int, error)
+	CountByTagID(ctx context.Context, tagID int) (int, error)
+	QueryCount(ctx context.Context, galleryFilter *PerformerFilterType, findFilter *FindFilterType) (int, error)
+
+	All(ctx context.Context) ([]*Performer, error)
+	GetImage(ctx context.Context, performerID int) ([]byte, error)
+	HasImage(ctx context.Context, performerID int) (bool, error)
 }
 
 type PerformerWriter interface {
@@ -227,6 +231,7 @@ type PerformerWriter interface {
 	UpdatePartial(ctx context.Context, id int, updatedPerformer PerformerPartial) (*Performer, error)
 	Update(ctx context.Context, updatedPerformer *Performer) error
 	Destroy(ctx context.Context, id int) error
+
 	UpdateImage(ctx context.Context, performerID int, image []byte) error
 }
 

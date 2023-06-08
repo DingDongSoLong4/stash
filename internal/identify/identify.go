@@ -45,7 +45,7 @@ type ScraperSource struct {
 type SceneIdentifier struct {
 	SceneReaderUpdater models.SceneReaderWriter
 	StudioCreator      StudioCreator
-	PerformerCreator   PerformerCreator
+	PerformerCreator   models.PerformerReaderWriter
 	TagCreatorFinder   TagCreatorFinder
 
 	DefaultOptions              *MetadataOptions

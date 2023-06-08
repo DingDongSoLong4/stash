@@ -20,7 +20,7 @@ func getImageFileTagger(s *models.Image, cache *match.Cache) tagger {
 }
 
 // ImagePerformers tags the provided image with performers whose name matches the image's path.
-func ImagePerformers(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, performerReader match.PerformerAutoTagQueryer, cache *match.Cache) error {
+func ImagePerformers(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, performerReader models.PerformerReader, cache *match.Cache) error {
 	t := getImageFileTagger(s, cache)
 
 	return t.tagPerformers(ctx, performerReader, func(subjectID, otherID int) (bool, error) {
