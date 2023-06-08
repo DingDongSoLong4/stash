@@ -32,13 +32,6 @@ type FinderCreatorUpdater interface {
 	models.FileLoader
 }
 
-type GalleryFinderCreator interface {
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*models.Gallery, error)
-	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*models.Gallery, error)
-	Create(ctx context.Context, newObject *models.Gallery, fileIDs []file.ID) error
-	UpdatePartial(ctx context.Context, id int, updatedGallery models.GalleryPartial) (*models.Gallery, error)
-}
-
 type ScanConfig interface {
 	GetCreateGalleriesFromFolders() bool
 }
@@ -49,7 +42,7 @@ type ScanGenerator interface {
 
 type ScanHandler struct {
 	CreatorUpdater FinderCreatorUpdater
-	GalleryFinder  GalleryFinderCreator
+	GalleryFinder  models.GalleryReaderWriter
 
 	ScanGenerator ScanGenerator
 

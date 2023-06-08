@@ -14,11 +14,6 @@ import (
 	"github.com/stashapp/stash/pkg/tag"
 )
 
-type GalleryFinder interface {
-	FindByPath(ctx context.Context, p string) ([]*models.Gallery, error)
-	FindUserGalleryByTitle(ctx context.Context, title string) ([]*models.Gallery, error)
-}
-
 type FullCreatorUpdater interface {
 	FinderCreatorUpdater
 	Update(ctx context.Context, updatedImage *models.Image) error
@@ -28,7 +23,7 @@ type Importer struct {
 	ReaderWriter        FullCreatorUpdater
 	FileFinder          file.Getter
 	StudioWriter        studio.NameFinderCreator
-	GalleryFinder       GalleryFinder
+	GalleryFinder       models.GalleryReader
 	PerformerWriter     performer.NameFinderCreator
 	TagWriter           tag.NameFinderCreator
 	Input               jsonschema.Image

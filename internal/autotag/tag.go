@@ -18,12 +18,6 @@ type ImageQueryTagUpdater interface {
 	image.PartialUpdater
 }
 
-type GalleryQueryTagUpdater interface {
-	gallery.Queryer
-	models.TagIDLoader
-	gallery.PartialUpdater
-}
-
 func getTagTaggers(p *models.Tag, aliases []string, cache *match.Cache) []tagger {
 	ret := []tagger{{
 		ID:    p.ID,
@@ -103,7 +97,7 @@ func (tagger *Tagger) TagImages(ctx context.Context, p *models.Tag, paths []stri
 }
 
 // TagGalleries searches for galleries whose path matches the provided tag name and tags the gallery with the tag.
-func (tagger *Tagger) TagGalleries(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw GalleryQueryTagUpdater) error {
+func (tagger *Tagger) TagGalleries(ctx context.Context, p *models.Tag, paths []string, aliases []string, rw models.GalleryReaderWriter) error {
 	t := getTagTaggers(p, aliases, tagger.Cache)
 
 	for _, tt := range t {

@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/match"
@@ -148,7 +147,7 @@ func (t *tagger) tagImages(ctx context.Context, paths []string, imageReader imag
 	})
 }
 
-func (t *tagger) tagGalleries(ctx context.Context, paths []string, galleryReader gallery.Queryer, addFunc addGalleryLinkFunc) error {
+func (t *tagger) tagGalleries(ctx context.Context, paths []string, galleryReader models.GalleryReader, addFunc addGalleryLinkFunc) error {
 	return match.PathToGalleriesFn(ctx, t.Name, paths, galleryReader, func(ctx context.Context, p *models.Gallery) error {
 		added, err := addFunc(p)
 

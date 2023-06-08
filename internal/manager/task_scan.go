@@ -99,18 +99,13 @@ type fileCounter interface {
 	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
 }
 
-type galleryFinder interface {
-	fileCounter
-	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*models.Gallery, error)
-}
-
 // handlerRequiredFilter returns true if a File's handler needs to be executed despite the file not being updated.
 type handlerRequiredFilter struct {
 	extensionConfig
 	txnManager     txn.Manager
 	SceneFinder    models.SceneReader
 	ImageFinder    fileCounter
-	GalleryFinder  galleryFinder
+	GalleryFinder  models.GalleryReader
 	CaptionUpdater video.CaptionUpdater
 
 	FolderCache *lru.LRU

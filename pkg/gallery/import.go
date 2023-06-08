@@ -15,7 +15,7 @@ import (
 )
 
 type Importer struct {
-	ReaderWriter        FullCreatorUpdater
+	ReaderWriter        models.GalleryReaderWriter
 	StudioWriter        studio.NameFinderCreator
 	PerformerWriter     performer.NameFinderCreator
 	TagWriter           tag.NameFinderCreator
@@ -26,11 +26,6 @@ type Importer struct {
 
 	ID      int
 	gallery models.Gallery
-}
-
-type FullCreatorUpdater interface {
-	FinderCreatorUpdater
-	Update(ctx context.Context, updatedGallery *models.Gallery) error
 }
 
 func (i *Importer) PreImport(ctx context.Context) error {

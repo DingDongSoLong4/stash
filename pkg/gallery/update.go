@@ -8,12 +8,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 )
 
-type ImageUpdater interface {
-	GetImageIDs(ctx context.Context, galleryID int) ([]int, error)
-	AddImages(ctx context.Context, galleryID int, imageIDs ...int) error
-	RemoveImages(ctx context.Context, galleryID int, imageIDs ...int) error
-}
-
 func (s *Service) Updated(ctx context.Context, galleryID int) error {
 	_, err := s.Repository.UpdatePartial(ctx, galleryID, models.GalleryPartial{
 		UpdatedAt: models.NewOptionalTime(time.Now()),
@@ -54,7 +48,7 @@ func (s *Service) RemoveImages(ctx context.Context, g *models.Gallery, toRemove 
 	return s.Updated(ctx, g.ID)
 }
 
-func AddPerformer(ctx context.Context, qb PartialUpdater, o *models.Gallery, performerID int) error {
+func AddPerformer(ctx context.Context, qb models.GalleryReaderWriter, o *models.Gallery, performerID int) error {
 	_, err := qb.UpdatePartial(ctx, o.ID, models.GalleryPartial{
 		PerformerIDs: &models.UpdateIDs{
 			IDs:  []int{performerID},
@@ -64,7 +58,7 @@ func AddPerformer(ctx context.Context, qb PartialUpdater, o *models.Gallery, per
 	return err
 }
 
-func AddTag(ctx context.Context, qb PartialUpdater, o *models.Gallery, tagID int) error {
+func AddTag(ctx context.Context, qb models.GalleryReaderWriter, o *models.Gallery, tagID int) error {
 	_, err := qb.UpdatePartial(ctx, o.ID, models.GalleryPartial{
 		TagIDs: &models.UpdateIDs{
 			IDs:  []int{tagID},

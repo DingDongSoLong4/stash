@@ -66,14 +66,9 @@ type TagFinder interface {
 	tag.Queryer
 }
 
-type GalleryFinder interface {
-	Find(ctx context.Context, id int) (*models.Gallery, error)
-	models.FileLoader
-}
-
 type Repository struct {
 	SceneFinder     models.SceneReader
-	GalleryFinder   GalleryFinder
+	GalleryFinder   models.GalleryReader
 	TagFinder       TagFinder
 	PerformerFinder PerformerFinder
 	MovieFinder     match.MovieNamesFinder

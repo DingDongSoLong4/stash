@@ -18,12 +18,6 @@ type ImageQueryPerformerUpdater interface {
 	image.PartialUpdater
 }
 
-type GalleryQueryPerformerUpdater interface {
-	gallery.Queryer
-	models.PerformerIDLoader
-	gallery.PartialUpdater
-}
-
 func getPerformerTaggers(p *models.Performer, cache *match.Cache) []tagger {
 	ret := []tagger{{
 		ID:    p.ID,
@@ -105,7 +99,7 @@ func (tagger *Tagger) PerformerImages(ctx context.Context, p *models.Performer, 
 }
 
 // PerformerGalleries searches for galleries whose path matches the provided performer name and tags the gallery with the performer.
-func (tagger *Tagger) PerformerGalleries(ctx context.Context, p *models.Performer, paths []string, rw GalleryQueryPerformerUpdater) error {
+func (tagger *Tagger) PerformerGalleries(ctx context.Context, p *models.Performer, paths []string, rw models.GalleryReaderWriter) error {
 	t := getPerformerTaggers(p, tagger.Cache)
 
 	for _, tt := range t {

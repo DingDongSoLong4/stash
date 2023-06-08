@@ -3,7 +3,6 @@ package autotag
 import (
 	"context"
 
-	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/match"
 	"github.com/stashapp/stash/pkg/models"
@@ -47,7 +46,7 @@ func addImageStudio(ctx context.Context, imageWriter image.PartialUpdater, i *mo
 	return true, nil
 }
 
-func addGalleryStudio(ctx context.Context, galleryWriter GalleryFinderUpdater, o *models.Gallery, studioID int) (bool, error) {
+func addGalleryStudio(ctx context.Context, galleryWriter models.GalleryReaderWriter, o *models.Gallery, studioID int) (bool, error) {
 	// don't set if already set
 	if o.StudioID != nil {
 		return false, nil
@@ -151,14 +150,8 @@ func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths 
 	return nil
 }
 
-type GalleryFinderUpdater interface {
-	gallery.Queryer
-	gallery.PartialUpdater
-	Find(ctx context.Context, id int) (*models.Gallery, error)
-}
-
 // StudioGalleries searches for galleries whose path matches the provided studio name and tags the gallery with the studio, if studio is not already set on the gallery.
-func (tagger *Tagger) StudioGalleries(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw GalleryFinderUpdater) error {
+func (tagger *Tagger) StudioGalleries(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw models.GalleryReaderWriter) error {
 	t := getStudioTagger(p, aliases, tagger.Cache)
 
 	for _, tt := range t {

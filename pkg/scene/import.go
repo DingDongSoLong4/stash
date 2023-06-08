@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/stashapp/stash/pkg/file"
-	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/movie"
@@ -21,7 +20,7 @@ type Importer struct {
 	ReaderWriter        models.SceneReaderWriter
 	FileFinder          file.Getter
 	StudioWriter        studio.NameFinderCreator
-	GalleryFinder       gallery.Finder
+	GalleryFinder       models.GalleryReader
 	PerformerWriter     performer.NameFinderCreator
 	MovieWriter         movie.NameFinderCreator
 	TagWriter           tag.NameFinderCreator

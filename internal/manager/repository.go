@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/stashapp/stash/pkg/file"
-	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
@@ -15,14 +14,6 @@ import (
 type ImageReaderWriter interface {
 	models.ImageReaderWriter
 	image.FinderCreatorUpdater
-	GetManyFileIDs(ctx context.Context, ids []int) ([][]file.ID, error)
-}
-
-type GalleryReaderWriter interface {
-	models.GalleryReaderWriter
-	gallery.FinderCreatorUpdater
-	gallery.Finder
-	models.FileLoader
 	GetManyFileIDs(ctx context.Context, ids []int) ([][]file.ID, error)
 }
 
@@ -42,7 +33,7 @@ type Repository struct {
 
 	File           FileReaderWriter
 	Folder         FolderReaderWriter
-	Gallery        GalleryReaderWriter
+	Gallery        models.GalleryReaderWriter
 	GalleryChapter models.GalleryChapterReaderWriter
 	Image          ImageReaderWriter
 	Movie          models.MovieReaderWriter
