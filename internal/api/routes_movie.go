@@ -13,15 +13,9 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type MovieFinder interface {
-	GetFrontImage(ctx context.Context, movieID int) ([]byte, error)
-	GetBackImage(ctx context.Context, movieID int) ([]byte, error)
-	Find(ctx context.Context, id int) (*models.Movie, error)
-}
-
 type movieRoutes struct {
 	txnManager  txn.Manager
-	movieFinder MovieFinder
+	movieFinder models.MovieReader
 }
 
 func (rs movieRoutes) Routes() chi.Router {

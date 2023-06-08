@@ -8,7 +8,6 @@ import (
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
-	"github.com/stashapp/stash/pkg/movie"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
 	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/utils"
@@ -20,7 +19,7 @@ type Importer struct {
 	StudioWriter        models.StudioReaderWriter
 	GalleryFinder       models.GalleryReader
 	PerformerWriter     models.PerformerReaderWriter
-	MovieWriter         movie.NameFinderCreator
+	MovieWriter         models.MovieReaderWriter
 	TagWriter           tag.NameFinderCreator
 	Input               jsonschema.Scene
 	MissingRefBehaviour models.ImportMissingRefEnum

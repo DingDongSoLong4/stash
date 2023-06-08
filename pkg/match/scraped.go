@@ -9,10 +9,6 @@ import (
 	"github.com/stashapp/stash/pkg/tag"
 )
 
-type MovieNamesFinder interface {
-	FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Movie, error)
-}
-
 // ScrapedPerformer matches the provided performer with the
 // performers in the database and sets the ID field if one is found.
 func ScrapedPerformer(ctx context.Context, qb models.PerformerReader, p *models.ScrapedPerformer, stashBoxEndpoint *string) error {
@@ -101,7 +97,7 @@ func ScrapedStudio(ctx context.Context, qb models.StudioReader, s *models.Scrape
 
 // ScrapedMovie matches the provided movie with the movies
 // in the database and sets the ID field if one is found.
-func ScrapedMovie(ctx context.Context, qb MovieNamesFinder, m *models.ScrapedMovie) error {
+func ScrapedMovie(ctx context.Context, qb models.MovieReader, m *models.ScrapedMovie) error {
 	if m.StoredID != nil || m.Name == nil {
 		return nil
 	}

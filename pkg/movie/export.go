@@ -11,13 +11,8 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type ImageGetter interface {
-	GetFrontImage(ctx context.Context, movieID int) ([]byte, error)
-	GetBackImage(ctx context.Context, movieID int) ([]byte, error)
-}
-
 // ToJSON converts a Movie into its JSON equivalent.
-func ToJSON(ctx context.Context, reader ImageGetter, studioReader models.StudioReader, movie *models.Movie) (*jsonschema.Movie, error) {
+func ToJSON(ctx context.Context, reader models.MovieReader, studioReader models.StudioReader, movie *models.Movie) (*jsonschema.Movie, error) {
 	newMovieJSON := jsonschema.Movie{
 		Name:      movie.Name,
 		Aliases:   movie.Aliases,

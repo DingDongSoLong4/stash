@@ -61,7 +61,7 @@ type Repository struct {
 	GalleryFinder   models.GalleryReader
 	TagFinder       TagFinder
 	PerformerFinder models.PerformerReader
-	MovieFinder     match.MovieNamesFinder
+	MovieFinder     models.MovieReader
 	StudioFinder    models.StudioReader
 }
 

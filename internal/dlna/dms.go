@@ -55,10 +55,6 @@ type TagFinder interface {
 	All(ctx context.Context) ([]*models.Tag, error)
 }
 
-type MovieFinder interface {
-	All(ctx context.Context) ([]*models.Movie, error)
-}
-
 const (
 	serverField                 = "Linux/3.4 DLNADOC/1.50 UPnP/1.0 DMS/1.0"
 	rootDeviceType              = "urn:schemas-upnp-org:device:MediaServer:1"

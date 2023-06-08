@@ -483,7 +483,7 @@ type SceneFilenameParserRepository struct {
 	Scene     models.SceneReader
 	Performer models.PerformerReader
 	Studio    models.StudioReader
-	Movie     MovieNameFinder
+	Movie     models.MovieReader
 	Tag       tag.Queryer
 }
 
@@ -592,11 +592,7 @@ func (p *SceneFilenameParser) queryStudio(ctx context.Context, qb models.StudioR
 	return ret
 }
 
-type MovieNameFinder interface {
-	FindByName(ctx context.Context, name string, nocase bool) (*models.Movie, error)
-}
-
-func (p *SceneFilenameParser) queryMovie(ctx context.Context, qb MovieNameFinder, movieName string) *models.Movie {
+func (p *SceneFilenameParser) queryMovie(ctx context.Context, qb models.MovieReader, movieName string) *models.Movie {
 	// massage the movie name
 	movieName = delimiterRE.ReplaceAllString(movieName, " ")
 
@@ -679,7 +675,7 @@ func (p *SceneFilenameParser) setStudio(ctx context.Context, qb models.StudioRea
 	}
 }
 
-func (p *SceneFilenameParser) setMovies(ctx context.Context, qb MovieNameFinder, h sceneHolder, result *SceneParserResult) {
+func (p *SceneFilenameParser) setMovies(ctx context.Context, qb models.MovieReader, h sceneHolder, result *SceneParserResult) {
 	// query for each movie
 	moviesSet := make(map[int]bool)
 	for _, movieName := range h.movies {

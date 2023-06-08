@@ -20,7 +20,7 @@ type Repository struct {
 	StudioFinder    models.StudioReader
 	TagFinder       TagFinder
 	PerformerFinder models.PerformerReader
-	MovieFinder     MovieFinder
+	MovieFinder     models.MovieReader
 }
 
 type Status struct {
