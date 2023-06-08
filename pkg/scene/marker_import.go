@@ -9,16 +9,9 @@ import (
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 )
 
-type MarkerCreatorUpdater interface {
-	Create(ctx context.Context, newSceneMarker *models.SceneMarker) error
-	Update(ctx context.Context, updatedSceneMarker *models.SceneMarker) error
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
-	UpdateTags(ctx context.Context, markerID int, tagIDs []int) error
-}
-
 type MarkerImporter struct {
 	SceneID             int
-	ReaderWriter        MarkerCreatorUpdater
+	ReaderWriter        models.SceneMarkerReaderWriter
 	TagWriter           models.TagReaderWriter
 	Input               jsonschema.SceneMarker
 	MissingRefBehaviour models.ImportMissingRefEnum

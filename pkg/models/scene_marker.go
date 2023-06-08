@@ -29,17 +29,24 @@ type MarkerStringsResultType struct {
 	Title string `json:"title"`
 }
 
-type SceneMarkerReader interface {
-	Find(ctx context.Context, id int) (*SceneMarker, error)
+type SceneMarkerFinder interface {
+	// TODO - rename this to Find and remove existing method
 	FindMany(ctx context.Context, ids []int) ([]*SceneMarker, error)
+}
+
+type SceneMarkerReader interface {
+	SceneMarkerFinder
+	Find(ctx context.Context, id int) (*SceneMarker, error)
 	FindBySceneID(ctx context.Context, sceneID int) ([]*SceneMarker, error)
-	CountByTagID(ctx context.Context, tagID int) (int, error)
-	GetMarkerStrings(ctx context.Context, q *string, sort *string) ([]*MarkerStringsResultType, error)
-	Wall(ctx context.Context, q *string) ([]*SceneMarker, error)
-	Count(ctx context.Context) (int, error)
-	All(ctx context.Context) ([]*SceneMarker, error)
 	Query(ctx context.Context, sceneMarkerFilter *SceneMarkerFilterType, findFilter *FindFilterType) ([]*SceneMarker, int, error)
+
+	Count(ctx context.Context) (int, error)
+	CountByTagID(ctx context.Context, tagID int) (int, error)
 	QueryCount(ctx context.Context, sceneMarkerFilter *SceneMarkerFilterType, findFilter *FindFilterType) (int, error)
+
+	All(ctx context.Context) ([]*SceneMarker, error)
+	Wall(ctx context.Context, q *string) ([]*SceneMarker, error)
+	GetMarkerStrings(ctx context.Context, q *string, sort *string) ([]*MarkerStringsResultType, error)
 	GetTagIDs(ctx context.Context, imageID int) ([]int, error)
 }
 
@@ -47,6 +54,7 @@ type SceneMarkerWriter interface {
 	Create(ctx context.Context, newSceneMarker *SceneMarker) error
 	Update(ctx context.Context, updatedSceneMarker *SceneMarker) error
 	Destroy(ctx context.Context, id int) error
+
 	UpdateTags(ctx context.Context, markerID int, tagIDs []int) error
 }
 

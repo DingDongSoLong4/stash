@@ -106,7 +106,7 @@ func getTagNames(tags []*models.Tag) []string {
 }
 
 // GetDependentTagIDs returns a slice of unique tag IDs that this scene references.
-func GetDependentTagIDs(ctx context.Context, tags models.TagReader, markerReader MarkerFinder, scene *models.Scene) ([]int, error) {
+func GetDependentTagIDs(ctx context.Context, tags models.TagReader, markerReader models.SceneMarkerReader, scene *models.Scene) ([]int, error) {
 	var ret []int
 
 	t, err := tags.FindBySceneID(ctx, scene.ID)
@@ -178,7 +178,7 @@ func GetDependentMovieIDs(ctx context.Context, scene *models.Scene) ([]int, erro
 
 // GetSceneMarkersJSON returns a slice of SceneMarker JSON representation
 // objects corresponding to the provided scene's markers.
-func GetSceneMarkersJSON(ctx context.Context, markerReader MarkerFinder, tagReader models.TagReader, scene *models.Scene) ([]jsonschema.SceneMarker, error) {
+func GetSceneMarkersJSON(ctx context.Context, markerReader models.SceneMarkerReader, tagReader models.TagReader, scene *models.Scene) ([]jsonschema.SceneMarker, error) {
 	sceneMarkers, err := markerReader.FindBySceneID(ctx, scene.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting scene markers: %v", err)

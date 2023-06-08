@@ -179,7 +179,7 @@ func (s *Service) deleteFiles(ctx context.Context, scene *models.Scene, fileDele
 // DestroyMarker deletes the scene marker from the database and returns a
 // function that removes the generated files, to be executed after the
 // transaction is successfully committed.
-func DestroyMarker(ctx context.Context, scene *models.Scene, sceneMarker *models.SceneMarker, qb MarkerDestroyer, fileDeleter *FileDeleter) error {
+func DestroyMarker(ctx context.Context, scene *models.Scene, sceneMarker *models.SceneMarker, qb models.SceneMarkerReaderWriter, fileDeleter *FileDeleter) error {
 	if err := qb.Destroy(ctx, sceneMarker.ID); err != nil {
 		return err
 	}

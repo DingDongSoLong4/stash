@@ -21,11 +21,6 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type SceneMarkerFinder interface {
-	Find(ctx context.Context, id int) (*models.SceneMarker, error)
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
-}
-
 type CaptionFinder interface {
 	GetCaptions(ctx context.Context, fileID file.ID) ([]*models.VideoCaption, error)
 }
@@ -35,7 +30,7 @@ type sceneRoutes struct {
 	sceneFinder       models.SceneReader
 	fileFinder        file.Finder
 	captionFinder     CaptionFinder
-	sceneMarkerFinder SceneMarkerFinder
+	sceneMarkerFinder models.SceneMarkerReader
 	tagFinder         models.TagReader
 }
 
