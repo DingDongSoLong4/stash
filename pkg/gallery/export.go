@@ -9,10 +9,6 @@ import (
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 )
 
-type ChapterFinder interface {
-	FindByGalleryID(ctx context.Context, galleryID int) ([]*models.GalleryChapter, error)
-}
-
 // ToBasicJSON converts a gallery object into its JSON object equivalent. It
 // does not convert the relationships to other objects.
 func ToBasicJSON(gallery *models.Gallery) (*jsonschema.Gallery, error) {
@@ -64,7 +60,7 @@ func GetStudioName(ctx context.Context, reader models.StudioReader, gallery *mod
 
 // GetGalleryChaptersJSON returns a slice of GalleryChapter JSON representation
 // objects corresponding to the provided gallery's chapters.
-func GetGalleryChaptersJSON(ctx context.Context, chapterReader ChapterFinder, gallery *models.Gallery) ([]jsonschema.GalleryChapter, error) {
+func GetGalleryChaptersJSON(ctx context.Context, chapterReader models.GalleryChapterReader, gallery *models.Gallery) ([]jsonschema.GalleryChapter, error) {
 	galleryChapters, err := chapterReader.FindByGalleryID(ctx, gallery.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting gallery chapters: %v", err)

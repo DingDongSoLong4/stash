@@ -2,9 +2,14 @@ package models
 
 import "context"
 
-type GalleryChapterReader interface {
-	Find(ctx context.Context, id int) (*GalleryChapter, error)
+type GalleryChapterFinder interface {
+	// TODO - rename this to Find and remove existing method
 	FindMany(ctx context.Context, ids []int) ([]*GalleryChapter, error)
+}
+
+type GalleryChapterReader interface {
+	GalleryChapterFinder
+	Find(ctx context.Context, id int) (*GalleryChapter, error)
 	FindByGalleryID(ctx context.Context, galleryID int) ([]*GalleryChapter, error)
 }
 
