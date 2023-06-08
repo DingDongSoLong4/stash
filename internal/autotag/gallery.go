@@ -53,7 +53,7 @@ func GalleryPerformers(ctx context.Context, s *models.Gallery, rw models.Gallery
 // GalleryStudios tags the provided gallery with the first studio whose name matches the gallery's path.
 //
 // Gallerys will not be tagged if studio is already set.
-func GalleryStudios(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, studioReader match.StudioAutoTagQueryer, cache *match.Cache) error {
+func GalleryStudios(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, studioReader models.StudioReader, cache *match.Cache) error {
 	if s.StudioID != nil {
 		// don't modify
 		return nil

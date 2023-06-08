@@ -51,10 +51,6 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type StudioFinder interface {
-	All(ctx context.Context) ([]*models.Studio, error)
-}
-
 type TagFinder interface {
 	All(ctx context.Context) ([]*models.Tag, error)
 }

@@ -52,14 +52,9 @@ func ScrapedPerformer(ctx context.Context, qb models.PerformerReader, p *models.
 	return nil
 }
 
-type StudioFinder interface {
-	studio.Queryer
-	FindByStashID(ctx context.Context, stashID models.StashID) ([]*models.Studio, error)
-}
-
 // ScrapedStudio matches the provided studio with the studios
 // in the database and sets the ID field if one is found.
-func ScrapedStudio(ctx context.Context, qb StudioFinder, s *models.ScrapedStudio, stashBoxEndpoint *string) error {
+func ScrapedStudio(ctx context.Context, qb models.StudioReader, s *models.ScrapedStudio, stashBoxEndpoint *string) error {
 	if s.StoredID != nil {
 		return nil
 	}

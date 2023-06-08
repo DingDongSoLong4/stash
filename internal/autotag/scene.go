@@ -44,7 +44,7 @@ func ScenePerformers(ctx context.Context, s *models.Scene, rw models.SceneReader
 // SceneStudios tags the provided scene with the first studio whose name matches the scene's path.
 //
 // Scenes will not be tagged if studio is already set.
-func SceneStudios(ctx context.Context, s *models.Scene, rw models.SceneReaderWriter, studioReader match.StudioAutoTagQueryer, cache *match.Cache) error {
+func SceneStudios(ctx context.Context, s *models.Scene, rw models.SceneReaderWriter, studioReader models.StudioReader, cache *match.Cache) error {
 	if s.StudioID != nil {
 		// don't modify
 		return nil

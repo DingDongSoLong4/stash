@@ -51,11 +51,6 @@ func isCDPPathWS(c GlobalConfig) bool {
 	return strings.HasPrefix(c.GetScraperCDPPath(), "ws://")
 }
 
-type StudioFinder interface {
-	match.StudioAutoTagQueryer
-	match.StudioFinder
-}
-
 type TagFinder interface {
 	match.TagAutoTagQueryer
 	tag.Queryer
@@ -67,7 +62,7 @@ type Repository struct {
 	TagFinder       TagFinder
 	PerformerFinder models.PerformerReader
 	MovieFinder     match.MovieNamesFinder
-	StudioFinder    StudioFinder
+	StudioFinder    models.StudioReader
 }
 
 // Cache stores the database of scrapers

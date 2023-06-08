@@ -482,7 +482,7 @@ func (p *SceneFilenameParser) initWhiteSpaceRegex() {
 type SceneFilenameParserRepository struct {
 	Scene     models.SceneReader
 	Performer models.PerformerReader
-	Studio    studio.Queryer
+	Studio    models.StudioReader
 	Movie     MovieNameFinder
 	Tag       tag.Queryer
 }
@@ -570,7 +570,7 @@ func (p *SceneFilenameParser) queryPerformer(ctx context.Context, qb models.Perf
 	return ret
 }
 
-func (p *SceneFilenameParser) queryStudio(ctx context.Context, qb studio.Queryer, studioName string) *models.Studio {
+func (p *SceneFilenameParser) queryStudio(ctx context.Context, qb models.StudioReader, studioName string) *models.Studio {
 	// massage the performer name
 	studioName = delimiterRE.ReplaceAllString(studioName, " ")
 
@@ -668,7 +668,7 @@ func (p *SceneFilenameParser) setTags(ctx context.Context, qb tag.Queryer, h sce
 	}
 }
 
-func (p *SceneFilenameParser) setStudio(ctx context.Context, qb studio.Queryer, h sceneHolder, result *SceneParserResult) {
+func (p *SceneFilenameParser) setStudio(ctx context.Context, qb models.StudioReader, h sceneHolder, result *SceneParserResult) {
 	// query for each performer
 	if h.studio != "" {
 		studio := p.queryStudio(ctx, qb, h.studio)

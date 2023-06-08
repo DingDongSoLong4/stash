@@ -39,25 +39,29 @@ type StudioFilterType struct {
 }
 
 type StudioFinder interface {
+	// TODO - rename this to Find and remove existing method
 	FindMany(ctx context.Context, ids []int) ([]*Studio, error)
 }
 
 type StudioReader interface {
-	Find(ctx context.Context, id int) (*Studio, error)
 	StudioFinder
+	Find(ctx context.Context, id int) (*Studio, error)
 	FindChildren(ctx context.Context, id int) ([]*Studio, error)
-	FindByName(ctx context.Context, name string, nocase bool) (*Studio, error)
 	FindByStashID(ctx context.Context, stashID StashID) ([]*Studio, error)
-	Count(ctx context.Context) (int, error)
-	All(ctx context.Context) ([]*Studio, error)
+	FindByName(ctx context.Context, name string, nocase bool) (*Studio, error)
+	Query(ctx context.Context, studioFilter *StudioFilterType, findFilter *FindFilterType) ([]*Studio, int, error)
 	// TODO - this interface is temporary until the filter schema can fully
 	// support the query needed
 	QueryForAutoTag(ctx context.Context, words []string) ([]*Studio, error)
-	Query(ctx context.Context, studioFilter *StudioFilterType, findFilter *FindFilterType) ([]*Studio, int, error)
+
+	StashIDLoader
+
+	Count(ctx context.Context) (int, error)
+
+	All(ctx context.Context) ([]*Studio, error)
+	GetAliases(ctx context.Context, studioID int) ([]string, error)
 	GetImage(ctx context.Context, studioID int) ([]byte, error)
 	HasImage(ctx context.Context, studioID int) (bool, error)
-	StashIDLoader
-	GetAliases(ctx context.Context, studioID int) ([]string, error)
 }
 
 type StudioWriter interface {
@@ -65,9 +69,10 @@ type StudioWriter interface {
 	UpdatePartial(ctx context.Context, id int, updatedStudio StudioPartial) (*Studio, error)
 	Update(ctx context.Context, updatedStudio *Studio) error
 	Destroy(ctx context.Context, id int) error
+
+	UpdateAliases(ctx context.Context, studioID int, aliases []string) error
 	UpdateImage(ctx context.Context, studioID int, image []byte) error
 	UpdateStashIDs(ctx context.Context, studioID int, stashIDs []StashID) error
-	UpdateAliases(ctx context.Context, studioID int, aliases []string) error
 }
 
 type StudioReaderWriter interface {

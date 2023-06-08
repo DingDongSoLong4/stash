@@ -11,15 +11,8 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type FinderImageStashIDGetter interface {
-	Finder
-	GetAliases(ctx context.Context, studioID int) ([]string, error)
-	GetImage(ctx context.Context, studioID int) ([]byte, error)
-	models.StashIDLoader
-}
-
 // ToJSON converts a Studio object into its JSON equivalent.
-func ToJSON(ctx context.Context, reader FinderImageStashIDGetter, studio *models.Studio) (*jsonschema.Studio, error) {
+func ToJSON(ctx context.Context, reader models.StudioReader, studio *models.Studio) (*jsonschema.Studio, error) {
 	newStudioJSON := jsonschema.Studio{
 		Name:          studio.Name,
 		URL:           studio.URL,

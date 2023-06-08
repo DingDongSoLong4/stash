@@ -44,7 +44,7 @@ func ImagePerformers(ctx context.Context, s *models.Image, rw models.ImageReader
 // ImageStudios tags the provided image with the first studio whose name matches the image's path.
 //
 // Images will not be tagged if studio is already set.
-func ImageStudios(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, studioReader match.StudioAutoTagQueryer, cache *match.Cache) error {
+func ImageStudios(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, studioReader models.StudioReader, cache *match.Cache) error {
 	if s.StudioID != nil {
 		// don't modify
 		return nil

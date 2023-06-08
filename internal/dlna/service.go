@@ -17,7 +17,7 @@ import (
 type Repository struct {
 	SceneFinder     models.SceneReader
 	FileFinder      file.Finder
-	StudioFinder    StudioFinder
+	StudioFinder    models.StudioReader
 	TagFinder       TagFinder
 	PerformerFinder models.PerformerReader
 	MovieFinder     MovieFinder

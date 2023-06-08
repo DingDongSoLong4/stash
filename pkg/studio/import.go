@@ -10,18 +10,10 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type NameFinderCreatorUpdater interface {
-	NameFinderCreator
-	Update(ctx context.Context, updatedStudio *models.Studio) error
-	UpdateImage(ctx context.Context, studioID int, image []byte) error
-	UpdateAliases(ctx context.Context, studioID int, aliases []string) error
-	UpdateStashIDs(ctx context.Context, studioID int, stashIDs []models.StashID) error
-}
-
 var ErrParentStudioNotExist = errors.New("parent studio does not exist")
 
 type Importer struct {
-	ReaderWriter        NameFinderCreatorUpdater
+	ReaderWriter        models.StudioReaderWriter
 	Input               jsonschema.Studio
 	MissingRefBehaviour models.ImportMissingRefEnum
 

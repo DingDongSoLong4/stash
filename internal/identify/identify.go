@@ -44,7 +44,7 @@ type ScraperSource struct {
 
 type SceneIdentifier struct {
 	SceneReaderUpdater models.SceneReaderWriter
-	StudioCreator      StudioCreator
+	StudioCreator      models.StudioReaderWriter
 	PerformerCreator   models.PerformerReaderWriter
 	TagCreatorFinder   TagCreatorFinder
 

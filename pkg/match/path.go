@@ -14,7 +14,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/studio"
 	"github.com/stashapp/stash/pkg/tag"
 )
 
@@ -27,12 +26,6 @@ const (
 )
 
 var separatorRE = regexp.MustCompile(separatorPattern)
-
-type StudioAutoTagQueryer interface {
-	QueryForAutoTag(ctx context.Context, words []string) ([]*models.Studio, error)
-	studio.Queryer
-	GetAliases(ctx context.Context, studioID int) ([]string, error)
-}
 
 type TagAutoTagQueryer interface {
 	QueryForAutoTag(ctx context.Context, words []string) ([]*models.Tag, error)
@@ -192,7 +185,7 @@ func PathToPerformers(ctx context.Context, path string, reader models.PerformerR
 	return ret, nil
 }
 
-func getStudios(ctx context.Context, words []string, reader StudioAutoTagQueryer, cache *Cache) ([]*models.Studio, error) {
+func getStudios(ctx context.Context, words []string, reader models.StudioReader, cache *Cache) ([]*models.Studio, error) {
 	studios, err := reader.QueryForAutoTag(ctx, words)
 	if err != nil {
 		return nil, err
@@ -209,7 +202,7 @@ func getStudios(ctx context.Context, words []string, reader StudioAutoTagQueryer
 // PathToStudio returns the Studio that matches the given path.
 // Where multiple matching studios are found, the one that matches the latest
 // position in the path is returned.
-func PathToStudio(ctx context.Context, path string, reader StudioAutoTagQueryer, cache *Cache, trimExt bool) (*models.Studio, error) {
+func PathToStudio(ctx context.Context, path string, reader models.StudioReader, cache *Cache, trimExt bool) (*models.Studio, error) {
 	words := getPathWords(path, trimExt)
 	candidates, err := getStudios(ctx, words, reader, cache)
 

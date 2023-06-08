@@ -25,17 +25,11 @@ import (
 	"github.com/stashapp/stash/pkg/scraper"
 	"github.com/stashapp/stash/pkg/scraper/stashbox/graphql"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/studio"
 	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type StudioReader interface {
-	match.StudioFinder
-	studio.Finder
-	models.StashIDLoader
-}
 type TagFinder interface {
 	tag.Queryer
 	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Tag, error)
@@ -45,7 +39,7 @@ type Repository struct {
 	Scene     models.SceneReader
 	Performer models.PerformerReader
 	Tag       TagFinder
-	Studio    StudioReader
+	Studio    models.StudioReader
 }
 
 // Client represents the client interface to a stash-box server instance.

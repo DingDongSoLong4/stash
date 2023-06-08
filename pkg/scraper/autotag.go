@@ -21,7 +21,7 @@ type autotagScraper struct {
 	// repository   models.Repository
 	txnManager      txn.Manager
 	performerReader models.PerformerReader
-	studioReader    match.StudioAutoTagQueryer
+	studioReader    models.StudioReader
 	tagReader       match.TagAutoTagQueryer
 
 	globalConfig GlobalConfig
@@ -52,7 +52,7 @@ func autotagMatchPerformers(ctx context.Context, path string, performerReader mo
 	return ret, nil
 }
 
-func autotagMatchStudio(ctx context.Context, path string, studioReader match.StudioAutoTagQueryer, trimExt bool) (*models.ScrapedStudio, error) {
+func autotagMatchStudio(ctx context.Context, path string, studioReader models.StudioReader, trimExt bool) (*models.ScrapedStudio, error) {
 	studio, err := match.PathToStudio(ctx, path, studioReader, nil, trimExt)
 	if err != nil {
 		return nil, fmt.Errorf("error matching studios: %w", err)

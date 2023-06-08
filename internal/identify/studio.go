@@ -9,13 +9,7 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type StudioCreator interface {
-	Create(ctx context.Context, newStudio *models.Studio) error
-	UpdateStashIDs(ctx context.Context, studioID int, stashIDs []models.StashID) error
-	UpdateImage(ctx context.Context, studioID int, image []byte) error
-}
-
-func createMissingStudio(ctx context.Context, endpoint string, w StudioCreator, studio *models.ScrapedStudio) (*int, error) {
+func createMissingStudio(ctx context.Context, endpoint string, w models.StudioReaderWriter, studio *models.ScrapedStudio) (*int, error) {
 	studioInput := scrapedToStudioInput(studio)
 	err := w.Create(ctx, &studioInput)
 	if err != nil {

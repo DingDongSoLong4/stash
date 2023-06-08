@@ -53,7 +53,7 @@ func getSingleLetterPerformers(ctx context.Context, c *Cache, reader models.Perf
 
 // getSingleLetterStudios returns all studios with names that start with single character words.
 // See getSingleLetterPerformers for details.
-func getSingleLetterStudios(ctx context.Context, c *Cache, reader StudioAutoTagQueryer) ([]*models.Studio, error) {
+func getSingleLetterStudios(ctx context.Context, c *Cache, reader models.StudioReader) ([]*models.Studio, error) {
 	if c == nil {
 		c = &Cache{}
 	}

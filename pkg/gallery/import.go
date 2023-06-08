@@ -9,13 +9,12 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/studio"
 	"github.com/stashapp/stash/pkg/tag"
 )
 
 type Importer struct {
 	ReaderWriter        models.GalleryReaderWriter
-	StudioWriter        studio.NameFinderCreator
+	StudioWriter        models.StudioReaderWriter
 	PerformerWriter     models.PerformerReaderWriter
 	TagWriter           tag.NameFinderCreator
 	FileFinder          file.Getter
