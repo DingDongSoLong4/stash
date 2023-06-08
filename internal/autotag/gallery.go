@@ -67,7 +67,7 @@ func GalleryStudios(ctx context.Context, s *models.Gallery, rw models.GalleryRea
 }
 
 // GalleryTags tags the provided gallery with tags whose name matches the gallery's path.
-func GalleryTags(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, tagReader match.TagAutoTagQueryer, cache *match.Cache) error {
+func GalleryTags(ctx context.Context, s *models.Gallery, rw models.GalleryReaderWriter, tagReader models.TagReader, cache *match.Cache) error {
 	t := getGalleryFileTagger(s, cache)
 
 	return t.tagTags(ctx, tagReader, func(subjectID, otherID int) (bool, error) {

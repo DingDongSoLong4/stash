@@ -41,12 +41,17 @@ type TagFilterType struct {
 }
 
 type TagFinder interface {
+	// TODO - rename this to Find and remove existing method
 	FindMany(ctx context.Context, ids []int) ([]*Tag, error)
 }
 
 type TagReader interface {
-	Find(ctx context.Context, id int) (*Tag, error)
 	TagFinder
+	Find(ctx context.Context, id int) (*Tag, error)
+	FindAllAncestors(ctx context.Context, tagID int, excludeIDs []int) ([]*TagPath, error)
+	FindAllDescendants(ctx context.Context, tagID int, excludeIDs []int) ([]*TagPath, error)
+	FindByParentTagID(ctx context.Context, parentID int) ([]*Tag, error)
+	FindByChildTagID(ctx context.Context, childID int) ([]*Tag, error)
 	FindBySceneID(ctx context.Context, sceneID int) ([]*Tag, error)
 	FindByPerformerID(ctx context.Context, performerID int) ([]*Tag, error)
 	FindBySceneMarkerID(ctx context.Context, sceneMarkerID int) ([]*Tag, error)
@@ -54,19 +59,17 @@ type TagReader interface {
 	FindByGalleryID(ctx context.Context, galleryID int) ([]*Tag, error)
 	FindByName(ctx context.Context, name string, nocase bool) (*Tag, error)
 	FindByNames(ctx context.Context, names []string, nocase bool) ([]*Tag, error)
-	FindByParentTagID(ctx context.Context, parentID int) ([]*Tag, error)
-	FindByChildTagID(ctx context.Context, childID int) ([]*Tag, error)
-	Count(ctx context.Context) (int, error)
-	All(ctx context.Context) ([]*Tag, error)
+	Query(ctx context.Context, tagFilter *TagFilterType, findFilter *FindFilterType) ([]*Tag, int, error)
 	// TODO - this interface is temporary until the filter schema can fully
 	// support the query needed
 	QueryForAutoTag(ctx context.Context, words []string) ([]*Tag, error)
-	Query(ctx context.Context, tagFilter *TagFilterType, findFilter *FindFilterType) ([]*Tag, int, error)
+
+	Count(ctx context.Context) (int, error)
+
+	All(ctx context.Context) ([]*Tag, error)
+	GetAliases(ctx context.Context, tagID int) ([]string, error)
 	GetImage(ctx context.Context, tagID int) ([]byte, error)
 	HasImage(ctx context.Context, tagID int) (bool, error)
-	GetAliases(ctx context.Context, tagID int) ([]string, error)
-	FindAllAncestors(ctx context.Context, tagID int, excludeIDs []int) ([]*TagPath, error)
-	FindAllDescendants(ctx context.Context, tagID int, excludeIDs []int) ([]*TagPath, error)
 }
 
 type TagWriter interface {
@@ -74,9 +77,10 @@ type TagWriter interface {
 	UpdatePartial(ctx context.Context, id int, updateTag TagPartial) (*Tag, error)
 	Update(ctx context.Context, updatedTag *Tag) error
 	Destroy(ctx context.Context, id int) error
-	UpdateImage(ctx context.Context, tagID int, image []byte) error
-	UpdateAliases(ctx context.Context, tagID int, aliases []string) error
 	Merge(ctx context.Context, source []int, destination int) error
+
+	UpdateAliases(ctx context.Context, tagID int, aliases []string) error
+	UpdateImage(ctx context.Context, tagID int, image []byte) error
 	UpdateParentTags(ctx context.Context, tagID int, parentIDs []int) error
 	UpdateChildTags(ctx context.Context, tagID int, parentIDs []int) error
 }

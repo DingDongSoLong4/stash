@@ -120,7 +120,7 @@ func ScrapedMovie(ctx context.Context, qb models.MovieReader, m *models.ScrapedM
 
 // ScrapedTag matches the provided tag with the tags
 // in the database and sets the ID field if one is found.
-func ScrapedTag(ctx context.Context, qb tag.Queryer, s *models.ScrapedTag) error {
+func ScrapedTag(ctx context.Context, qb models.TagReader, s *models.ScrapedTag) error {
 	if s.StoredID != nil {
 		return nil
 	}

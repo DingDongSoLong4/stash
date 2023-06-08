@@ -13,20 +13,14 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/sliceutil"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
-	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/utils"
 )
-
-type TagCreatorFinder interface {
-	Create(ctx context.Context, newTag *models.Tag) error
-	tag.Finder
-}
 
 type sceneRelationships struct {
 	sceneReader              models.SceneReader
 	studioCreator            models.StudioReaderWriter
 	performerCreator         models.PerformerReaderWriter
-	tagCreatorFinder         TagCreatorFinder
+	tagCreatorFinder         models.TagReaderWriter
 	scene                    *models.Scene
 	result                   *scrapeResult
 	fieldOptions             map[string]*FieldOptions

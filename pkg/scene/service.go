@@ -7,21 +7,10 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/plugin"
-	"github.com/stashapp/stash/pkg/tag"
 )
-
-type MarkerTagFinder interface {
-	tag.Finder
-	TagFinder
-	FindBySceneMarkerID(ctx context.Context, sceneMarkerID int) ([]*models.Tag, error)
-}
 
 type MarkerFinder interface {
 	FindBySceneID(ctx context.Context, sceneID int) ([]*models.SceneMarker, error)
-}
-
-type TagFinder interface {
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Tag, error)
 }
 
 type MarkerDestroyer interface {

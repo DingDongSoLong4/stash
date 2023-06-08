@@ -14,7 +14,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/tag"
 )
 
 const (
@@ -26,12 +25,6 @@ const (
 )
 
 var separatorRE = regexp.MustCompile(separatorPattern)
-
-type TagAutoTagQueryer interface {
-	QueryForAutoTag(ctx context.Context, words []string) ([]*models.Tag, error)
-	tag.Queryer
-	GetAliases(ctx context.Context, tagID int) ([]string, error)
-}
 
 func getPathQueryRegex(name string) string {
 	// escape specific regex characters
@@ -236,7 +229,7 @@ func PathToStudio(ctx context.Context, path string, reader models.StudioReader, 
 	return ret, nil
 }
 
-func getTags(ctx context.Context, words []string, reader TagAutoTagQueryer, cache *Cache) ([]*models.Tag, error) {
+func getTags(ctx context.Context, words []string, reader models.TagReader, cache *Cache) ([]*models.Tag, error) {
 	tags, err := reader.QueryForAutoTag(ctx, words)
 	if err != nil {
 		return nil, err
@@ -250,7 +243,7 @@ func getTags(ctx context.Context, words []string, reader TagAutoTagQueryer, cach
 	return append(tags, swTags...), nil
 }
 
-func PathToTags(ctx context.Context, path string, reader TagAutoTagQueryer, cache *Cache, trimExt bool) ([]*models.Tag, error) {
+func PathToTags(ctx context.Context, path string, reader models.TagReader, cache *Cache, trimExt bool) ([]*models.Tag, error) {
 	words := getPathWords(path, trimExt)
 	tags, err := getTags(ctx, words, reader, cache)
 

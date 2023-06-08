@@ -11,19 +11,13 @@ import (
 	"github.com/stashapp/stash/internal/static"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type TagFinder interface {
-	tag.Finder
-	GetImage(ctx context.Context, tagID int) ([]byte, error)
-}
-
 type tagRoutes struct {
 	txnManager txn.Manager
-	tagFinder  TagFinder
+	tagFinder  models.TagReader
 }
 
 func (rs tagRoutes) Routes() chi.Router {

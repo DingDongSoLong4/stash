@@ -7,7 +7,6 @@ import (
 
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
-	"github.com/stashapp/stash/pkg/tag"
 )
 
 type MarkerCreatorUpdater interface {
@@ -20,7 +19,7 @@ type MarkerCreatorUpdater interface {
 type MarkerImporter struct {
 	SceneID             int
 	ReaderWriter        MarkerCreatorUpdater
-	TagWriter           tag.NameFinderCreator
+	TagWriter           models.TagReaderWriter
 	Input               jsonschema.SceneMarker
 	MissingRefBehaviour models.ImportMissingRefEnum
 

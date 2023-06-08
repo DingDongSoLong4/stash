@@ -22,7 +22,7 @@ type autotagScraper struct {
 	txnManager      txn.Manager
 	performerReader models.PerformerReader
 	studioReader    models.StudioReader
-	tagReader       match.TagAutoTagQueryer
+	tagReader       models.TagReader
 
 	globalConfig GlobalConfig
 }
@@ -69,7 +69,7 @@ func autotagMatchStudio(ctx context.Context, path string, studioReader models.St
 	return nil, nil
 }
 
-func autotagMatchTags(ctx context.Context, path string, tagReader match.TagAutoTagQueryer, trimExt bool) ([]*models.ScrapedTag, error) {
+func autotagMatchTags(ctx context.Context, path string, tagReader models.TagReader, trimExt bool) ([]*models.ScrapedTag, error) {
 	t, err := match.PathToTags(ctx, path, tagReader, nil, trimExt)
 	if err != nil {
 		return nil, fmt.Errorf("error matching tags: %w", err)

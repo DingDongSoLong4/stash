@@ -25,20 +25,14 @@ import (
 	"github.com/stashapp/stash/pkg/scraper"
 	"github.com/stashapp/stash/pkg/scraper/stashbox/graphql"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/tag"
 	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type TagFinder interface {
-	tag.Queryer
-	FindBySceneID(ctx context.Context, sceneID int) ([]*models.Tag, error)
-}
-
 type Repository struct {
 	Scene     models.SceneReader
 	Performer models.PerformerReader
-	Tag       TagFinder
+	Tag       models.TagReader
 	Studio    models.StudioReader
 }
 

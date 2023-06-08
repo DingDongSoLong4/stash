@@ -58,7 +58,7 @@ func ImageStudios(ctx context.Context, s *models.Image, rw models.ImageReaderWri
 }
 
 // ImageTags tags the provided image with tags whose name matches the image's path.
-func ImageTags(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, tagReader match.TagAutoTagQueryer, cache *match.Cache) error {
+func ImageTags(ctx context.Context, s *models.Image, rw models.ImageReaderWriter, tagReader models.TagReader, cache *match.Cache) error {
 	t := getImageFileTagger(s, cache)
 
 	return t.tagTags(ctx, tagReader, func(subjectID, otherID int) (bool, error) {

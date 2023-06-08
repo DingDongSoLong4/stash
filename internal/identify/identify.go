@@ -46,7 +46,7 @@ type SceneIdentifier struct {
 	SceneReaderUpdater models.SceneReaderWriter
 	StudioCreator      models.StudioReaderWriter
 	PerformerCreator   models.PerformerReaderWriter
-	TagCreatorFinder   TagCreatorFinder
+	TagCreatorFinder   models.TagReaderWriter
 
 	DefaultOptions              *MetadataOptions
 	Sources                     []ScraperSource

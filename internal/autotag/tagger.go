@@ -93,7 +93,7 @@ func (t *tagger) tagStudios(ctx context.Context, studioReader models.StudioReade
 	return nil
 }
 
-func (t *tagger) tagTags(ctx context.Context, tagReader match.TagAutoTagQueryer, addFunc addLinkFunc) error {
+func (t *tagger) tagTags(ctx context.Context, tagReader models.TagReader, addFunc addLinkFunc) error {
 	others, err := match.PathToTags(ctx, t.Path, tagReader, t.cache, t.trimExt)
 	if err != nil {
 		return err

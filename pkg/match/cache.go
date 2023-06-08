@@ -86,7 +86,7 @@ func getSingleLetterStudios(ctx context.Context, c *Cache, reader models.StudioR
 
 // getSingleLetterTags returns all tags with names that start with single character words.
 // See getSingleLetterPerformers for details.
-func getSingleLetterTags(ctx context.Context, c *Cache, reader TagAutoTagQueryer) ([]*models.Tag, error) {
+func getSingleLetterTags(ctx context.Context, c *Cache, reader models.TagReader) ([]*models.Tag, error) {
 	if c == nil {
 		c = &Cache{}
 	}

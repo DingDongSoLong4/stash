@@ -18,7 +18,7 @@ type Repository struct {
 	SceneFinder     models.SceneReader
 	FileFinder      file.Finder
 	StudioFinder    models.StudioReader
-	TagFinder       TagFinder
+	TagFinder       models.TagReader
 	PerformerFinder models.PerformerReader
 	MovieFinder     models.MovieReader
 }

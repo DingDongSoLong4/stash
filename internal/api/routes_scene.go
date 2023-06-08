@@ -17,7 +17,6 @@ import (
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
@@ -37,7 +36,7 @@ type sceneRoutes struct {
 	fileFinder        file.Finder
 	captionFinder     CaptionFinder
 	sceneMarkerFinder SceneMarkerFinder
-	tagFinder         scene.MarkerTagFinder
+	tagFinder         models.TagReader
 }
 
 func (rs sceneRoutes) Routes() chi.Router {

@@ -484,7 +484,7 @@ type SceneFilenameParserRepository struct {
 	Performer models.PerformerReader
 	Studio    models.StudioReader
 	Movie     models.MovieReader
-	Tag       tag.Queryer
+	Tag       models.TagReader
 }
 
 func (p *SceneFilenameParser) Parse(ctx context.Context, repo SceneFilenameParserRepository) ([]*SceneParserResult, int, error) {
@@ -609,7 +609,7 @@ func (p *SceneFilenameParser) queryMovie(ctx context.Context, qb models.MovieRea
 	return ret
 }
 
-func (p *SceneFilenameParser) queryTag(ctx context.Context, qb tag.Queryer, tagName string) *models.Tag {
+func (p *SceneFilenameParser) queryTag(ctx context.Context, qb models.TagReader, tagName string) *models.Tag {
 	// massage the tag name
 	tagName = delimiterRE.ReplaceAllString(tagName, " ")
 
@@ -648,7 +648,7 @@ func (p *SceneFilenameParser) setPerformers(ctx context.Context, qb models.Perfo
 	}
 }
 
-func (p *SceneFilenameParser) setTags(ctx context.Context, qb tag.Queryer, h sceneHolder, result *SceneParserResult) {
+func (p *SceneFilenameParser) setTags(ctx context.Context, qb models.TagReader, h sceneHolder, result *SceneParserResult) {
 	// query for each performer
 	tagsSet := make(map[int]bool)
 	for _, tagName := range h.tags {

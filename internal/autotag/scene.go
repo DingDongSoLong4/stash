@@ -58,7 +58,7 @@ func SceneStudios(ctx context.Context, s *models.Scene, rw models.SceneReaderWri
 }
 
 // SceneTags tags the provided scene with tags whose name matches the scene's path.
-func SceneTags(ctx context.Context, s *models.Scene, rw models.SceneReaderWriter, tagReader match.TagAutoTagQueryer, cache *match.Cache) error {
+func SceneTags(ctx context.Context, s *models.Scene, rw models.SceneReaderWriter, tagReader models.TagReader, cache *match.Cache) error {
 	t := getSceneFileTagger(s, cache)
 
 	return t.tagTags(ctx, tagReader, func(subjectID, otherID int) (bool, error) {
