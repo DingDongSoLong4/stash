@@ -29,10 +29,10 @@ models:
       - github.com/99designs/gqlgen/graphql.IntID
       - github.com/stashapp/stash/pkg/models.FileID
       - github.com/stashapp/stash/pkg/models.FolderID
-  Timestamp:
-    model: github.com/stashapp/stash/pkg/models.Timestamp
   Int64:
-    model: github.com/stashapp/stash/pkg/models.Int64
+    model: github.com/99designs/gqlgen/graphql.Int64
+  Timestamp:
+    model: github.com/stashapp/stash/internal/api.Timestamp
   # define to force resolvers
   Image:
     model: github.com/stashapp/stash/pkg/models.Image
