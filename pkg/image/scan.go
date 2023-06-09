@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/paths"
@@ -26,7 +25,7 @@ type ScanConfig interface {
 }
 
 type ScanGenerator interface {
-	Generate(ctx context.Context, i *models.Image, f file.File) error
+	Generate(ctx context.Context, i *models.Image, f models.File) error
 }
 
 type ScanHandler struct {
@@ -62,7 +61,7 @@ func (h *ScanHandler) validate() error {
 	return nil
 }
 
-func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File) error {
+func (h *ScanHandler) Handle(ctx context.Context, f models.File, oldFile models.File) error {
 	if err := h.validate(); err != nil {
 		return err
 	}
@@ -112,7 +111,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 
 		if err := h.CreatorUpdater.Create(ctx, &models.ImageCreateInput{
 			Image:   newImage,
-			FileIDs: []file.ID{imageFile.ID},
+			FileIDs: []models.FileID{imageFile.ID},
 		}); err != nil {
 			return fmt.Errorf("creating new image: %w", err)
 		}
@@ -133,8 +132,8 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 
 	// remove the old thumbnail if the checksum changed - we'll regenerate it
 	if oldFile != nil {
-		oldHash := oldFile.Base().Fingerprints.GetString(file.FingerprintTypeMD5)
-		newHash := f.Base().Fingerprints.GetString(file.FingerprintTypeMD5)
+		oldHash := oldFile.Base().Fingerprints.GetString(models.FingerprintTypeMD5)
+		newHash := f.Base().Fingerprints.GetString(models.FingerprintTypeMD5)
 
 		if oldHash != "" && newHash != "" && oldHash != newHash {
 			// remove cache dir of gallery
@@ -155,7 +154,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 	return nil
 }
 
-func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Image, f *file.BaseFile, updateExisting bool) error {
+func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Image, f *models.BaseFile, updateExisting bool) error {
 	for _, i := range existing {
 		if err := i.LoadFiles(ctx, h.CreatorUpdater); err != nil {
 			return err
@@ -221,7 +220,7 @@ func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.
 	return nil
 }
 
-func (h *ScanHandler) getOrCreateFolderBasedGallery(ctx context.Context, f file.File) (*models.Gallery, error) {
+func (h *ScanHandler) getOrCreateFolderBasedGallery(ctx context.Context, f models.File) (*models.Gallery, error) {
 	folderID := f.Base().ParentFolderID
 	g, err := h.GalleryFinder.FindByFolderID(ctx, folderID)
 	if err != nil {
@@ -281,7 +280,7 @@ func (h *ScanHandler) associateFolderImages(ctx context.Context, g *models.Galle
 	return nil
 }
 
-func (h *ScanHandler) getOrCreateZipBasedGallery(ctx context.Context, zipFile file.File) (*models.Gallery, error) {
+func (h *ScanHandler) getOrCreateZipBasedGallery(ctx context.Context, zipFile models.File) (*models.Gallery, error) {
 	g, err := h.GalleryFinder.FindByFileID(ctx, zipFile.Base().ID)
 	if err != nil {
 		return nil, fmt.Errorf("finding zip based gallery: %w", err)
@@ -301,7 +300,7 @@ func (h *ScanHandler) getOrCreateZipBasedGallery(ctx context.Context, zipFile fi
 
 	logger.Infof("%s doesn't exist. Creating new gallery...", zipFile.Base().Path)
 
-	if err := h.GalleryFinder.Create(ctx, newGallery, []file.ID{zipFile.Base().ID}); err != nil {
+	if err := h.GalleryFinder.Create(ctx, newGallery, []models.FileID{zipFile.Base().ID}); err != nil {
 		return nil, fmt.Errorf("creating zip-based gallery: %w", err)
 	}
 
@@ -310,7 +309,7 @@ func (h *ScanHandler) getOrCreateZipBasedGallery(ctx context.Context, zipFile fi
 	return newGallery, nil
 }
 
-func (h *ScanHandler) getOrCreateGallery(ctx context.Context, f file.File) (*models.Gallery, error) {
+func (h *ScanHandler) getOrCreateGallery(ctx context.Context, f models.File) (*models.Gallery, error) {
 	// don't create folder-based galleries for files in zip file
 	if f.Base().ZipFile != nil {
 		return h.getOrCreateZipBasedGallery(ctx, f.Base().ZipFile)
@@ -339,7 +338,7 @@ func (h *ScanHandler) getOrCreateGallery(ctx context.Context, f file.File) (*mod
 	return nil, nil
 }
 
-func (h *ScanHandler) getGalleryToAssociate(ctx context.Context, newImage *models.Image, f file.File) (*models.Gallery, error) {
+func (h *ScanHandler) getGalleryToAssociate(ctx context.Context, newImage *models.Image, f models.File) (*models.Gallery, error) {
 	g, err := h.getOrCreateGallery(ctx, f)
 	if err != nil {
 		return nil, err

@@ -152,7 +152,6 @@ func Start() error {
 		txnManager:        txnManager,
 		sceneFinder:       txnManager.Scene,
 		fileFinder:        txnManager.File,
-		captionFinder:     txnManager.File,
 		sceneMarkerFinder: txnManager.SceneMarker,
 		tagFinder:         txnManager.Tag,
 	}.Routes())

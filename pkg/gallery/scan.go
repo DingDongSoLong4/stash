@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
@@ -20,7 +19,7 @@ type ScanHandler struct {
 	PluginCache        *plugin.Cache
 }
 
-func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File) error {
+func (h *ScanHandler) Handle(ctx context.Context, f models.File, oldFile models.File) error {
 	baseFile := f.Base()
 
 	// try to match the file to a gallery
@@ -64,7 +63,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 
 		logger.Infof("%s doesn't exist. Creating new gallery...", f.Base().Path)
 
-		if err := h.CreatorUpdater.Create(ctx, newGallery, []file.ID{baseFile.ID}); err != nil {
+		if err := h.CreatorUpdater.Create(ctx, newGallery, []models.FileID{baseFile.ID}); err != nil {
 			return fmt.Errorf("creating new gallery: %w", err)
 		}
 
@@ -93,7 +92,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 	return nil
 }
 
-func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Gallery, f file.File, updateExisting bool) error {
+func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Gallery, f models.File, updateExisting bool) error {
 	for _, i := range existing {
 		if err := i.LoadFiles(ctx, h.CreatorUpdater); err != nil {
 			return err
@@ -127,7 +126,7 @@ func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.
 	return nil
 }
 
-func (h *ScanHandler) associateScene(ctx context.Context, existing []*models.Gallery, f file.File) error {
+func (h *ScanHandler) associateScene(ctx context.Context, existing []*models.Gallery, f models.File) error {
 	galleryIDs := make([]int, len(existing))
 	for i, g := range existing {
 		galleryIDs[i] = g.ID

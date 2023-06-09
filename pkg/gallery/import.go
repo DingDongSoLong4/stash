@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -16,8 +15,8 @@ type Importer struct {
 	StudioWriter        models.StudioReaderWriter
 	PerformerWriter     models.PerformerReaderWriter
 	TagWriter           models.TagReaderWriter
-	FileFinder          file.Getter
-	FolderFinder        file.FolderGetter
+	FileFinder          models.FileReader
+	FolderFinder        models.FolderReader
 	Input               jsonschema.Gallery
 	MissingRefBehaviour models.ImportMissingRefEnum
 
@@ -241,7 +240,7 @@ func (i *Importer) createTags(ctx context.Context, names []string) ([]*models.Ta
 }
 
 func (i *Importer) populateFilesFolder(ctx context.Context) error {
-	files := make([]file.File, 0)
+	files := make([]models.File, 0)
 
 	for _, ref := range i.Input.ZipFiles {
 		path := ref
@@ -330,7 +329,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 }
 
 func (i *Importer) Create(ctx context.Context) (*int, error) {
-	var fileIDs []file.ID
+	var fileIDs []models.FileID
 	for _, f := range i.gallery.Files.List() {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}

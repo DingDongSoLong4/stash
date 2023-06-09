@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
@@ -20,14 +19,14 @@ var (
 )
 
 type ScanGenerator interface {
-	Generate(ctx context.Context, s *models.Scene, f *file.VideoFile) error
+	Generate(ctx context.Context, s *models.Scene, f *models.VideoFile) error
 }
 
 type ScanHandler struct {
 	CreatorUpdater models.SceneReaderWriter
 
 	ScanGenerator  ScanGenerator
-	CaptionUpdater video.CaptionUpdater
+	CaptionUpdater models.FileReaderWriter
 	PluginCache    *plugin.Cache
 
 	FileNamingAlgorithm models.HashAlgorithm
@@ -54,12 +53,12 @@ func (h *ScanHandler) validate() error {
 	return nil
 }
 
-func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File) error {
+func (h *ScanHandler) Handle(ctx context.Context, f models.File, oldFile models.File) error {
 	if err := h.validate(); err != nil {
 		return err
 	}
 
-	videoFile, ok := f.(*file.VideoFile)
+	videoFile, ok := f.(*models.VideoFile)
 	if !ok {
 		return ErrNotVideoFile
 	}
@@ -99,7 +98,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 
 		logger.Infof("%s doesn't exist. Creating new scene...", f.Base().Path)
 
-		if err := h.CreatorUpdater.Create(ctx, newScene, []file.ID{videoFile.ID}); err != nil {
+		if err := h.CreatorUpdater.Create(ctx, newScene, []models.FileID{videoFile.ID}); err != nil {
 			return fmt.Errorf("creating new scene: %w", err)
 		}
 
@@ -131,7 +130,7 @@ func (h *ScanHandler) Handle(ctx context.Context, f file.File, oldFile file.File
 	return nil
 }
 
-func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Scene, f *file.VideoFile, updateExisting bool) error {
+func (h *ScanHandler) associateExisting(ctx context.Context, existing []*models.Scene, f *models.VideoFile, updateExisting bool) error {
 	for _, s := range existing {
 		if err := s.LoadFiles(ctx, h.CreatorUpdater); err != nil {
 			return err

@@ -24,7 +24,7 @@ import (
 type imageRoutes struct {
 	txnManager  txn.Manager
 	imageFinder models.ImageReader
-	fileFinder  file.Finder
+	fileFinder  models.FileReader
 }
 
 func (rs imageRoutes) Routes() chi.Router {

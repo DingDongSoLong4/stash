@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/asticode/go-astisub"
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/txn"
@@ -86,13 +85,8 @@ func getCaptionsLangFromPath(captionPath string) string {
 	return langCode
 }
 
-type CaptionUpdater interface {
-	GetCaptions(ctx context.Context, fileID file.ID) ([]*models.VideoCaption, error)
-	UpdateCaptions(ctx context.Context, fileID file.ID, captions []*models.VideoCaption) error
-}
-
 // associates captions to scene/s with the same basename
-func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manager, fqb file.Getter, w CaptionUpdater) {
+func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manager, fqb models.FileReaderWriter) {
 	captionLang := getCaptionsLangFromPath(captionPath)
 
 	captionPrefix := getCaptionPrefix(captionPath)
@@ -108,7 +102,7 @@ func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manag
 			// found some files
 			// filter out non video files
 			switch f.(type) {
-			case *file.VideoFile:
+			case *models.VideoFile:
 				break
 			default:
 				continue
@@ -118,7 +112,7 @@ func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manag
 			path := f.Base().Path
 
 			logger.Debugf("Matched captions to file %s", path)
-			captions, er := w.GetCaptions(ctx, fileID)
+			captions, er := fqb.GetCaptions(ctx, fileID)
 			if er == nil {
 				fileExt := filepath.Ext(captionPath)
 				ext := fileExt[1:]
@@ -129,7 +123,7 @@ func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manag
 						CaptionType:  ext,
 					}
 					captions = append(captions, newCaption)
-					er = w.UpdateCaptions(ctx, fileID, captions)
+					er = fqb.UpdateCaptions(ctx, fileID, captions)
 					if er == nil {
 						logger.Debugf("Updated captions for file %s. Added %s", path, captionLang)
 					}
@@ -143,8 +137,8 @@ func AssociateCaptions(ctx context.Context, captionPath string, txnMgr txn.Manag
 }
 
 // CleanCaptions removes non existent/accessible language codes from captions
-func CleanCaptions(ctx context.Context, f *file.VideoFile, txnMgr txn.Manager, w CaptionUpdater) error {
-	captions, err := w.GetCaptions(ctx, f.ID)
+func CleanCaptions(ctx context.Context, f *models.VideoFile, txnMgr txn.Manager, fqb models.FileReaderWriter) error {
+	captions, err := fqb.GetCaptions(ctx, f.ID)
 	if err != nil {
 		return fmt.Errorf("getting captions for file %s: %w", f.Path, err)
 	}
@@ -172,7 +166,7 @@ func CleanCaptions(ctx context.Context, f *file.VideoFile, txnMgr txn.Manager, w
 
 	if changed {
 		fn := func(ctx context.Context) error {
-			return w.UpdateCaptions(ctx, f.ID, newCaptions)
+			return fqb.UpdateCaptions(ctx, f.ID, newCaptions)
 		}
 
 		// possible that we are already in a transaction and txnMgr is nil

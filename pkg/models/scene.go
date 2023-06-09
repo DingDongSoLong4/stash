@@ -1,10 +1,6 @@
 package models
 
-import (
-	"context"
-
-	"github.com/stashapp/stash/pkg/file"
-)
+import "context"
 
 type PHashDuplicationCriterionInput struct {
 	Duplicated *bool `json:"duplicated"`
@@ -151,12 +147,12 @@ type SceneFinder interface {
 type SceneReader interface {
 	SceneFinder
 	Find(ctx context.Context, id int) (*Scene, error)
-	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*Scene, error)
+	FindByFingerprints(ctx context.Context, fp []Fingerprint) ([]*Scene, error)
 	FindByChecksum(ctx context.Context, checksum string) ([]*Scene, error)
 	FindByOSHash(ctx context.Context, oshash string) ([]*Scene, error)
 	FindByPath(ctx context.Context, path string) ([]*Scene, error)
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*Scene, error)
-	FindByPrimaryFileID(ctx context.Context, fileID file.ID) ([]*Scene, error)
+	FindByFileID(ctx context.Context, fileID FileID) ([]*Scene, error)
+	FindByPrimaryFileID(ctx context.Context, fileID FileID) ([]*Scene, error)
 	FindByPerformerID(ctx context.Context, performerID int) ([]*Scene, error)
 	FindByGalleryID(ctx context.Context, performerID int) ([]*Scene, error)
 	FindByMovieID(ctx context.Context, movieID int) ([]*Scene, error)
@@ -175,7 +171,7 @@ type SceneReader interface {
 	Count(ctx context.Context) (int, error)
 	CountByPerformerID(ctx context.Context, performerID int) (int, error)
 	CountByMovieID(ctx context.Context, movieID int) (int, error)
-	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
+	CountByFileID(ctx context.Context, fileID FileID) (int, error)
 	CountByStudioID(ctx context.Context, studioID int) (int, error)
 	CountByTagID(ctx context.Context, tagID int) (int, error)
 	CountMissingChecksum(ctx context.Context) (int, error)
@@ -196,14 +192,14 @@ type SceneReader interface {
 }
 
 type SceneWriter interface {
-	Create(ctx context.Context, newScene *Scene, fileIDs []file.ID) error
+	Create(ctx context.Context, newScene *Scene, fileIDs []FileID) error
 	Update(ctx context.Context, updatedScene *Scene) error
 	UpdatePartial(ctx context.Context, id int, updatedScene ScenePartial) (*Scene, error)
 	Destroy(ctx context.Context, id int) error
 
-	AddFileID(ctx context.Context, id int, fileID file.ID) error
+	AddFileID(ctx context.Context, id int, fileID FileID) error
 	AddGalleryIDs(ctx context.Context, sceneID int, galleryIDs []int) error
-	AssignFiles(ctx context.Context, sceneID int, fileID []file.ID) error
+	AssignFiles(ctx context.Context, sceneID int, fileID []FileID) error
 	IncrementOCounter(ctx context.Context, id int) (int, error)
 	DecrementOCounter(ctx context.Context, id int) (int, error)
 	ResetOCounter(ctx context.Context, id int) (int, error)

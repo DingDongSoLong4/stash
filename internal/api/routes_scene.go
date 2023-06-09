@@ -12,7 +12,6 @@ import (
 	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/ffmpeg"
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/logger"
@@ -21,15 +20,10 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-type CaptionFinder interface {
-	GetCaptions(ctx context.Context, fileID file.ID) ([]*models.VideoCaption, error)
-}
-
 type sceneRoutes struct {
 	txnManager        txn.Manager
 	sceneFinder       models.SceneReader
-	fileFinder        file.Finder
-	captionFinder     CaptionFinder
+	fileFinder        models.FileReader
 	sceneMarkerFinder models.SceneMarkerReader
 	tagFinder         models.TagReader
 }
@@ -394,7 +388,7 @@ func (rs sceneRoutes) Caption(w http.ResponseWriter, r *http.Request, lang strin
 			return nil
 		}
 
-		captions, err = rs.captionFinder.GetCaptions(ctx, primaryFile.Base().ID)
+		captions, err = rs.fileFinder.GetCaptions(ctx, primaryFile.Base().ID)
 
 		return err
 	})

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -13,7 +12,7 @@ import (
 
 type Importer struct {
 	ReaderWriter        models.ImageReaderWriter
-	FileFinder          file.Getter
+	FileFinder          models.FileReader
 	StudioWriter        models.StudioReaderWriter
 	GalleryFinder       models.GalleryReader
 	PerformerWriter     models.PerformerReaderWriter
@@ -86,7 +85,7 @@ func (i *Importer) imageJSONToImage(imageJSON jsonschema.Image) models.Image {
 }
 
 func (i *Importer) populateFiles(ctx context.Context) error {
-	files := make([]file.File, 0)
+	files := make([]models.File, 0)
 
 	for _, ref := range i.Input.Files {
 		path := ref
@@ -315,7 +314,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 }
 
 func (i *Importer) Create(ctx context.Context) (*int, error) {
-	var fileIDs []file.ID
+	var fileIDs []models.FileID
 	for _, f := range i.image.Files.List() {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}

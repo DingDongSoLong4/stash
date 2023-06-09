@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/jsonschema"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -14,7 +13,7 @@ import (
 
 type Importer struct {
 	ReaderWriter        models.SceneReaderWriter
-	FileFinder          file.Getter
+	FileFinder          models.FileReader
 	StudioWriter        models.StudioReaderWriter
 	GalleryFinder       models.GalleryReader
 	PerformerWriter     models.PerformerReaderWriter
@@ -112,7 +111,7 @@ func (i *Importer) sceneJSONToScene(sceneJSON jsonschema.Scene) models.Scene {
 }
 
 func (i *Importer) populateFiles(ctx context.Context) error {
-	files := make([]*file.VideoFile, 0)
+	files := make([]*models.VideoFile, 0)
 
 	for _, ref := range i.Input.Files {
 		path := ref
@@ -124,7 +123,7 @@ func (i *Importer) populateFiles(ctx context.Context) error {
 		if f == nil {
 			return fmt.Errorf("scene file '%s' not found", path)
 		} else {
-			files = append(files, f.(*file.VideoFile))
+			files = append(files, f.(*models.VideoFile))
 		}
 	}
 
@@ -400,7 +399,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 }
 
 func (i *Importer) Create(ctx context.Context) (*int, error) {
-	var fileIDs []file.ID
+	var fileIDs []models.FileID
 	for _, f := range i.scene.Files.List() {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}

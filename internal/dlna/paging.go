@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
 )
@@ -60,7 +59,7 @@ func (p *scenePager) getPages(ctx context.Context, r models.SceneReader, total i
 	return objs, nil
 }
 
-func (p *scenePager) getPageVideos(ctx context.Context, r models.SceneReader, f file.Finder, page int, host string, sort string, direction models.SortDirectionEnum) ([]interface{}, error) {
+func (p *scenePager) getPageVideos(ctx context.Context, r models.SceneReader, f models.FileReader, page int, host string, sort string, direction models.SortDirectionEnum) ([]interface{}, error) {
 	var objs []interface{}
 
 	findFilter := &models.FindFilterType{

@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scene"
@@ -11,22 +10,11 @@ import (
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type FileReaderWriter interface {
-	file.Store
-	Query(ctx context.Context, options models.FileQueryOptions) (*models.FileQueryResult, error)
-	GetCaptions(ctx context.Context, fileID file.ID) ([]*models.VideoCaption, error)
-	IsPrimary(ctx context.Context, fileID file.ID) (bool, error)
-}
-
-type FolderReaderWriter interface {
-	file.FolderStore
-}
-
 type Repository struct {
 	models.TxnManager
 
-	File           FileReaderWriter
-	Folder         FolderReaderWriter
+	File           models.FileReaderWriter
+	Folder         models.FolderReaderWriter
 	Gallery        models.GalleryReaderWriter
 	GalleryChapter models.GalleryChapterReaderWriter
 	Image          models.ImageReaderWriter
@@ -72,15 +60,15 @@ func sqliteRepository(d *sqlite.Database) Repository {
 }
 
 type SceneService interface {
-	Create(ctx context.Context, input *models.Scene, fileIDs []file.ID, coverImage []byte) (*models.Scene, error)
-	AssignFile(ctx context.Context, sceneID int, fileID file.ID) error
+	Create(ctx context.Context, input *models.Scene, fileIDs []models.FileID, coverImage []byte) (*models.Scene, error)
+	AssignFile(ctx context.Context, sceneID int, fileID models.FileID) error
 	Merge(ctx context.Context, sourceIDs []int, destinationID int, values models.ScenePartial) error
 	Destroy(ctx context.Context, scene *models.Scene, fileDeleter *scene.FileDeleter, deleteGenerated, deleteFile bool) error
 }
 
 type ImageService interface {
 	Destroy(ctx context.Context, image *models.Image, fileDeleter *image.FileDeleter, deleteGenerated, deleteFile bool) error
-	DestroyZipImages(ctx context.Context, zipFile file.File, fileDeleter *image.FileDeleter, deleteGenerated bool) ([]*models.Image, error)
+	DestroyZipImages(ctx context.Context, zipFile models.File, fileDeleter *image.FileDeleter, deleteGenerated bool) ([]*models.Image, error)
 }
 
 type GalleryService interface {

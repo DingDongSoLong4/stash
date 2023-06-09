@@ -1,10 +1,6 @@
 package models
 
-import (
-	"context"
-
-	"github.com/stashapp/stash/pkg/file"
-)
+import "context"
 
 type GalleryFilterType struct {
 	And     *GalleryFilterType    `json:"AND"`
@@ -95,12 +91,12 @@ type GalleryFinder interface {
 type GalleryReader interface {
 	GalleryFinder
 	Find(ctx context.Context, id int) (*Gallery, error)
-	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*Gallery, error)
+	FindByFingerprints(ctx context.Context, fp []Fingerprint) ([]*Gallery, error)
 	FindByChecksum(ctx context.Context, checksum string) ([]*Gallery, error)
 	FindByChecksums(ctx context.Context, checksums []string) ([]*Gallery, error)
 	FindByPath(ctx context.Context, path string) ([]*Gallery, error)
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*Gallery, error)
-	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*Gallery, error)
+	FindByFileID(ctx context.Context, fileID FileID) ([]*Gallery, error)
+	FindByFolderID(ctx context.Context, folderID FolderID) ([]*Gallery, error)
 	FindBySceneID(ctx context.Context, sceneID int) ([]*Gallery, error)
 	FindByImageID(ctx context.Context, imageID int) ([]*Gallery, error)
 	FindUserGalleryByTitle(ctx context.Context, title string) ([]*Gallery, error)
@@ -114,19 +110,19 @@ type GalleryReader interface {
 	FileLoader
 
 	Count(ctx context.Context) (int, error)
-	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
+	CountByFileID(ctx context.Context, fileID FileID) (int, error)
 	QueryCount(ctx context.Context, galleryFilter *GalleryFilterType, findFilter *FindFilterType) (int, error)
 
 	All(ctx context.Context) ([]*Gallery, error)
 }
 
 type GalleryWriter interface {
-	Create(ctx context.Context, newGallery *Gallery, fileIDs []file.ID) error
+	Create(ctx context.Context, newGallery *Gallery, fileIDs []FileID) error
 	Update(ctx context.Context, updatedGallery *Gallery) error
 	UpdatePartial(ctx context.Context, id int, updatedGallery GalleryPartial) (*Gallery, error)
 	Destroy(ctx context.Context, id int) error
 
-	AddFileID(ctx context.Context, id int, fileID file.ID) error
+	AddFileID(ctx context.Context, id int, fileID FileID) error
 	AddImages(ctx context.Context, galleryID int, imageIDs ...int) error
 	UpdateImages(ctx context.Context, galleryID int, imageIDs []int) error
 	RemoveImages(ctx context.Context, galleryID int, imageIDs ...int) error

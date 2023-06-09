@@ -1,10 +1,6 @@
 package models
 
-import (
-	"context"
-
-	"github.com/stashapp/stash/pkg/file"
-)
+import "context"
 
 type ImageFilterType struct {
 	And   *ImageFilterType      `json:"AND"`
@@ -108,11 +104,11 @@ type ImageFinder interface {
 type ImageReader interface {
 	ImageFinder
 	Find(ctx context.Context, id int) (*Image, error)
-	FindByFingerprints(ctx context.Context, fp []file.Fingerprint) ([]*Image, error)
+	FindByFingerprints(ctx context.Context, fp []Fingerprint) ([]*Image, error)
 	FindByChecksum(ctx context.Context, checksum string) ([]*Image, error)
-	FindByFileID(ctx context.Context, fileID file.ID) ([]*Image, error)
-	FindByFolderID(ctx context.Context, folderID file.FolderID) ([]*Image, error)
-	FindByZipFileID(ctx context.Context, zipFileID file.ID) ([]*Image, error)
+	FindByFileID(ctx context.Context, fileID FileID) ([]*Image, error)
+	FindByFolderID(ctx context.Context, folderID FolderID) ([]*Image, error)
+	FindByZipFileID(ctx context.Context, zipFileID FileID) ([]*Image, error)
 	FindByGalleryID(ctx context.Context, galleryID int) ([]*Image, error)
 	Query(ctx context.Context, options ImageQueryOptions) (*ImageQueryResult, error)
 
@@ -123,7 +119,7 @@ type ImageReader interface {
 	BulkFileLoader
 
 	Count(ctx context.Context) (int, error)
-	CountByFileID(ctx context.Context, fileID file.ID) (int, error)
+	CountByFileID(ctx context.Context, fileID FileID) (int, error)
 	CountByGalleryID(ctx context.Context, galleryID int) (int, error)
 	OCountByPerformerID(ctx context.Context, performerID int) (int, error)
 	QueryCount(ctx context.Context, imageFilter *ImageFilterType, findFilter *FindFilterType) (int, error)
@@ -138,7 +134,7 @@ type ImageWriter interface {
 	UpdatePartial(ctx context.Context, id int, partial ImagePartial) (*Image, error)
 	Destroy(ctx context.Context, id int) error
 
-	AddFileID(ctx context.Context, id int, fileID file.ID) error
+	AddFileID(ctx context.Context, id int, fileID FileID) error
 	IncrementOCounter(ctx context.Context, id int) (int, error)
 	DecrementOCounter(ctx context.Context, id int) (int, error)
 	ResetOCounter(ctx context.Context, id int) (int, error)
