@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/models"
@@ -31,16 +30,13 @@ func (r *mutationResolver) StudioCreate(ctx context.Context, input models.Studio
 	}
 
 	// Populate a new studio from the input
-	currentTime := time.Now()
-	newStudio := models.Studio{
-		Name:          input.Name,
-		CreatedAt:     currentTime,
-		UpdatedAt:     currentTime,
-		URL:           translator.string(input.URL, "url"),
-		Rating:        translator.ratingConversionInt(input.Rating, input.Rating100),
-		Details:       translator.string(input.Details, "details"),
-		IgnoreAutoTag: translator.bool(input.IgnoreAutoTag, "ignore_auto_tag"),
-	}
+	newStudio := models.NewStudio()
+
+	newStudio.Name = input.Name
+	newStudio.URL = translator.string(input.URL, "url")
+	newStudio.Rating = translator.ratingConversionInt(input.Rating, input.Rating100)
+	newStudio.Details = translator.string(input.Details, "details")
+	newStudio.IgnoreAutoTag = translator.bool(input.IgnoreAutoTag, "ignore_auto_tag")
 
 	var err error
 

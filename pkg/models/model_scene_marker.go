@@ -14,12 +14,10 @@ type SceneMarker struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-type SceneMarkers []*SceneMarker
-
-func (m *SceneMarkers) Append(o interface{}) {
-	*m = append(*m, o.(*SceneMarker))
-}
-
-func (m *SceneMarkers) New() interface{} {
-	return &SceneMarker{}
+func NewSceneMarker() SceneMarker {
+	currentTime := time.Now()
+	return SceneMarker{
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+	}
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
@@ -111,42 +110,36 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 				logger.Warnf("failure to execute partial update of performer: %v", txnErr)
 			}
 		} else if t.name != nil && performer.Name != nil {
-			currentTime := time.Now()
-			var aliases []string
+			newPerformer := models.NewPerformer()
+
+			newPerformer.Name = *performer.Name
+			newPerformer.Disambiguation = getString(performer.Disambiguation)
+			newPerformer.Details = getString(performer.Details)
+			newPerformer.Birthdate = getDate(performer.Birthdate)
+			newPerformer.DeathDate = getDate(performer.DeathDate)
+			newPerformer.CareerLength = getString(performer.CareerLength)
+			newPerformer.Country = getString(performer.Country)
+			newPerformer.Ethnicity = getString(performer.Ethnicity)
+			newPerformer.EyeColor = getString(performer.EyeColor)
+			newPerformer.HairColor = getString(performer.HairColor)
+			newPerformer.FakeTits = getString(performer.FakeTits)
+			newPerformer.Height = getIntPtr(performer.Height)
+			newPerformer.Weight = getIntPtr(performer.Weight)
+			newPerformer.Instagram = getString(performer.Instagram)
+			newPerformer.Measurements = getString(performer.Measurements)
+			newPerformer.Piercings = getString(performer.Piercings)
+			newPerformer.Tattoos = getString(performer.Tattoos)
+			newPerformer.Twitter = getString(performer.Twitter)
+			newPerformer.URL = getString(performer.URL)
+			newPerformer.StashIDs = models.NewRelatedStashIDs([]models.StashID{
+				{
+					Endpoint: t.box.Endpoint,
+					StashID:  *performer.RemoteSiteID,
+				},
+			})
+
 			if performer.Aliases != nil {
-				aliases = stringslice.FromString(*performer.Aliases, ",")
-			} else {
-				aliases = []string{}
-			}
-			newPerformer := models.Performer{
-				Aliases:        models.NewRelatedStrings(aliases),
-				Disambiguation: getString(performer.Disambiguation),
-				Details:        getString(performer.Details),
-				Birthdate:      getDate(performer.Birthdate),
-				DeathDate:      getDate(performer.DeathDate),
-				CareerLength:   getString(performer.CareerLength),
-				Country:        getString(performer.Country),
-				CreatedAt:      currentTime,
-				Ethnicity:      getString(performer.Ethnicity),
-				EyeColor:       getString(performer.EyeColor),
-				HairColor:      getString(performer.HairColor),
-				FakeTits:       getString(performer.FakeTits),
-				Height:         getIntPtr(performer.Height),
-				Weight:         getIntPtr(performer.Weight),
-				Instagram:      getString(performer.Instagram),
-				Measurements:   getString(performer.Measurements),
-				Name:           *performer.Name,
-				Piercings:      getString(performer.Piercings),
-				Tattoos:        getString(performer.Tattoos),
-				Twitter:        getString(performer.Twitter),
-				URL:            getString(performer.URL),
-				StashIDs: models.NewRelatedStashIDs([]models.StashID{
-					{
-						Endpoint: t.box.Endpoint,
-						StashID:  *performer.RemoteSiteID,
-					},
-				}),
-				UpdatedAt: currentTime,
+				newPerformer.Aliases = models.NewRelatedStrings(stringslice.FromString(*performer.Aliases, ","))
 			}
 
 			if performer.Gender != nil {

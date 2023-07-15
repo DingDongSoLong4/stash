@@ -17,6 +17,14 @@ type Studio struct {
 	IgnoreAutoTag bool   `json:"ignore_auto_tag"`
 }
 
+func NewStudio() Studio {
+	currentTime := time.Now()
+	return Studio{
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+	}
+}
+
 type StudioPartial struct {
 	Name      OptionalString
 	URL       OptionalString
@@ -29,28 +37,9 @@ type StudioPartial struct {
 	IgnoreAutoTag OptionalBool
 }
 
-func NewStudio(name string) *Studio {
-	currentTime := time.Now()
-	return &Studio{
-		Name:      name,
-		CreatedAt: currentTime,
-		UpdatedAt: currentTime,
-	}
-}
-
 func NewStudioPartial() StudioPartial {
-	updatedTime := time.Now()
+	currentTime := time.Now()
 	return StudioPartial{
-		UpdatedAt: NewOptionalTime(updatedTime),
+		UpdatedAt: NewOptionalTime(currentTime),
 	}
-}
-
-type Studios []*Studio
-
-func (s *Studios) Append(o interface{}) {
-	*s = append(*s, o.(*Studio))
-}
-
-func (s *Studios) New() interface{} {
-	return &Studio{}
 }

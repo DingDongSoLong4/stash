@@ -12,13 +12,3 @@ type GalleryChapter struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
-
-type GalleryChapters []*GalleryChapter
-
-func (m *GalleryChapters) Append(o interface{}) {
-	*m = append(*m, o.(*GalleryChapter))
-}
-
-func (m *GalleryChapters) New() interface{} {
-	return &GalleryChapter{}
-}

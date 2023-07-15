@@ -66,13 +66,3 @@ type SavedFilter struct {
 	// JSON-encoded filter string
 	Filter string `json:"filter"`
 }
-
-type SavedFilters []*SavedFilter
-
-func (m *SavedFilters) Append(o interface{}) {
-	*m = append(*m, o.(*SavedFilter))
-}
-
-func (m *SavedFilters) New() interface{} {
-	return &SavedFilter{}
-}

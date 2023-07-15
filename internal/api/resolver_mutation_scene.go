@@ -39,15 +39,15 @@ func (r *mutationResolver) SceneCreate(ctx context.Context, input models.SceneCr
 	}
 
 	// Populate a new scene from the input
-	newScene := models.Scene{
-		Title:     translator.string(input.Title, "title"),
-		Code:      translator.string(input.Code, "code"),
-		Details:   translator.string(input.Details, "details"),
-		Director:  translator.string(input.Director, "director"),
-		Rating:    translator.ratingConversionInt(input.Rating, input.Rating100),
-		Organized: translator.bool(input.Organized, "organized"),
-		StashIDs:  models.NewRelatedStashIDs(input.StashIds),
-	}
+	newScene := models.NewScene()
+
+	newScene.Title = translator.string(input.Title, "title")
+	newScene.Code = translator.string(input.Code, "code")
+	newScene.Details = translator.string(input.Details, "details")
+	newScene.Director = translator.string(input.Director, "director")
+	newScene.Rating = translator.ratingConversionInt(input.Rating, input.Rating100)
+	newScene.Organized = translator.bool(input.Organized, "organized")
+	newScene.StashIDs = models.NewRelatedStashIDs(input.StashIds)
 
 	newScene.Date, err = translator.datePtr(input.Date, "date")
 	if err != nil {
@@ -164,8 +164,6 @@ func (r *mutationResolver) ScenesUpdate(ctx context.Context, input []*models.Sce
 func scenePartialFromInput(input models.SceneUpdateInput, translator changesetTranslator) (*models.ScenePartial, error) {
 	updatedScene := models.NewScenePartial()
 
-	var err error
-
 	updatedScene.Title = translator.optionalString(input.Title, "title")
 	updatedScene.Code = translator.optionalString(input.Code, "code")
 	updatedScene.Details = translator.optionalString(input.Details, "details")
@@ -176,6 +174,8 @@ func scenePartialFromInput(input models.SceneUpdateInput, translator changesetTr
 	updatedScene.PlayDuration = translator.optionalFloat64(input.PlayDuration, "play_duration")
 	updatedScene.Organized = translator.optionalBool(input.Organized, "organized")
 	updatedScene.StashIDs = translator.updateStashIDs(input.StashIds, "stash_ids")
+
+	var err error
 
 	updatedScene.Date, err = translator.optionalDate(input.Date, "date")
 	if err != nil {
@@ -622,15 +622,13 @@ func (r *mutationResolver) SceneMarkerCreate(ctx context.Context, input SceneMar
 		return nil, err
 	}
 
-	currentTime := time.Now()
-	newSceneMarker := models.SceneMarker{
-		Title:        input.Title,
-		Seconds:      input.Seconds,
-		PrimaryTagID: primaryTagID,
-		SceneID:      sceneID,
-		CreatedAt:    currentTime,
-		UpdatedAt:    currentTime,
-	}
+	// Populate a new scene marker from the input
+	newSceneMarker := models.NewSceneMarker()
+
+	newSceneMarker.Title = input.Title
+	newSceneMarker.Seconds = input.Seconds
+	newSceneMarker.PrimaryTagID = primaryTagID
+	newSceneMarker.SceneID = sceneID
 
 	tagIDs, err := stringslice.StringSliceToIntSlice(input.TagIds)
 	if err != nil {
@@ -647,7 +645,6 @@ func (r *mutationResolver) SceneMarkerCreate(ctx context.Context, input SceneMar
 }
 
 func (r *mutationResolver) SceneMarkerUpdate(ctx context.Context, input SceneMarkerUpdateInput) (*models.SceneMarker, error) {
-	// Populate scene marker from the input
 	sceneMarkerID, err := strconv.Atoi(input.ID)
 	if err != nil {
 		return nil, err
@@ -663,13 +660,15 @@ func (r *mutationResolver) SceneMarkerUpdate(ctx context.Context, input SceneMar
 		return nil, err
 	}
 
+	// Populate scene marker from the input
+	currentTime := time.Now()
 	updatedSceneMarker := models.SceneMarker{
 		ID:           sceneMarkerID,
 		Title:        input.Title,
 		Seconds:      input.Seconds,
 		SceneID:      sceneID,
 		PrimaryTagID: primaryTagID,
-		UpdatedAt:    time.Now(),
+		UpdatedAt:    currentTime,
 	}
 
 	tagIDs, err := stringslice.StringSliceToIntSlice(input.TagIds)

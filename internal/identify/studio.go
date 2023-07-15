@@ -3,7 +3,6 @@ package identify
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/utils"
@@ -44,12 +43,8 @@ func createMissingStudio(ctx context.Context, endpoint string, w models.StudioRe
 }
 
 func scrapedToStudioInput(studio *models.ScrapedStudio) models.Studio {
-	currentTime := time.Now()
-	ret := models.Studio{
-		Name:      studio.Name,
-		CreatedAt: currentTime,
-		UpdatedAt: currentTime,
-	}
+	ret := models.NewStudio()
+	ret.Name = studio.Name
 
 	if studio.URL != nil {
 		ret.URL = *studio.URL

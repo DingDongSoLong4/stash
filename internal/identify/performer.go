@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -65,12 +64,9 @@ func createMissingPerformer(ctx context.Context, endpoint string, w models.Perfo
 }
 
 func scrapedToPerformerInput(performer *models.ScrapedPerformer) models.Performer {
-	currentTime := time.Now()
-	ret := models.Performer{
-		Name:      *performer.Name,
-		CreatedAt: currentTime,
-		UpdatedAt: currentTime,
-	}
+	ret := models.NewPerformer()
+	ret.Name = *performer.Name
+
 	if performer.Disambiguation != nil {
 		ret.Disambiguation = *performer.Disambiguation
 	}

@@ -40,15 +40,12 @@ func (r *mutationResolver) GalleryCreate(ctx context.Context, input GalleryCreat
 	}
 
 	// Populate a new gallery from the input
-	currentTime := time.Now()
-	newGallery := models.Gallery{
-		Title:     input.Title,
-		URL:       translator.string(input.URL, "url"),
-		Details:   translator.string(input.Details, "details"),
-		Rating:    translator.ratingConversionInt(input.Rating, input.Rating100),
-		CreatedAt: currentTime,
-		UpdatedAt: currentTime,
-	}
+	newGallery := models.NewGallery()
+
+	newGallery.Title = input.Title
+	newGallery.URL = translator.string(input.URL, "url")
+	newGallery.Details = translator.string(input.Details, "details")
+	newGallery.Rating = translator.ratingConversionInt(input.Rating, input.Rating100)
 
 	var err error
 
