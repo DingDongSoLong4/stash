@@ -25,7 +25,7 @@ func (r *mutationResolver) getStudio(ctx context.Context, id int) (ret *models.S
 	return ret, nil
 }
 
-func (r *mutationResolver) StudioCreate(ctx context.Context, input StudioCreateInput) (*models.Studio, error) {
+func (r *mutationResolver) StudioCreate(ctx context.Context, input models.StudioCreateInput) (*models.Studio, error) {
 	translator := changesetTranslator{
 		inputMap: getUpdateInputMap(ctx),
 	}
@@ -76,8 +76,7 @@ func (r *mutationResolver) StudioCreate(ctx context.Context, input StudioCreateI
 
 		// Save the stash_ids
 		if input.StashIds != nil {
-			stashIDJoins := stashIDPtrSliceToSlice(input.StashIds)
-			if err := qb.UpdateStashIDs(ctx, newStudio.ID, stashIDJoins); err != nil {
+			if err := qb.UpdateStashIDs(ctx, newStudio.ID, input.StashIds); err != nil {
 				return err
 			}
 		}
@@ -101,7 +100,7 @@ func (r *mutationResolver) StudioCreate(ctx context.Context, input StudioCreateI
 	return r.getStudio(ctx, newStudio.ID)
 }
 
-func (r *mutationResolver) StudioUpdate(ctx context.Context, input StudioUpdateInput) (*models.Studio, error) {
+func (r *mutationResolver) StudioUpdate(ctx context.Context, input models.StudioUpdateInput) (*models.Studio, error) {
 	studioID, err := strconv.Atoi(input.ID)
 	if err != nil {
 		return nil, err
@@ -119,6 +118,7 @@ func (r *mutationResolver) StudioUpdate(ctx context.Context, input StudioUpdateI
 	updatedStudio.Details = translator.optionalString(input.Details, "details")
 	updatedStudio.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedStudio.IgnoreAutoTag = translator.optionalBool(input.IgnoreAutoTag, "ignore_auto_tag")
+
 	updatedStudio.ParentID, err = translator.optionalIntFromString(input.ParentID, "parent_id")
 	if err != nil {
 		return nil, fmt.Errorf("converting parent id: %w", err)
@@ -157,8 +157,7 @@ func (r *mutationResolver) StudioUpdate(ctx context.Context, input StudioUpdateI
 
 		// Save the stash_ids
 		if translator.hasField("stash_ids") {
-			stashIDJoins := stashIDPtrSliceToSlice(input.StashIds)
-			if err := qb.UpdateStashIDs(ctx, studioID, stashIDJoins); err != nil {
+			if err := qb.UpdateStashIDs(ctx, studioID, input.StashIds); err != nil {
 				return err
 			}
 		}

@@ -28,8 +28,6 @@ func (r *mutationResolver) MovieCreate(ctx context.Context, input MovieCreateInp
 		inputMap: getUpdateInputMap(ctx),
 	}
 
-	// generate checksum from movie name rather than image
-
 	// Populate a new movie from the input
 	currentTime := time.Now()
 	newMovie := models.Movie{
@@ -126,14 +124,15 @@ func (r *mutationResolver) MovieUpdate(ctx context.Context, input MovieUpdateInp
 	updatedMovie.Name = translator.optionalString(input.Name, "name")
 	updatedMovie.Aliases = translator.optionalString(input.Aliases, "aliases")
 	updatedMovie.Duration = translator.optionalInt(input.Duration, "duration")
-	updatedMovie.Date, err = translator.optionalDate(input.Date, "date")
-	if err != nil {
-		return nil, fmt.Errorf("converting date: %w", err)
-	}
 	updatedMovie.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedMovie.Director = translator.optionalString(input.Director, "director")
 	updatedMovie.Synopsis = translator.optionalString(input.Synopsis, "synopsis")
 	updatedMovie.URL = translator.optionalString(input.URL, "url")
+
+	updatedMovie.Date, err = translator.optionalDate(input.Date, "date")
+	if err != nil {
+		return nil, fmt.Errorf("converting date: %w", err)
+	}
 	updatedMovie.StudioID, err = translator.optionalIntFromString(input.StudioID, "studio_id")
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)
@@ -198,11 +197,12 @@ func (r *mutationResolver) BulkMovieUpdate(ctx context.Context, input BulkMovieU
 		inputMap: getUpdateInputMap(ctx),
 	}
 
-	// populate movie from the input
+	// Populate movie from the input
 	updatedMovie := models.NewMoviePartial()
 
 	updatedMovie.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedMovie.Director = translator.optionalString(input.Director, "director")
+
 	updatedMovie.StudioID, err = translator.optionalIntFromString(input.StudioID, "studio_id")
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)

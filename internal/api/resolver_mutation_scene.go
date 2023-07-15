@@ -28,52 +28,25 @@ func (r *mutationResolver) getScene(ctx context.Context, id int) (ret *models.Sc
 	return ret, nil
 }
 
-func (r *mutationResolver) SceneCreate(ctx context.Context, input SceneCreateInput) (ret *models.Scene, err error) {
+func (r *mutationResolver) SceneCreate(ctx context.Context, input models.SceneCreateInput) (ret *models.Scene, err error) {
 	translator := changesetTranslator{
 		inputMap: getUpdateInputMap(ctx),
 	}
 
-	performerIDs, err := stringslice.StringSliceToIntSlice(input.PerformerIds)
-	if err != nil {
-		return nil, fmt.Errorf("converting performer ids: %w", err)
-	}
-	tagIDs, err := stringslice.StringSliceToIntSlice(input.TagIds)
-	if err != nil {
-		return nil, fmt.Errorf("converting tag ids: %w", err)
-	}
-	galleryIDs, err := stringslice.StringSliceToIntSlice(input.GalleryIds)
-	if err != nil {
-		return nil, fmt.Errorf("converting gallery ids: %w", err)
-	}
-
-	moviesScenes, err := models.MoviesScenesFromInput(input.Movies)
-	if err != nil {
-		return nil, fmt.Errorf("converting movies scenes: %w", err)
-	}
-
-	fileIDsInt, err := stringslice.StringSliceToIntSlice(input.FileIds)
+	fileIDs, err := translator.fileIDSliceFromStringSlice(input.FileIds, "file_ids")
 	if err != nil {
 		return nil, fmt.Errorf("converting file ids: %w", err)
 	}
 
-	fileIDs := make([]models.FileID, len(fileIDsInt))
-	for i, v := range fileIDsInt {
-		fileIDs[i] = models.FileID(v)
-	}
-
 	// Populate a new scene from the input
 	newScene := models.Scene{
-		Title:        translator.string(input.Title, "title"),
-		Code:         translator.string(input.Code, "code"),
-		Details:      translator.string(input.Details, "details"),
-		Director:     translator.string(input.Director, "director"),
-		Rating:       translator.ratingConversionInt(input.Rating, input.Rating100),
-		Organized:    translator.bool(input.Organized, "organized"),
-		PerformerIDs: models.NewRelatedIDs(performerIDs),
-		TagIDs:       models.NewRelatedIDs(tagIDs),
-		GalleryIDs:   models.NewRelatedIDs(galleryIDs),
-		Movies:       models.NewRelatedMovies(moviesScenes),
-		StashIDs:     models.NewRelatedStashIDs(stashIDPtrSliceToSlice(input.StashIds)),
+		Title:     translator.string(input.Title, "title"),
+		Code:      translator.string(input.Code, "code"),
+		Details:   translator.string(input.Details, "details"),
+		Director:  translator.string(input.Director, "director"),
+		Rating:    translator.ratingConversionInt(input.Rating, input.Rating100),
+		Organized: translator.bool(input.Organized, "organized"),
+		StashIDs:  models.NewRelatedStashIDs(input.StashIds),
 	}
 
 	newScene.Date, err = translator.datePtr(input.Date, "date")
@@ -89,6 +62,24 @@ func (r *mutationResolver) SceneCreate(ctx context.Context, input SceneCreateInp
 		newScene.URLs = models.NewRelatedStrings(input.Urls)
 	} else if input.URL != nil {
 		newScene.URLs = models.NewRelatedStrings([]string{*input.URL})
+	}
+
+	newScene.PerformerIDs, err = translator.relatedIds(input.PerformerIds, "performer_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting performer ids: %w", err)
+	}
+	newScene.TagIDs, err = translator.relatedIds(input.TagIds, "tag_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting tag ids: %w", err)
+	}
+	newScene.GalleryIDs, err = translator.relatedIds(input.GalleryIds, "gallery_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting gallery ids: %w", err)
+	}
+
+	newScene.Movies, err = translator.relatedMovies(input.Movies, "movies")
+	if err != nil {
+		return nil, fmt.Errorf("converting movies: %w", err)
 	}
 
 	var coverImageData []byte
@@ -179,20 +170,21 @@ func scenePartialFromInput(input models.SceneUpdateInput, translator changesetTr
 	updatedScene.Code = translator.optionalString(input.Code, "code")
 	updatedScene.Details = translator.optionalString(input.Details, "details")
 	updatedScene.Director = translator.optionalString(input.Director, "director")
-	updatedScene.Date, err = translator.optionalDate(input.Date, "date")
-	if err != nil {
-		return nil, fmt.Errorf("converting date: %w", err)
-	}
 	updatedScene.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedScene.OCounter = translator.optionalInt(input.OCounter, "o_counter")
 	updatedScene.PlayCount = translator.optionalInt(input.PlayCount, "play_count")
 	updatedScene.PlayDuration = translator.optionalFloat64(input.PlayDuration, "play_duration")
+	updatedScene.Organized = translator.optionalBool(input.Organized, "organized")
+	updatedScene.StashIDs = translator.updateStashIDs(input.StashIds, "stash_ids")
+
+	updatedScene.Date, err = translator.optionalDate(input.Date, "date")
+	if err != nil {
+		return nil, fmt.Errorf("converting date: %w", err)
+	}
 	updatedScene.StudioID, err = translator.optionalIntFromString(input.StudioID, "studio_id")
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)
 	}
-
-	updatedScene.Organized = translator.optionalBool(input.Organized, "organized")
 
 	if translator.hasField("urls") {
 		updatedScene.URLs = &models.UpdateStrings{
@@ -206,51 +198,27 @@ func scenePartialFromInput(input models.SceneUpdateInput, translator changesetTr
 		}
 	}
 
-	if input.PrimaryFileID != nil {
-		primaryFileID, err := strconv.Atoi(*input.PrimaryFileID)
-		if err != nil {
-			return nil, fmt.Errorf("converting primary file id: %w", err)
-		}
-
-		converted := models.FileID(primaryFileID)
-		updatedScene.PrimaryFileID = &converted
+	updatedScene.PrimaryFileID, err = translator.fileIDPtrFromString(input.PrimaryFileID, "primary_file_id")
+	if err != nil {
+		return nil, fmt.Errorf("converting primary file id: %w", err)
 	}
 
-	if translator.hasField("performer_ids") {
-		updatedScene.PerformerIDs, err = translateUpdateIDs(input.PerformerIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting performer ids: %w", err)
-		}
+	updatedScene.PerformerIDs, err = translator.updateIds(input.PerformerIds, "performer_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting performer ids: %w", err)
+	}
+	updatedScene.TagIDs, err = translator.updateIds(input.TagIds, "tag_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting tag ids: %w", err)
+	}
+	updatedScene.GalleryIDs, err = translator.updateIds(input.GalleryIds, "gallery_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting gallery ids: %w", err)
 	}
 
-	if translator.hasField("tag_ids") {
-		updatedScene.TagIDs, err = translateUpdateIDs(input.TagIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting tag ids: %w", err)
-		}
-	}
-
-	if translator.hasField("gallery_ids") {
-		updatedScene.GalleryIDs, err = translateUpdateIDs(input.GalleryIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting gallery ids: %w", err)
-		}
-	}
-
-	// Save the movies
-	if translator.hasField("movies") {
-		updatedScene.MovieIDs, err = models.UpdateMovieIDsFromInput(input.Movies)
-		if err != nil {
-			return nil, fmt.Errorf("converting movie ids: %w", err)
-		}
-	}
-
-	// Save the stash_ids
-	if translator.hasField("stash_ids") {
-		updatedScene.StashIDs = &models.UpdateStashIDs{
-			StashIDs: input.StashIds,
-			Mode:     models.RelationshipUpdateModeSet,
-		}
+	updatedScene.MovieIDs, err = translator.updateMovieIDs(input.Movies, "movies")
+	if err != nil {
+		return nil, fmt.Errorf("converting movies: %w", err)
 	}
 
 	return &updatedScene, nil
@@ -363,17 +331,17 @@ func (r *mutationResolver) BulkSceneUpdate(ctx context.Context, input BulkSceneU
 	updatedScene.Code = translator.optionalString(input.Code, "code")
 	updatedScene.Details = translator.optionalString(input.Details, "details")
 	updatedScene.Director = translator.optionalString(input.Director, "director")
+	updatedScene.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
+	updatedScene.Organized = translator.optionalBool(input.Organized, "organized")
+
 	updatedScene.Date, err = translator.optionalDate(input.Date, "date")
 	if err != nil {
 		return nil, fmt.Errorf("converting date: %w", err)
 	}
-	updatedScene.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedScene.StudioID, err = translator.optionalIntFromString(input.StudioID, "studio_id")
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)
 	}
-
-	updatedScene.Organized = translator.optionalBool(input.Organized, "organized")
 
 	if translator.hasField("urls") {
 		updatedScene.URLs = &models.UpdateStrings{
@@ -387,33 +355,22 @@ func (r *mutationResolver) BulkSceneUpdate(ctx context.Context, input BulkSceneU
 		}
 	}
 
-	if translator.hasField("performer_ids") {
-		updatedScene.PerformerIDs, err = translateUpdateIDs(input.PerformerIds.Ids, input.PerformerIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting performer ids: %w", err)
-		}
+	updatedScene.PerformerIDs, err = translator.updateIdsBulk(input.PerformerIds, "performer_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting performer ids: %w", err)
+	}
+	updatedScene.TagIDs, err = translator.updateIdsBulk(input.TagIds, "tag_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting tag ids: %w", err)
+	}
+	updatedScene.GalleryIDs, err = translator.updateIdsBulk(input.GalleryIds, "gallery_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting gallery ids: %w", err)
 	}
 
-	if translator.hasField("tag_ids") {
-		updatedScene.TagIDs, err = translateUpdateIDs(input.TagIds.Ids, input.TagIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting tag ids: %w", err)
-		}
-	}
-
-	if translator.hasField("gallery_ids") {
-		updatedScene.GalleryIDs, err = translateUpdateIDs(input.GalleryIds.Ids, input.GalleryIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting gallery ids: %w", err)
-		}
-	}
-
-	// Save the movies
-	if translator.hasField("movie_ids") {
-		updatedScene.MovieIDs, err = translateSceneMovieIDs(*input.MovieIds)
-		if err != nil {
-			return nil, fmt.Errorf("converting movie ids: %w", err)
-		}
+	updatedScene.MovieIDs, err = translator.updateMovieIDsBulk(input.MovieIds, "movie_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting movie ids: %w", err)
 	}
 
 	ret := []*models.Scene{}

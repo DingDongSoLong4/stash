@@ -107,6 +107,8 @@ func (r *mutationResolver) imageUpdate(ctx context.Context, input ImageUpdateInp
 	updatedImage.Title = translator.optionalString(input.Title, "title")
 	updatedImage.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedImage.URL = translator.optionalString(input.URL, "url")
+	updatedImage.Organized = translator.optionalBool(input.Organized, "organized")
+
 	updatedImage.Date, err = translator.optionalDate(input.Date, "date")
 	if err != nil {
 		return nil, fmt.Errorf("converting date: %w", err)
@@ -115,16 +117,13 @@ func (r *mutationResolver) imageUpdate(ctx context.Context, input ImageUpdateInp
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)
 	}
-	updatedImage.Organized = translator.optionalBool(input.Organized, "organized")
 
-	if input.PrimaryFileID != nil {
-		primaryFileID, err := strconv.Atoi(*input.PrimaryFileID)
-		if err != nil {
-			return nil, fmt.Errorf("converting primary file id: %w", err)
-		}
-
-		converted := models.FileID(primaryFileID)
-		updatedImage.PrimaryFileID = &converted
+	updatedImage.PrimaryFileID, err = translator.fileIDPtrFromString(input.PrimaryFileID, "primary_file_id")
+	if err != nil {
+		return nil, fmt.Errorf("converting primary file id: %w", err)
+	}
+	if updatedImage.PrimaryFileID != nil {
+		primaryFileID := *updatedImage.PrimaryFileID
 
 		if err := i.LoadFiles(ctx, r.repository.Image); err != nil {
 			return nil, err
@@ -133,24 +132,23 @@ func (r *mutationResolver) imageUpdate(ctx context.Context, input ImageUpdateInp
 		// ensure that new primary file is associated with image
 		var f models.File
 		for _, ff := range i.Files.List() {
-			if ff.Base().ID == converted {
+			if ff.Base().ID == primaryFileID {
 				f = ff
 			}
 		}
 
 		if f == nil {
-			return nil, fmt.Errorf("file with id %d not associated with image", converted)
+			return nil, fmt.Errorf("file with id %d not associated with image", primaryFileID)
 		}
 	}
 
 	var updatedGalleryIDs []int
 
-	if translator.hasField("gallery_ids") {
-		updatedImage.GalleryIDs, err = translateUpdateIDs(input.GalleryIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting gallery ids: %w", err)
-		}
-
+	updatedImage.GalleryIDs, err = translator.updateIds(input.GalleryIds, "gallery_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting gallery ids: %w", err)
+	}
+	if updatedImage.GalleryIDs != nil {
 		// ensure gallery IDs are loaded
 		if err := i.LoadGalleryIDs(ctx, r.repository.Image); err != nil {
 			return nil, err
@@ -163,18 +161,13 @@ func (r *mutationResolver) imageUpdate(ctx context.Context, input ImageUpdateInp
 		updatedGalleryIDs = updatedImage.GalleryIDs.ImpactedIDs(i.GalleryIDs.List())
 	}
 
-	if translator.hasField("performer_ids") {
-		updatedImage.PerformerIDs, err = translateUpdateIDs(input.PerformerIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting performer ids: %w", err)
-		}
+	updatedImage.PerformerIDs, err = translator.updateIds(input.PerformerIds, "performer_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting performer ids: %w", err)
 	}
-
-	if translator.hasField("tag_ids") {
-		updatedImage.TagIDs, err = translateUpdateIDs(input.TagIds, models.RelationshipUpdateModeSet)
-		if err != nil {
-			return nil, fmt.Errorf("converting tag ids: %w", err)
-		}
+	updatedImage.TagIDs, err = translator.updateIds(input.TagIds, "tag_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting tag ids: %w", err)
 	}
 
 	qb := r.repository.Image
@@ -209,6 +202,8 @@ func (r *mutationResolver) BulkImageUpdate(ctx context.Context, input BulkImageU
 	updatedImage.Title = translator.optionalString(input.Title, "title")
 	updatedImage.Rating = translator.ratingConversionOptional(input.Rating, input.Rating100)
 	updatedImage.URL = translator.optionalString(input.URL, "url")
+	updatedImage.Organized = translator.optionalBool(input.Organized, "organized")
+
 	updatedImage.Date, err = translator.optionalDate(input.Date, "date")
 	if err != nil {
 		return nil, fmt.Errorf("converting date: %w", err)
@@ -217,27 +212,18 @@ func (r *mutationResolver) BulkImageUpdate(ctx context.Context, input BulkImageU
 	if err != nil {
 		return nil, fmt.Errorf("converting studio id: %w", err)
 	}
-	updatedImage.Organized = translator.optionalBool(input.Organized, "organized")
 
-	if translator.hasField("gallery_ids") {
-		updatedImage.GalleryIDs, err = translateUpdateIDs(input.GalleryIds.Ids, input.GalleryIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting gallery ids: %w", err)
-		}
+	updatedImage.GalleryIDs, err = translator.updateIdsBulk(input.GalleryIds, "gallery_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting gallery ids: %w", err)
 	}
-
-	if translator.hasField("performer_ids") {
-		updatedImage.PerformerIDs, err = translateUpdateIDs(input.PerformerIds.Ids, input.PerformerIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting performer ids: %w", err)
-		}
+	updatedImage.PerformerIDs, err = translator.updateIdsBulk(input.PerformerIds, "performer_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting performer ids: %w", err)
 	}
-
-	if translator.hasField("tag_ids") {
-		updatedImage.TagIDs, err = translateUpdateIDs(input.TagIds.Ids, input.TagIds.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("converting tag ids: %w", err)
-		}
+	updatedImage.TagIDs, err = translator.updateIdsBulk(input.TagIds, "tag_ids")
+	if err != nil {
+		return nil, fmt.Errorf("converting tag ids: %w", err)
 	}
 
 	// Start the transaction and save the images
