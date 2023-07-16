@@ -14,7 +14,11 @@ import (
 // Returns an error if the command fails. If the command fails, the return
 // value will be of type *exec.ExitError.
 func (f *FFMpeg) Generate(ctx context.Context, args Args) error {
-	cmd := f.Command(ctx, args)
+	if err := f.ensureConfigured(); err != nil {
+		return err
+	}
+
+	cmd := f.command(ctx, args)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -37,7 +41,11 @@ func (f *FFMpeg) Generate(ctx context.Context, args Args) error {
 
 // GenerateOutput runs ffmpeg with the given args and returns it standard output.
 func (f *FFMpeg) GenerateOutput(ctx context.Context, args []string, stdin io.Reader) ([]byte, error) {
-	cmd := f.Command(ctx, args)
+	if err := f.ensureConfigured(); err != nil {
+		return nil, err
+	}
+
+	cmd := f.command(ctx, args)
 	cmd.Stdin = stdin
 
 	ret, err := cmd.Output()

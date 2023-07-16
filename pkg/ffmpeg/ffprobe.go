@@ -2,6 +2,7 @@ package ffmpeg
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"github.com/stashapp/stash/pkg/exec"
 	"github.com/stashapp/stash/pkg/logger"
 )
+
+var ErrFFProbeUnconfigured = errors.New("ffprobe not configured")
 
 // VideoFile represents the ffprobe output for a video file.
 type VideoFile struct {
@@ -73,12 +76,29 @@ func (v *VideoFile) TranscodeScale(maxSize int) (int, int) {
 }
 
 // FFProbe provides an interface to the ffprobe executable.
-type FFProbe string
+type FFProbe struct {
+	ffprobe string
+}
+
+func (f *FFProbe) Configure(path string) {
+	f.ffprobe = path
+}
+
+func (f *FFProbe) ensureConfigured() error {
+	if f.ffprobe == "" {
+		return ErrFFProbeUnconfigured
+	}
+	return nil
+}
 
 // NewVideoFile runs ffprobe on the given path and returns a VideoFile.
 func (f *FFProbe) NewVideoFile(videoPath string) (*VideoFile, error) {
+	if err := f.ensureConfigured(); err != nil {
+		return nil, err
+	}
+
 	args := []string{"-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-show_error", videoPath}
-	cmd := exec.Command(string(*f), args...)
+	cmd := exec.Command(f.ffprobe, args...)
 	out, err := cmd.Output()
 
 	if err != nil {
@@ -96,8 +116,12 @@ func (f *FFProbe) NewVideoFile(videoPath string) (*VideoFile, error) {
 // GetReadFrameCount counts the actual frames of the video file.
 // Used when the frame count is missing or incorrect.
 func (f *FFProbe) GetReadFrameCount(path string) (int64, error) {
+	if err := f.ensureConfigured(); err != nil {
+		return 0, err
+	}
+
 	args := []string{"-v", "quiet", "-print_format", "json", "-count_frames", "-show_format", "-show_streams", "-show_error", path}
-	out, err := exec.Command(string(*f), args...).Output()
+	out, err := exec.Command(f.ffprobe, args...).Output()
 
 	if err != nil {
 		return 0, fmt.Errorf("FFProbe encountered an error with <%s>.\nError JSON:\n%s\nError: %s", path, string(out), err.Error())

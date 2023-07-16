@@ -1,12 +1,8 @@
 package generate
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/fsutil"
@@ -121,63 +117,4 @@ func (g Generator) generateBytes(lockCtx *fsutil.LockContext, p Paths, pattern s
 
 	defer os.Remove(tmpFn)
 	return os.ReadFile(tmpFn)
-}
-
-// generate runs ffmpeg with the given args and waits for it to finish.
-// Returns an error if the command fails. If the command fails, the return
-// value will be of type *exec.ExitError.
-func (g Generator) generate(ctx *fsutil.LockContext, args []string) error {
-	cmd := g.Encoder.Command(ctx, args)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("error starting command: %w", err)
-	}
-
-	ctx.AttachCommand(cmd)
-
-	if err := cmd.Wait(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			exitErr.Stderr = stderr.Bytes()
-			err = exitErr
-		}
-		return fmt.Errorf("error running ffmpeg command <%s>: %w", strings.Join(args, " "), err)
-	}
-
-	return nil
-}
-
-// GenerateOutput runs ffmpeg with the given args and returns it standard output.
-func (g Generator) generateOutput(lockCtx *fsutil.LockContext, args []string) ([]byte, error) {
-	cmd := g.Encoder.Command(lockCtx, args)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("error starting command: %w", err)
-	}
-
-	lockCtx.AttachCommand(cmd)
-
-	if err := cmd.Wait(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			exitErr.Stderr = stderr.Bytes()
-			err = exitErr
-		}
-		return nil, fmt.Errorf("error running ffmpeg command <%s>: %w", strings.Join(args, " "), err)
-	}
-
-	if stdout.Len() == 0 {
-		return nil, fmt.Errorf("ffmpeg command produced no output: <%s>", strings.Join(args, " "))
-	}
-
-	return stdout.Bytes(), nil
 }

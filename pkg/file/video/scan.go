@@ -2,7 +2,6 @@ package video
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/stashapp/stash/pkg/ffmpeg"
@@ -12,14 +11,10 @@ import (
 
 // Decorator adds video specific fields to a File.
 type Decorator struct {
-	FFProbe ffmpeg.FFProbe
+	FFProbe *ffmpeg.FFProbe
 }
 
 func (d *Decorator) Decorate(ctx context.Context, fs models.FS, f models.File) (models.File, error) {
-	if d.FFProbe == "" {
-		return f, errors.New("ffprobe not configured")
-	}
-
 	base := f.Base()
 	// TODO - copy to temp file if not an OsFS
 	if _, isOs := fs.(*file.OsFS); !isOs {

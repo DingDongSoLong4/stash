@@ -91,7 +91,7 @@ func (g Generator) transcode(input string, options TranscodeOptions) generateFn 
 			ExtraOutputArgs: g.FFMpegConfig.GetTranscodeOutputArgs(),
 		})
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }
 
@@ -125,7 +125,7 @@ func (g Generator) transcodeVideo(input string, options TranscodeOptions) genera
 			ExtraOutputArgs: g.FFMpegConfig.GetTranscodeOutputArgs(),
 		})
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }
 
@@ -145,7 +145,7 @@ func (g Generator) transcodeAudio(input string, options TranscodeOptions) genera
 			AudioCodec: ffmpeg.AudioCodecAAC,
 		})
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }
 
@@ -168,6 +168,6 @@ func (g Generator) transcodeCopyVideo(input string, options TranscodeOptions) ge
 			AudioArgs:  audioArgs,
 		})
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }

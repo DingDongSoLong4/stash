@@ -3,10 +3,13 @@ package ffmpeg
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 
 	stashExec "github.com/stashapp/stash/pkg/exec"
 )
+
+var ErrFFMpegUnconfigured = errors.New("ffmpeg not configured")
 
 // FFMpeg provides an interface to ffmpeg.
 type FFMpeg struct {
@@ -14,16 +17,20 @@ type FFMpeg struct {
 	hwCodecSupport []VideoCodec
 }
 
-// Creates a new FFMpeg encoder
-func NewEncoder(ffmpegPath string) *FFMpeg {
-	ret := &FFMpeg{
-		ffmpeg: ffmpegPath,
-	}
+func (f *FFMpeg) Configure(ctx context.Context, path string) {
+	f.ffmpeg = path
 
-	return ret
+	f.initHWSupport(ctx)
+}
+
+func (f *FFMpeg) ensureConfigured() error {
+	if f.ffmpeg == "" {
+		return ErrFFMpegUnconfigured
+	}
+	return nil
 }
 
 // Returns an exec.Cmd that can be used to run ffmpeg using args.
-func (f *FFMpeg) Command(ctx context.Context, args []string) *exec.Cmd {
+func (f *FFMpeg) command(ctx context.Context, args []string) *exec.Cmd {
 	return stashExec.CommandContext(ctx, string(f.ffmpeg), args...)
 }

@@ -31,7 +31,7 @@ For further information you can [read the in-app manual](ui/v2.5/src/docs/en).
 ## First Run
 #### Windows Users: Security Prompt
 Running the app might present a security prompt since the binary isn't yet signed. Bypass this by clicking "more info" and then the "run anyway" button.
-#### FFMPEG
+#### FFMpeg
 Stash requires ffmpeg. If you don't have it installed, Stash will download a copy for you. It is recommended that Linux users install `ffmpeg` from their distro's package manager.
 
 # Usage

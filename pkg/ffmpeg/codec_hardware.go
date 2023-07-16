@@ -25,7 +25,7 @@ var (
 )
 
 // Tests all (given) hardware codec's
-func (f *FFMpeg) InitHWSupport(ctx context.Context) {
+func (f *FFMpeg) initHWSupport(ctx context.Context) {
 	var hwCodecSupport []VideoCodec
 
 	for _, codec := range []VideoCodec{
@@ -54,7 +54,7 @@ func (f *FFMpeg) InitHWSupport(ctx context.Context) {
 		args = args.Format("null")
 		args = args.Output("-")
 
-		cmd := f.Command(ctx, args)
+		cmd := f.command(ctx, args)
 
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr

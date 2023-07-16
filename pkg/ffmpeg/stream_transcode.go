@@ -193,6 +193,12 @@ func (o TranscodeOptions) makeStreamArgs(sm *StreamManager) Args {
 }
 
 func (sm *StreamManager) ServeTranscode(w http.ResponseWriter, r *http.Request, options TranscodeOptions) {
+	if err := sm.encoder.ensureConfigured(); err != nil {
+		logger.Warnf("[transcode] cannot live transcode files: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	streamRequestCtx := NewStreamRequestContext(w, r)
 	lockCtx := sm.lockManager.ReadLock(streamRequestCtx, options.VideoFile.Path)
 
@@ -216,7 +222,7 @@ func (sm *StreamManager) ServeTranscode(w http.ResponseWriter, r *http.Request, 
 
 func (sm *StreamManager) getTranscodeStream(ctx *fsutil.LockContext, options TranscodeOptions) (http.HandlerFunc, error) {
 	args := options.makeStreamArgs(sm)
-	cmd := sm.encoder.Command(ctx, args)
+	cmd := sm.encoder.command(ctx, args)
 
 	stdout, err := cmd.StdoutPipe()
 	if nil != err {

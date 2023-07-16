@@ -61,6 +61,6 @@ func (g Generator) screenshot(input string, options screenshotOptions) generateF
 
 		args := transcoder.ScreenshotTime(input, options.Time, ssOptions)
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }

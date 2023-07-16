@@ -218,7 +218,7 @@ func (g Generator) previewVideoChunk(lockCtx *fsutil.LockContext, fn string, opt
 
 	args := transcoder.Transcode(fn, trimOptions)
 
-	return g.generate(lockCtx, args)
+	return g.Encoder.Generate(lockCtx, args)
 }
 
 func (g Generator) generateConcatFile(chunkFiles []string) (fn string, err error) {
@@ -246,7 +246,7 @@ func (g Generator) previewVideoChunkCombine(lockCtx *fsutil.LockContext, concatF
 
 	args := transcoder.Splice(concatFilePath, spliceOptions)
 
-	return g.generate(lockCtx, args)
+	return g.Encoder.Generate(lockCtx, args)
 }
 
 func removeFiles(list []string) {
@@ -313,6 +313,6 @@ func (g Generator) previewVideoToImage(input string) generateFn {
 
 		args := transcoder.Transcode(input, encodeOptions)
 
-		return g.generate(lockCtx, args)
+		return g.Encoder.Generate(lockCtx, args)
 	}
 }

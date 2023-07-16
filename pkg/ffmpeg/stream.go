@@ -23,7 +23,7 @@ const (
 type StreamManager struct {
 	cacheDir string
 	encoder  *FFMpeg
-	ffprobe  FFProbe
+	ffprobe  *FFProbe
 
 	config      StreamManagerConfig
 	lockManager *fsutil.ReadLockManager
@@ -42,41 +42,48 @@ type StreamManagerConfig interface {
 	GetTranscodeHardwareAcceleration() bool
 }
 
-func NewStreamManager(cacheDir string, encoder *FFMpeg, ffprobe FFProbe, config StreamManagerConfig, lockManager *fsutil.ReadLockManager) *StreamManager {
+func NewStreamManager(encoder *FFMpeg, ffprobe *FFProbe, config StreamManagerConfig, lockManager *fsutil.ReadLockManager) *StreamManager {
+	return &StreamManager{
+		encoder:     encoder,
+		ffprobe:     ffprobe,
+		config:      config,
+		lockManager: lockManager,
+	}
+}
+
+// Configure configures or reconfigures the stream manager with a new cacheDir.
+func (sm *StreamManager) Configure(cacheDir string) {
+	sm.Shutdown()
+
+	sm.cacheDir = cacheDir
 	if cacheDir == "" {
-		logger.Warn("cache directory is not set. Live HLS/DASH transcoding will be disabled")
-	}
+		logger.Warn("Cache directory unset. Live HLS/DASH transcoding will be disabled.")
+	} else {
+		sm.runningStreams = make(map[string]*runningStream)
 
-	ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
 
-	ret := &StreamManager{
-		cacheDir:       cacheDir,
-		encoder:        encoder,
-		ffprobe:        ffprobe,
-		config:         config,
-		lockManager:    lockManager,
-		context:        ctx,
-		cancelFunc:     cancel,
-		runningStreams: make(map[string]*runningStream),
-	}
+		sm.context = ctx
+		sm.cancelFunc = cancel
 
-	go func() {
-		for {
-			select {
-			case <-time.After(monitorInterval):
-				ret.monitorStreams()
-			case <-ctx.Done():
-				return
+		go func() {
+			for {
+				select {
+				case <-time.After(monitorInterval):
+					sm.monitorStreams()
+				case <-ctx.Done():
+					return
+				}
 			}
-		}
-	}()
-
-	return ret
+		}()
+	}
 }
 
 // Shutdown shuts down the stream manager, killing any running transcoding processes and removing all cached files.
 func (sm *StreamManager) Shutdown() {
-	sm.cancelFunc()
+	if sm.cancelFunc != nil {
+		sm.cancelFunc()
+	}
 	sm.stopAndRemoveAll()
 }
 

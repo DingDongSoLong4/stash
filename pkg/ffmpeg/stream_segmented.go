@@ -570,6 +570,12 @@ func (sm *StreamManager) serveWaitingSegment(w http.ResponseWriter, r *http.Requ
 }
 
 func (sm *StreamManager) ServeSegment(w http.ResponseWriter, r *http.Request, options StreamOptions) {
+	if err := sm.encoder.ensureConfigured(); err != nil {
+		logger.Warnf("[transcode] cannot live transcode files: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	if sm.cacheDir == "" {
 		logger.Error("[transcode] cannot live transcode files because cache dir is unset")
 		http.Error(w, "cannot live transcode files because cache dir is unset", http.StatusServiceUnavailable)
@@ -657,7 +663,7 @@ func (sm *StreamManager) startTranscode(stream *runningStream, segment int, done
 	lockCtx := sm.lockManager.ReadLock(sm.context, stream.vf.Path)
 
 	args := stream.makeStreamArgs(sm, segment)
-	cmd := sm.encoder.Command(lockCtx, args)
+	cmd := sm.encoder.command(lockCtx, args)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {

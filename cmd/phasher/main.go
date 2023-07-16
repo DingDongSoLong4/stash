@@ -18,7 +18,7 @@ func customUsage() {
 	flag.PrintDefaults()
 }
 
-func printPhash(ff *ffmpeg.FFMpeg, ffp ffmpeg.FFProbe, inputfile string, quiet *bool) error {
+func printPhash(ff *ffmpeg.FFMpeg, ffp *ffmpeg.FFProbe, inputfile string, quiet *bool) error {
 	ffvideoFile, err := ffp.NewVideoFile(inputfile)
 	if err != nil {
 		return err
@@ -70,10 +70,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Example: parallel %v ::: *.mp4\n", os.Args[0])
 	}
 
+	encoder := &ffmpeg.FFMpeg{}
+	ffprobe := &ffmpeg.FFProbe{}
+
 	ffmpegPath, ffprobePath := ffmpeg.GetPaths(nil)
-	encoder := ffmpeg.NewEncoder(ffmpegPath)
-	encoder.InitHWSupport(context.TODO())
-	ffprobe := ffmpeg.FFProbe(ffprobePath)
+	encoder.Configure(context.TODO(), ffmpegPath)
+	ffprobe.Configure(ffprobePath)
 
 	for _, item := range args {
 		if err := printPhash(encoder, ffprobe, item, quiet); err != nil {

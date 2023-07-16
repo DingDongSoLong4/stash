@@ -17,6 +17,10 @@ type FrameInfo struct {
 // CalculateFrameRate calculates the frame rate and number of frames of the video file.
 // Used where the frame rate or NbFrames is missing or invalid in the ffprobe output.
 func (f *FFMpeg) CalculateFrameRate(ctx context.Context, v *VideoFile) (*FrameInfo, error) {
+	if err := f.ensureConfigured(); err != nil {
+		return nil, err
+	}
+
 	var args Args
 	args = append(args, "-nostats")
 	args = args.Input(v.Path).
@@ -25,7 +29,7 @@ func (f *FFMpeg) CalculateFrameRate(ctx context.Context, v *VideoFile) (*FrameIn
 		Overwrite().
 		NullOutput()
 
-	command := f.Command(ctx, args)
+	command := f.command(ctx, args)
 	var stdErrBuffer bytes.Buffer
 	command.Stderr = &stdErrBuffer // Frames go to stderr rather than stdout
 	err := command.Run()

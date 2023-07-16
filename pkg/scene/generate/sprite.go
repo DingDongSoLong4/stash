@@ -57,7 +57,7 @@ func (g Generator) SpriteScreenshotSlow(ctx context.Context, input string, frame
 }
 
 func (g Generator) generateImage(lockCtx *fsutil.LockContext, args ffmpeg.Args) (image.Image, error) {
-	out, err := g.generateOutput(lockCtx, args)
+	out, err := g.Encoder.GenerateOutput(lockCtx, args, nil)
 	if err != nil {
 		return nil, err
 	}
