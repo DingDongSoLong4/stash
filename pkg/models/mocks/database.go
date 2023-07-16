@@ -74,6 +74,21 @@ func NewDatabase() *Database {
 	}
 }
 
+func (db *Database) AssertExpectations(t mock.TestingT) {
+	db.File.AssertExpectations(t)
+	db.Folder.AssertExpectations(t)
+	db.Gallery.AssertExpectations(t)
+	db.GalleryChapter.AssertExpectations(t)
+	db.Image.AssertExpectations(t)
+	db.Movie.AssertExpectations(t)
+	db.Performer.AssertExpectations(t)
+	db.Scene.AssertExpectations(t)
+	db.SceneMarker.AssertExpectations(t)
+	db.Studio.AssertExpectations(t)
+	db.Tag.AssertExpectations(t)
+	db.SavedFilter.AssertExpectations(t)
+}
+
 func (db *Database) Repository() models.Repository {
 	return models.Repository{
 		Database:       db,

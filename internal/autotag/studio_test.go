@@ -179,7 +179,7 @@ func testStudioScenes(t *testing.T, tc testStudioCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Scene.AssertExpectations(t)
+	db.AssertExpectations(t)
 }
 
 func TestStudioImages(t *testing.T) {
@@ -290,7 +290,7 @@ func testStudioImages(t *testing.T, tc testStudioCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Image.AssertExpectations(t)
+	db.AssertExpectations(t)
 }
 
 func TestStudioGalleries(t *testing.T) {
@@ -401,5 +401,5 @@ func testStudioGalleries(t *testing.T, tc testStudioCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Gallery.AssertExpectations(t)
+	db.AssertExpectations(t)
 }

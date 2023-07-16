@@ -182,7 +182,7 @@ func testTagScenes(t *testing.T, tc testTagCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Scene.AssertExpectations(t)
+	db.AssertExpectations(t)
 }
 
 func TestTagImages(t *testing.T) {
@@ -297,7 +297,7 @@ func testTagImages(t *testing.T, tc testTagCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Image.AssertExpectations(t)
+	db.AssertExpectations(t)
 }
 
 func TestTagGalleries(t *testing.T) {
@@ -413,5 +413,5 @@ func testTagGalleries(t *testing.T, tc testTagCase) {
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	db.Gallery.AssertExpectations(t)
+	db.AssertExpectations(t)
 }
