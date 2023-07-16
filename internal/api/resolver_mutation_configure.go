@@ -256,8 +256,10 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 		}
 	}
 
+	refreshSessionStore := false
 	if input.MaxSessionAge != nil {
 		c.Set(config.MaxSessionAge, *input.MaxSessionAge)
+		refreshSessionStore = true
 	}
 
 	if input.LogFile != nil {
@@ -365,15 +367,19 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 		return makeConfigGeneralResult(), err
 	}
 
-	manager.GetInstance().RefreshConfig()
+	mgr := manager.GetInstance()
+	mgr.RefreshConfig()
+	if refreshSessionStore {
+		mgr.RefreshSessionStore()
+	}
 	if refreshScraperCache {
-		manager.GetInstance().RefreshScraperCache()
+		mgr.RefreshScraperCache()
 	}
 	if refreshStreamManager {
-		manager.GetInstance().RefreshStreamManager()
+		mgr.RefreshStreamManager()
 	}
 	if refreshBlobStorage {
-		manager.GetInstance().SetBlobStoreOptions()
+		mgr.SetBlobStoreOptions()
 	}
 
 	return makeConfigGeneralResult(), nil

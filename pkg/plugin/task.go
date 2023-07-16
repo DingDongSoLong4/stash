@@ -40,7 +40,7 @@ type pluginTask struct {
 	operation    *OperationConfig
 	input        common.PluginInput
 	gqlHandler   http.Handler
-	serverConfig ServerConfig
+	globalConfig GlobalConfig
 
 	progress chan float64
 	result   *common.PluginOutput

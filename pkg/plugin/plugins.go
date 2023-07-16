@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin/common"
@@ -42,7 +43,7 @@ type PluginUI struct {
 	CSS []string `json:"css"`
 }
 
-type ServerConfig interface {
+type GlobalConfig interface {
 	GetHost() string
 	GetPort() int
 	GetConfigPath() string
@@ -53,7 +54,7 @@ type ServerConfig interface {
 
 // Cache stores plugin details.
 type Cache struct {
-	config       ServerConfig
+	globalConfig GlobalConfig
 	plugins      []Config
 	sessionStore *session.Store
 	gqlHandler   http.Handler
@@ -66,9 +67,10 @@ type Cache struct {
 //
 // Does not load plugins. Plugins will need to be
 // loaded explicitly using ReloadPlugins.
-func NewCache(config ServerConfig) *Cache {
+func NewCache(globalConfig GlobalConfig, sessionStore *session.Store) *Cache {
 	return &Cache{
-		config: config,
+		globalConfig: globalConfig,
+		sessionStore: sessionStore,
 	}
 }
 
@@ -76,50 +78,31 @@ func (c *Cache) RegisterGQLHandler(handler http.Handler) {
 	c.gqlHandler = handler
 }
 
-func (c *Cache) RegisterSessionStore(sessionStore *session.Store) {
-	c.sessionStore = sessionStore
-}
-
-// LoadPlugins clears the plugin cache and loads from the plugin path.
-// In the event of an error during loading, the cache will be left empty.
-func (c *Cache) LoadPlugins() error {
-	c.plugins = nil
-	plugins, err := loadPlugins(c.config.GetPluginsPath())
-	if err != nil {
-		return err
-	}
-
-	c.plugins = plugins
-	return nil
-}
-
-func loadPlugins(path string) ([]Config, error) {
+// ReloadPlugins clears the plugin cache and loads from the plugin path.
+// If a plugin cannot be loaded, an error is logged and the plugin is skipped.
+func (c *Cache) ReloadPlugins() {
+	path := c.globalConfig.GetPluginsPath()
 	plugins := make([]Config, 0)
 
 	logger.Debugf("Reading plugin configs from %s", path)
-	pluginFiles := []string{}
-	err := filepath.Walk(path, func(fp string, f os.FileInfo, err error) error {
+
+	err := fsutil.SymWalk(path, func(fp string, f os.FileInfo, err error) error {
 		if filepath.Ext(fp) == ".yml" {
-			pluginFiles = append(pluginFiles, fp)
+			plugin, err := loadPluginFromYAMLFile(fp)
+			if err != nil {
+				logger.Errorf("Error loading plugin %s: %v", fp, err)
+			} else {
+				plugins = append(plugins, *plugin)
+			}
 		}
 		return nil
 	})
 
 	if err != nil {
-
-		return nil, err
+		logger.Errorf("Error reading plugin configs: %v", err)
 	}
 
-	for _, file := range pluginFiles {
-		plugin, err := loadPluginFromYAMLFile(file)
-		if err != nil {
-			logger.Errorf("Error loading plugin %s: %s", file, err.Error())
-		} else {
-			plugins = append(plugins, *plugin)
-		}
-	}
-
-	return plugins, nil
+	c.plugins = plugins
 }
 
 // ListPlugins returns plugin details for all of the loaded plugins.
@@ -156,13 +139,13 @@ func (c Cache) makeServerConnection(ctx context.Context) common.StashServerConne
 
 	serverConnection := common.StashServerConnection{
 		Scheme:        "http",
-		Host:          c.config.GetHost(),
-		Port:          c.config.GetPort(),
+		Host:          c.globalConfig.GetHost(),
+		Port:          c.globalConfig.GetPort(),
 		SessionCookie: cookie,
-		Dir:           c.config.GetConfigPath(),
+		Dir:           c.globalConfig.GetConfigPath(),
 	}
 
-	if c.config.HasTLSConfig() {
+	if c.globalConfig.HasTLSConfig() {
 		serverConnection.Scheme = "https"
 	}
 
@@ -193,7 +176,7 @@ func (c Cache) CreateTask(ctx context.Context, pluginID string, operationName st
 		input:        buildPluginInput(plugin, operation, serverConnection, args),
 		progress:     progress,
 		gqlHandler:   c.gqlHandler,
-		serverConfig: c.config,
+		globalConfig: c.globalConfig,
 	}
 	return task.createTask(), nil
 }
@@ -248,7 +231,7 @@ func (c Cache) executePostHooks(ctx context.Context, hookType HookTriggerEnum, h
 				operation:    &h.OperationConfig,
 				input:        pluginInput,
 				gqlHandler:   c.gqlHandler,
-				serverConfig: c.config,
+				globalConfig: c.globalConfig,
 			}
 
 			task := pt.createTask()

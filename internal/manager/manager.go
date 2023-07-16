@@ -182,7 +182,7 @@ func initialize() error {
 		Logger:          l,
 		ReadLockManager: fsutil.NewReadLockManager(),
 		DownloadStore:   NewDownloadStore(),
-		PluginCache:     plugin.NewCache(cfg),
+		SessionStore:    session.NewStore(cfg),
 
 		FFMpeg:  &ffmpeg.FFMpeg{},
 		FFProbe: &ffmpeg.FFProbe{},
@@ -193,6 +193,11 @@ func initialize() error {
 
 		scanSubs: &subscriptionManager{},
 	}
+
+	instance.PluginCache = plugin.NewCache(cfg, instance.SessionStore)
+
+	scraperRepository := scraper.NewRepository(repo)
+	instance.ScraperCache = scraper.NewCache(cfg, scraperRepository)
 
 	instance.SceneService = &scene.Service{
 		File:             db.File,
@@ -254,10 +259,6 @@ func initialize() error {
 		if cfgFile != "" {
 			cfgFile += " "
 		}
-
-		// create temporary session store - this will be re-initialised
-		// after config is complete
-		instance.SessionStore = session.NewStore(cfg)
 
 		logger.Warnf("config file %snot found. Assuming new system...", cfgFile)
 	}
@@ -434,20 +435,15 @@ func (s *Manager) PostInit(ctx context.Context) error {
 		logger.Warnf("could not set initial configuration: %v", err)
 	}
 
-	*s.Paths = paths.NewPaths(s.Config.GetGeneratedPath(), s.Config.GetBlobsPath())
 	s.RefreshConfig()
-	s.SessionStore = session.NewStore(s.Config)
-	s.PluginCache.RegisterSessionStore(s.SessionStore)
+	s.SessionStore.Reset()
 
-	if err := s.PluginCache.LoadPlugins(); err != nil {
-		logger.Errorf("Error reading plugin configs: %s", err.Error())
-	}
-
+	s.RefreshPluginCache()
+	s.RefreshScraperCache()
 	s.RefreshStreamManager()
 
 	s.SetBlobStoreOptions()
 
-	s.ScraperCache = instance.initScraperCache()
 	writeStashIcon()
 
 	// clear the downloads and tmp directories
@@ -508,18 +504,6 @@ func writeStashIcon() {
 	}
 }
 
-// initScraperCache initializes a new scraper cache and returns it.
-func (s *Manager) initScraperCache() *scraper.Cache {
-	scraperRepository := scraper.NewRepository(s.Repository)
-	ret, err := scraper.NewCache(config.GetInstance(), scraperRepository)
-
-	if err != nil {
-		logger.Errorf("Error reading scraper configs: %s", err.Error())
-	}
-
-	return ret
-}
-
 func (s *Manager) RefreshConfig() {
 	*s.Paths = paths.NewPaths(s.Config.GetGeneratedPath(), s.Config.GetBlobsPath())
 	config := s.Config
@@ -545,14 +529,26 @@ func (s *Manager) RefreshConfig() {
 	}
 }
 
-// RefreshScraperCache refreshes the scraper cache. Call this when scraper
-// configuration changes.
-func (s *Manager) RefreshScraperCache() {
-	s.ScraperCache = s.initScraperCache()
+// RefreshSessionStore refreshes the session store configuration.
+// Call this when the max session age changes.
+func (s *Manager) RefreshSessionStore() {
+	s.SessionStore.Configure(s.Config.GetMaxSessionAge())
 }
 
-// RefreshStreamManager refreshes the stream manager. Call this when cache directory
-// changes.
+// RefreshPluginCache refreshes the plugin cache.
+// Call this when the plugin configuration changes.
+func (s *Manager) RefreshPluginCache() {
+	s.PluginCache.ReloadPlugins()
+}
+
+// RefreshScraperCache refreshes the scraper cache.
+// Call this when the scraper configuration changes.
+func (s *Manager) RefreshScraperCache() {
+	s.ScraperCache.ReloadScrapers()
+}
+
+// RefreshStreamManager refreshes the stream manager.
+// Call this when the cache directory changes.
 func (s *Manager) RefreshStreamManager() {
 	s.StreamManager.Configure(s.Config.GetCachePath())
 }

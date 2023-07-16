@@ -50,16 +50,29 @@ type Store struct {
 	config       SessionConfig
 }
 
+// NewStore creates and configures a new session store using the provided config.
 func NewStore(c SessionConfig) *Store {
 	ret := &Store{
 		sessionStore: sessions.NewCookieStore(c.GetSessionStoreKey()),
 		config:       c,
 	}
 
-	ret.sessionStore.MaxAge(c.GetMaxSessionAge())
 	ret.sessionStore.Options.SameSite = http.SameSiteLaxMode
 
+	ret.Configure(c.GetMaxSessionAge())
+
 	return ret
+}
+
+// Configure sets the max age of session cookies.
+// It will not reset the session store.
+func (s *Store) Configure(maxAge int) {
+	s.sessionStore.MaxAge(maxAge)
+}
+
+// Reset resets the store, clearing all sessions.
+func (s *Store) Reset() {
+	*s = *NewStore(s.config)
 }
 
 func (s *Store) Login(w http.ResponseWriter, r *http.Request) error {

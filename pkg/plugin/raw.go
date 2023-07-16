@@ -44,7 +44,7 @@ func (t *rawPluginTask) Start() error {
 
 	var cmd *exec.Cmd
 	if python.IsPythonCommand(command[0]) {
-		pythonPath := t.serverConfig.GetPythonPath()
+		pythonPath := t.globalConfig.GetPythonPath()
 		var p *python.Python
 		if pythonPath != "" {
 			p = python.New(pythonPath)
