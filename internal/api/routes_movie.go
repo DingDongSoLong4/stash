@@ -9,13 +9,19 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 type movieRoutes struct {
-	txnManager  txn.Manager
-	movieFinder models.MovieReader
+	routes
+	movie models.MovieReader
+}
+
+func getMovieRoutes(repo models.Repository) chi.Router {
+	return movieRoutes{
+		routes: routes{txnManager: repo.Database},
+		movie:  repo.Movie,
+	}.Routes()
 }
 
 func (rs movieRoutes) Routes() chi.Router {
@@ -35,9 +41,9 @@ func (rs movieRoutes) FrontImage(w http.ResponseWriter, r *http.Request) {
 	defaultParam := r.URL.Query().Get("default")
 	var image []byte
 	if defaultParam != "true" {
-		readTxnErr := txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		readTxnErr := rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			image, err = rs.movieFinder.GetFrontImage(ctx, movie.ID)
+			image, err = rs.movie.GetFrontImage(ctx, movie.ID)
 			return err
 		})
 		if errors.Is(readTxnErr, context.Canceled) {
@@ -60,9 +66,9 @@ func (rs movieRoutes) BackImage(w http.ResponseWriter, r *http.Request) {
 	defaultParam := r.URL.Query().Get("default")
 	var image []byte
 	if defaultParam != "true" {
-		readTxnErr := txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		readTxnErr := rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			image, err = rs.movieFinder.GetBackImage(ctx, movie.ID)
+			image, err = rs.movie.GetBackImage(ctx, movie.ID)
 			return err
 		})
 		if errors.Is(readTxnErr, context.Canceled) {
@@ -89,8 +95,8 @@ func (rs movieRoutes) MovieCtx(next http.Handler) http.Handler {
 		}
 
 		var movie *models.Movie
-		_ = txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
-			movie, _ = rs.movieFinder.Find(ctx, movieID)
+		_ = rs.withReadTxn(r, func(ctx context.Context) error {
+			movie, _ = rs.movie.Find(ctx, movieID)
 			return nil
 		})
 		if movie == nil {

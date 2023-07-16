@@ -11,13 +11,19 @@ import (
 	"github.com/stashapp/stash/internal/static"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 type tagRoutes struct {
-	txnManager txn.Manager
-	tagFinder  models.TagReader
+	routes
+	tag models.TagReader
+}
+
+func getTagRoutes(repo models.Repository) chi.Router {
+	return tagRoutes{
+		routes: routes{txnManager: repo.Database},
+		tag:    repo.Tag,
+	}.Routes()
 }
 
 func (rs tagRoutes) Routes() chi.Router {
@@ -37,9 +43,9 @@ func (rs tagRoutes) Image(w http.ResponseWriter, r *http.Request) {
 
 	var image []byte
 	if defaultParam != "true" {
-		readTxnErr := txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		readTxnErr := rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			image, err = rs.tagFinder.GetImage(ctx, tag.ID)
+			image, err = rs.tag.GetImage(ctx, tag.ID)
 			return err
 		})
 		if errors.Is(readTxnErr, context.Canceled) {
@@ -73,9 +79,9 @@ func (rs tagRoutes) TagCtx(next http.Handler) http.Handler {
 		}
 
 		var tag *models.Tag
-		_ = txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		_ = rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			tag, err = rs.tagFinder.Find(ctx, tagID)
+			tag, err = rs.tag.Find(ctx, tagID)
 			return err
 		})
 		if tag == nil {

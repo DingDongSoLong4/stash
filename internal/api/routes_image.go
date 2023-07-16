@@ -17,14 +17,21 @@ import (
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 type imageRoutes struct {
-	txnManager  txn.Manager
-	imageFinder models.ImageReader
-	fileFinder  models.FileReader
+	routes
+	image models.ImageReader
+	file  models.FileReader
+}
+
+func getImageRoutes(repo models.Repository) chi.Router {
+	return imageRoutes{
+		routes: routes{txnManager: repo.Database},
+		image:  repo.Image,
+		file:   repo.File,
+	}.Routes()
 }
 
 func (rs imageRoutes) Routes() chi.Router {
@@ -151,19 +158,18 @@ func (rs imageRoutes) ImageCtx(next http.Handler) http.Handler {
 		imageID, _ := strconv.Atoi(imageIdentifierQueryParam)
 
 		var image *models.Image
-		_ = txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
-			qb := rs.imageFinder
+		_ = rs.withReadTxn(r, func(ctx context.Context) error {
 			if imageID == 0 {
-				images, _ := qb.FindByChecksum(ctx, imageIdentifierQueryParam)
+				images, _ := rs.image.FindByChecksum(ctx, imageIdentifierQueryParam)
 				if len(images) > 0 {
 					image = images[0]
 				}
 			} else {
-				image, _ = qb.Find(ctx, imageID)
+				image, _ = rs.image.Find(ctx, imageID)
 			}
 
 			if image != nil {
-				if err := image.LoadPrimaryFile(ctx, rs.fileFinder); err != nil {
+				if err := image.LoadPrimaryFile(ctx, rs.file); err != nil {
 					if !errors.Is(err, context.Canceled) {
 						logger.Errorf("error loading primary file for image %d: %v", imageID, err)
 					}

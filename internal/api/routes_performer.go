@@ -10,13 +10,19 @@ import (
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 type performerRoutes struct {
-	txnManager      txn.Manager
-	performerFinder models.PerformerReader
+	routes
+	performer models.PerformerReader
+}
+
+func getPerformerRoutes(repo models.Repository) chi.Router {
+	return performerRoutes{
+		routes:    routes{txnManager: repo.Database},
+		performer: repo.Performer,
+	}.Routes()
 }
 
 func (rs performerRoutes) Routes() chi.Router {
@@ -36,9 +42,9 @@ func (rs performerRoutes) Image(w http.ResponseWriter, r *http.Request) {
 
 	var image []byte
 	if defaultParam != "true" {
-		readTxnErr := txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		readTxnErr := rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			image, err = rs.performerFinder.GetImage(ctx, performer.ID)
+			image, err = rs.performer.GetImage(ctx, performer.ID)
 			return err
 		})
 		if errors.Is(readTxnErr, context.Canceled) {
@@ -65,9 +71,9 @@ func (rs performerRoutes) PerformerCtx(next http.Handler) http.Handler {
 		}
 
 		var performer *models.Performer
-		_ = txn.WithReadTxn(r.Context(), rs.txnManager, func(ctx context.Context) error {
+		_ = rs.withReadTxn(r, func(ctx context.Context) error {
 			var err error
-			performer, err = rs.performerFinder.Find(ctx, performerID)
+			performer, err = rs.performer.Find(ctx, performerID)
 			return err
 		})
 		if performer == nil {
