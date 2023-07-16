@@ -45,7 +45,8 @@ func TestPerformerScenes(t *testing.T) {
 }
 
 func testPerformerScenes(t *testing.T, performerName, expectedRegex string) {
-	mockSceneReader := &mocks.SceneReaderWriter{}
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	const performerID = 2
 
@@ -84,7 +85,7 @@ func testPerformerScenes(t *testing.T, performerName, expectedRegex string) {
 		Direction: &direction,
 	}
 
-	mockSceneReader.On("Query", mock.Anything, scene.QueryOptions(expectedSceneFilter, expectedFindFilter, false)).
+	db.Scene.On("Query", mock.Anything, scene.QueryOptions(expectedSceneFilter, expectedFindFilter, false)).
 		Return(mocks.SceneQueryResult(scenes, len(scenes)), nil).Once()
 
 	for i := range matchingPaths {
@@ -107,19 +108,19 @@ func testPerformerScenes(t *testing.T, performerName, expectedRegex string) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockSceneReader.On("UpdatePartial", mock.Anything, sceneID, matchPartial).Return(nil, nil).Once()
+		db.Scene.On("UpdatePartial", mock.Anything, sceneID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.PerformerScenes(testCtx, &performer, nil, mockSceneReader)
+	err := tagger.PerformerScenes(testCtx, &performer, nil)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockSceneReader.AssertExpectations(t)
+	db.Scene.AssertExpectations(t)
 }
 
 func TestPerformerImages(t *testing.T) {
@@ -147,7 +148,8 @@ func TestPerformerImages(t *testing.T) {
 }
 
 func testPerformerImages(t *testing.T, performerName, expectedRegex string) {
-	mockImageReader := &mocks.ImageReaderWriter{}
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	const performerID = 2
 
@@ -186,7 +188,7 @@ func testPerformerImages(t *testing.T, performerName, expectedRegex string) {
 		Direction: &direction,
 	}
 
-	mockImageReader.On("Query", mock.Anything, image.QueryOptions(expectedImageFilter, expectedFindFilter, false)).
+	db.Image.On("Query", mock.Anything, image.QueryOptions(expectedImageFilter, expectedFindFilter, false)).
 		Return(mocks.ImageQueryResult(images, len(images)), nil).Once()
 
 	for i := range matchingPaths {
@@ -209,19 +211,19 @@ func testPerformerImages(t *testing.T, performerName, expectedRegex string) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockImageReader.On("UpdatePartial", mock.Anything, imageID, matchPartial).Return(nil, nil).Once()
+		db.Image.On("UpdatePartial", mock.Anything, imageID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.PerformerImages(testCtx, &performer, nil, mockImageReader)
+	err := tagger.PerformerImages(testCtx, &performer, nil)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockImageReader.AssertExpectations(t)
+	db.Image.AssertExpectations(t)
 }
 
 func TestPerformerGalleries(t *testing.T) {
@@ -249,7 +251,8 @@ func TestPerformerGalleries(t *testing.T) {
 }
 
 func testPerformerGalleries(t *testing.T, performerName, expectedRegex string) {
-	mockGalleryReader := &mocks.GalleryReaderWriter{}
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	const performerID = 2
 
@@ -289,7 +292,7 @@ func testPerformerGalleries(t *testing.T, performerName, expectedRegex string) {
 		Direction: &direction,
 	}
 
-	mockGalleryReader.On("Query", mock.Anything, expectedGalleryFilter, expectedFindFilter).Return(galleries, len(galleries), nil).Once()
+	db.Gallery.On("Query", mock.Anything, expectedGalleryFilter, expectedFindFilter).Return(galleries, len(galleries), nil).Once()
 
 	for i := range matchingPaths {
 		galleryID := i + 1
@@ -311,17 +314,17 @@ func testPerformerGalleries(t *testing.T, performerName, expectedRegex string) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockGalleryReader.On("UpdatePartial", mock.Anything, galleryID, matchPartial).Return(nil, nil).Once()
+		db.Gallery.On("UpdatePartial", mock.Anything, galleryID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.PerformerGalleries(testCtx, &performer, nil, mockGalleryReader)
+	err := tagger.PerformerGalleries(testCtx, &performer, nil)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockGalleryReader.AssertExpectations(t)
+	db.Gallery.AssertExpectations(t)
 }

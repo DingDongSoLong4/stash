@@ -83,7 +83,8 @@ func testStudioScenes(t *testing.T, tc testStudioCase) {
 	aliasName := tc.aliasName
 	aliasRegex := tc.aliasRegex
 
-	mockSceneReader := &mocks.SceneReaderWriter{}
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	var studioID = 2
 
@@ -130,7 +131,7 @@ func testStudioScenes(t *testing.T, tc testStudioCase) {
 	}
 
 	// if alias provided, then don't find by name
-	onNameQuery := mockSceneReader.On("Query", testCtx, scene.QueryOptions(expectedSceneFilter, expectedFindFilter, false))
+	onNameQuery := db.Scene.On("Query", testCtx, scene.QueryOptions(expectedSceneFilter, expectedFindFilter, false))
 
 	if aliasName == "" {
 		onNameQuery.Return(mocks.SceneQueryResult(scenes, len(scenes)), nil).Once()
@@ -145,7 +146,7 @@ func testStudioScenes(t *testing.T, tc testStudioCase) {
 			},
 		}
 
-		mockSceneReader.On("Query", mock.Anything, scene.QueryOptions(expectedAliasFilter, expectedFindFilter, false)).
+		db.Scene.On("Query", mock.Anything, scene.QueryOptions(expectedAliasFilter, expectedFindFilter, false)).
 			Return(mocks.SceneQueryResult(scenes, len(scenes)), nil).Once()
 	}
 
@@ -166,19 +167,19 @@ func testStudioScenes(t *testing.T, tc testStudioCase) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockSceneReader.On("UpdatePartial", mock.Anything, sceneID, matchPartial).Return(nil, nil).Once()
+		db.Scene.On("UpdatePartial", mock.Anything, sceneID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.StudioScenes(testCtx, &studio, nil, aliases, mockSceneReader)
+	err := tagger.StudioScenes(testCtx, &studio, nil, aliases)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockSceneReader.AssertExpectations(t)
+	db.Scene.AssertExpectations(t)
 }
 
 func TestStudioImages(t *testing.T) {
@@ -195,7 +196,8 @@ func testStudioImages(t *testing.T, tc testStudioCase) {
 	aliasName := tc.aliasName
 	aliasRegex := tc.aliasRegex
 
-	mockImageReader := &mocks.ImageReaderWriter{}
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	var studioID = 2
 
@@ -241,7 +243,7 @@ func testStudioImages(t *testing.T, tc testStudioCase) {
 	}
 
 	// if alias provided, then don't find by name
-	onNameQuery := mockImageReader.On("Query", mock.Anything, image.QueryOptions(expectedImageFilter, expectedFindFilter, false))
+	onNameQuery := db.Image.On("Query", mock.Anything, image.QueryOptions(expectedImageFilter, expectedFindFilter, false))
 	if aliasName == "" {
 		onNameQuery.Return(mocks.ImageQueryResult(images, len(images)), nil).Once()
 	} else {
@@ -255,7 +257,7 @@ func testStudioImages(t *testing.T, tc testStudioCase) {
 			},
 		}
 
-		mockImageReader.On("Query", mock.Anything, image.QueryOptions(expectedAliasFilter, expectedFindFilter, false)).
+		db.Image.On("Query", mock.Anything, image.QueryOptions(expectedAliasFilter, expectedFindFilter, false)).
 			Return(mocks.ImageQueryResult(images, len(images)), nil).Once()
 	}
 
@@ -276,19 +278,19 @@ func testStudioImages(t *testing.T, tc testStudioCase) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockImageReader.On("UpdatePartial", mock.Anything, imageID, matchPartial).Return(nil, nil).Once()
+		db.Image.On("UpdatePartial", mock.Anything, imageID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.StudioImages(testCtx, &studio, nil, aliases, mockImageReader)
+	err := tagger.StudioImages(testCtx, &studio, nil, aliases)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockImageReader.AssertExpectations(t)
+	db.Image.AssertExpectations(t)
 }
 
 func TestStudioGalleries(t *testing.T) {
@@ -304,7 +306,9 @@ func testStudioGalleries(t *testing.T, tc testStudioCase) {
 	expectedRegex := tc.expectedRegex
 	aliasName := tc.aliasName
 	aliasRegex := tc.aliasRegex
-	mockGalleryReader := &mocks.GalleryReaderWriter{}
+
+	db := mocks.NewDatabase()
+	repo := db.Repository()
 
 	var studioID = 2
 
@@ -351,7 +355,7 @@ func testStudioGalleries(t *testing.T, tc testStudioCase) {
 	}
 
 	// if alias provided, then don't find by name
-	onNameQuery := mockGalleryReader.On("Query", mock.Anything, expectedGalleryFilter, expectedFindFilter)
+	onNameQuery := db.Gallery.On("Query", mock.Anything, expectedGalleryFilter, expectedFindFilter)
 	if aliasName == "" {
 		onNameQuery.Return(galleries, len(galleries), nil).Once()
 	} else {
@@ -365,7 +369,7 @@ func testStudioGalleries(t *testing.T, tc testStudioCase) {
 			},
 		}
 
-		mockGalleryReader.On("Query", mock.Anything, expectedAliasFilter, expectedFindFilter).Return(galleries, len(galleries), nil).Once()
+		db.Gallery.On("Query", mock.Anything, expectedAliasFilter, expectedFindFilter).Return(galleries, len(galleries), nil).Once()
 	}
 
 	for i := range matchingPaths {
@@ -385,17 +389,17 @@ func testStudioGalleries(t *testing.T, tc testStudioCase) {
 
 			return assert.Equal(t, got, expected)
 		})
-		mockGalleryReader.On("UpdatePartial", mock.Anything, galleryID, matchPartial).Return(nil, nil).Once()
+		db.Gallery.On("UpdatePartial", mock.Anything, galleryID, matchPartial).Return(nil, nil).Once()
 	}
 
 	tagger := Tagger{
-		TxnManager: &mocks.TxnManager{},
+		Repository: NewRepository(repo),
 	}
 
-	err := tagger.StudioGalleries(testCtx, &studio, nil, aliases, mockGalleryReader)
+	err := tagger.StudioGalleries(testCtx, &studio, nil, aliases)
 
 	assert := assert.New(t)
 
 	assert.Nil(err)
-	mockGalleryReader.AssertExpectations(t)
+	db.Gallery.AssertExpectations(t)
 }

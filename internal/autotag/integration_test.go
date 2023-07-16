@@ -62,7 +62,7 @@ func runTests(m *testing.M) int {
 		panic(fmt.Sprintf("Could not initialize database: %s", err.Error()))
 	}
 
-	r = db.TxnRepository()
+	r = db.Repository()
 
 	// defer close and delete the database
 	defer testTeardown(databaseFile)
@@ -541,7 +541,7 @@ func TestParsePerformerScenes(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, p := range performers {
@@ -549,7 +549,7 @@ func TestParsePerformerScenes(t *testing.T) {
 			if err := p.LoadAliases(ctx, r.Performer); err != nil {
 				return err
 			}
-			return tagger.PerformerScenes(ctx, p, nil, r.Scene)
+			return tagger.PerformerScenes(ctx, p, nil)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -595,7 +595,7 @@ func TestParseStudioScenes(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range studios {
@@ -605,7 +605,7 @@ func TestParseStudioScenes(t *testing.T) {
 				return err
 			}
 
-			return tagger.StudioScenes(ctx, s, nil, aliases, r.Scene)
+			return tagger.StudioScenes(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -655,7 +655,7 @@ func TestParseTagScenes(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range tags {
@@ -665,7 +665,7 @@ func TestParseTagScenes(t *testing.T) {
 				return err
 			}
 
-			return tagger.TagScenes(ctx, s, nil, aliases, r.Scene)
+			return tagger.TagScenes(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -711,7 +711,7 @@ func TestParsePerformerImages(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, p := range performers {
@@ -719,7 +719,7 @@ func TestParsePerformerImages(t *testing.T) {
 			if err := p.LoadAliases(ctx, r.Performer); err != nil {
 				return err
 			}
-			return tagger.PerformerImages(ctx, p, nil, r.Image)
+			return tagger.PerformerImages(ctx, p, nil)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -766,7 +766,7 @@ func TestParseStudioImages(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range studios {
@@ -776,7 +776,7 @@ func TestParseStudioImages(t *testing.T) {
 				return err
 			}
 
-			return tagger.StudioImages(ctx, s, nil, aliases, r.Image)
+			return tagger.StudioImages(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -826,7 +826,7 @@ func TestParseTagImages(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range tags {
@@ -836,7 +836,7 @@ func TestParseTagImages(t *testing.T) {
 				return err
 			}
 
-			return tagger.TagImages(ctx, s, nil, aliases, r.Image)
+			return tagger.TagImages(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -883,7 +883,7 @@ func TestParsePerformerGalleries(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, p := range performers {
@@ -891,7 +891,7 @@ func TestParsePerformerGalleries(t *testing.T) {
 			if err := p.LoadAliases(ctx, r.Performer); err != nil {
 				return err
 			}
-			return tagger.PerformerGalleries(ctx, p, nil, r.Gallery)
+			return tagger.PerformerGalleries(ctx, p, nil)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -938,7 +938,7 @@ func TestParseStudioGalleries(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range studios {
@@ -948,7 +948,7 @@ func TestParseStudioGalleries(t *testing.T) {
 				return err
 			}
 
-			return tagger.StudioGalleries(ctx, s, nil, aliases, r.Gallery)
+			return tagger.StudioGalleries(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}
@@ -998,7 +998,7 @@ func TestParseTagGalleries(t *testing.T) {
 	}
 
 	tagger := Tagger{
-		TxnManager: db,
+		Repository: NewRepository(r),
 	}
 
 	for _, s := range tags {
@@ -1008,7 +1008,7 @@ func TestParseTagGalleries(t *testing.T) {
 				return err
 			}
 
-			return tagger.TagGalleries(ctx, s, nil, aliases, r.Gallery)
+			return tagger.TagGalleries(ctx, s, nil, aliases)
 		}); err != nil {
 			t.Errorf("Error auto-tagging performers: %s", err)
 		}

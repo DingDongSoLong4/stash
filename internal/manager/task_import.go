@@ -483,12 +483,7 @@ func (t *ImportTask) ImportGalleries(ctx context.Context) {
 
 		if err := r.WithTxn(ctx, func(ctx context.Context) error {
 			galleryImporter := &gallery.Importer{
-				ReaderWriter:        r.Gallery,
-				FolderFinder:        r.Folder,
-				FileFinder:          r.File,
-				PerformerWriter:     r.Performer,
-				StudioWriter:        r.Studio,
-				TagWriter:           r.Tag,
+				Repository:          r,
 				Input:               *galleryJSON,
 				MissingRefBehaviour: t.MissingRefBehaviour,
 			}
@@ -636,18 +631,10 @@ func (t *ImportTask) ImportScenes(ctx context.Context) {
 
 		if err := r.WithTxn(ctx, func(ctx context.Context) error {
 			sceneImporter := &scene.Importer{
-				ReaderWriter: r.Scene,
-				Input:        *sceneJSON,
-				FileFinder:   r.File,
-
+				Repository:          r,
+				Input:               *sceneJSON,
 				FileNamingAlgorithm: t.fileNamingAlgorithm,
 				MissingRefBehaviour: t.MissingRefBehaviour,
-
-				GalleryFinder:   r.Gallery,
-				MovieWriter:     r.Movie,
-				PerformerWriter: r.Performer,
-				StudioWriter:    r.Studio,
-				TagWriter:       r.Tag,
 			}
 
 			if err := performImport(ctx, sceneImporter, t.DuplicateBehaviour); err != nil {
@@ -706,16 +693,9 @@ func (t *ImportTask) ImportImages(ctx context.Context) {
 
 		if err := r.WithTxn(ctx, func(ctx context.Context) error {
 			imageImporter := &image.Importer{
-				ReaderWriter: r.Image,
-				FileFinder:   r.File,
-				Input:        *imageJSON,
-
+				Repository:          r,
+				Input:               *imageJSON,
 				MissingRefBehaviour: t.MissingRefBehaviour,
-
-				GalleryFinder:   r.Gallery,
-				PerformerWriter: r.Performer,
-				StudioWriter:    r.Studio,
-				TagWriter:       r.Tag,
 			}
 
 			return performImport(ctx, imageImporter, t.DuplicateBehaviour)

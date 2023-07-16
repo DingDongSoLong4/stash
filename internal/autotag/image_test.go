@@ -36,11 +36,10 @@ func TestImagePerformers(t *testing.T) {
 	assert := assert.New(t)
 
 	for _, test := range testTables {
-		mockPerformerReader := &mocks.PerformerReaderWriter{}
-		mockImageReader := &mocks.ImageReaderWriter{}
+		db := mocks.NewDatabase()
 
-		mockPerformerReader.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
-		mockPerformerReader.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Performer{&performer, &reversedPerformer}, nil).Once()
+		db.Performer.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
+		db.Performer.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Performer{&performer, &reversedPerformer}, nil).Once()
 
 		if test.Matches {
 			matchPartial := mock.MatchedBy(func(got models.ImagePartial) bool {
@@ -60,7 +59,7 @@ func TestImagePerformers(t *testing.T) {
 
 				return assert.Equal(got, expected)
 			})
-			mockImageReader.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
+			db.Image.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
 		}
 
 		image := models.Image{
@@ -68,11 +67,11 @@ func TestImagePerformers(t *testing.T) {
 			Path:         test.Path,
 			PerformerIDs: models.NewRelatedIDs([]int{}),
 		}
-		err := ImagePerformers(testCtx, &image, mockImageReader, mockPerformerReader, nil)
+		err := ImagePerformers(testCtx, &image, db.Image, db.Performer, nil)
 
 		assert.Nil(err)
-		mockPerformerReader.AssertExpectations(t)
-		mockImageReader.AssertExpectations(t)
+		db.Performer.AssertExpectations(t)
+		db.Image.AssertExpectations(t)
 	}
 }
 
@@ -98,7 +97,7 @@ func TestImageStudios(t *testing.T) {
 
 	assert := assert.New(t)
 
-	doTest := func(mockStudioReader *mocks.StudioReaderWriter, mockImageReader *mocks.ImageReaderWriter, test pathTestTable) {
+	doTest := func(db *mocks.Database, test pathTestTable) {
 		if test.Matches {
 			matchPartial := mock.MatchedBy(func(got models.ImagePartial) bool {
 				expected := models.ImagePartial{
@@ -114,29 +113,28 @@ func TestImageStudios(t *testing.T) {
 
 				return assert.Equal(got, expected)
 			})
-			mockImageReader.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
+			db.Image.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
 		}
 
 		image := models.Image{
 			ID:   imageID,
 			Path: test.Path,
 		}
-		err := ImageStudios(testCtx, &image, mockImageReader, mockStudioReader, nil)
+		err := ImageStudios(testCtx, &image, db.Image, db.Studio, nil)
 
 		assert.Nil(err)
-		mockStudioReader.AssertExpectations(t)
-		mockImageReader.AssertExpectations(t)
+		db.Studio.AssertExpectations(t)
+		db.Image.AssertExpectations(t)
 	}
 
 	for _, test := range testTables {
-		mockStudioReader := &mocks.StudioReaderWriter{}
-		mockImageReader := &mocks.ImageReaderWriter{}
+		db := mocks.NewDatabase()
 
-		mockStudioReader.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
-		mockStudioReader.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Studio{&studio, &reversedStudio}, nil).Once()
-		mockStudioReader.On("GetAliases", testCtx, mock.Anything).Return([]string{}, nil).Maybe()
+		db.Studio.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
+		db.Studio.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Studio{&studio, &reversedStudio}, nil).Once()
+		db.Studio.On("GetAliases", testCtx, mock.Anything).Return([]string{}, nil).Maybe()
 
-		doTest(mockStudioReader, mockImageReader, test)
+		doTest(db, test)
 	}
 
 	// test against aliases
@@ -144,17 +142,16 @@ func TestImageStudios(t *testing.T) {
 	studio.Name = unmatchedName
 
 	for _, test := range testTables {
-		mockStudioReader := &mocks.StudioReaderWriter{}
-		mockImageReader := &mocks.ImageReaderWriter{}
+		db := mocks.NewDatabase()
 
-		mockStudioReader.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
-		mockStudioReader.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Studio{&studio, &reversedStudio}, nil).Once()
-		mockStudioReader.On("GetAliases", testCtx, studioID).Return([]string{
+		db.Studio.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
+		db.Studio.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Studio{&studio, &reversedStudio}, nil).Once()
+		db.Studio.On("GetAliases", testCtx, studioID).Return([]string{
 			studioName,
 		}, nil).Once()
-		mockStudioReader.On("GetAliases", testCtx, reversedStudioID).Return([]string{}, nil).Once()
+		db.Studio.On("GetAliases", testCtx, reversedStudioID).Return([]string{}, nil).Once()
 
-		doTest(mockStudioReader, mockImageReader, test)
+		doTest(db, test)
 	}
 }
 
@@ -180,7 +177,7 @@ func TestImageTags(t *testing.T) {
 
 	assert := assert.New(t)
 
-	doTest := func(mockTagReader *mocks.TagReaderWriter, mockImageReader *mocks.ImageReaderWriter, test pathTestTable) {
+	doTest := func(db *mocks.Database, test pathTestTable) {
 		if test.Matches {
 			matchPartial := mock.MatchedBy(func(got models.ImagePartial) bool {
 				expected := models.ImagePartial{
@@ -199,7 +196,7 @@ func TestImageTags(t *testing.T) {
 
 				return assert.Equal(got, expected)
 			})
-			mockImageReader.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
+			db.Image.On("UpdatePartial", testCtx, imageID, matchPartial).Return(nil, nil).Once()
 		}
 
 		image := models.Image{
@@ -207,22 +204,21 @@ func TestImageTags(t *testing.T) {
 			Path:   test.Path,
 			TagIDs: models.NewRelatedIDs([]int{}),
 		}
-		err := ImageTags(testCtx, &image, mockImageReader, mockTagReader, nil)
+		err := ImageTags(testCtx, &image, db.Image, db.Tag, nil)
 
 		assert.Nil(err)
-		mockTagReader.AssertExpectations(t)
-		mockImageReader.AssertExpectations(t)
+		db.Tag.AssertExpectations(t)
+		db.Image.AssertExpectations(t)
 	}
 
 	for _, test := range testTables {
-		mockTagReader := &mocks.TagReaderWriter{}
-		mockImageReader := &mocks.ImageReaderWriter{}
+		db := mocks.NewDatabase()
 
-		mockTagReader.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
-		mockTagReader.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Tag{&tag, &reversedTag}, nil).Once()
-		mockTagReader.On("GetAliases", testCtx, mock.Anything).Return([]string{}, nil).Maybe()
+		db.Tag.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
+		db.Tag.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Tag{&tag, &reversedTag}, nil).Once()
+		db.Tag.On("GetAliases", testCtx, mock.Anything).Return([]string{}, nil).Maybe()
 
-		doTest(mockTagReader, mockImageReader, test)
+		doTest(db, test)
 	}
 
 	// test against aliases
@@ -230,16 +226,15 @@ func TestImageTags(t *testing.T) {
 	tag.Name = unmatchedName
 
 	for _, test := range testTables {
-		mockTagReader := &mocks.TagReaderWriter{}
-		mockImageReader := &mocks.ImageReaderWriter{}
+		db := mocks.NewDatabase()
 
-		mockTagReader.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
-		mockTagReader.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Tag{&tag, &reversedTag}, nil).Once()
-		mockTagReader.On("GetAliases", testCtx, tagID).Return([]string{
+		db.Tag.On("Query", testCtx, mock.Anything, mock.Anything).Return(nil, 0, nil)
+		db.Tag.On("QueryForAutoTag", testCtx, mock.Anything).Return([]*models.Tag{&tag, &reversedTag}, nil).Once()
+		db.Tag.On("GetAliases", testCtx, tagID).Return([]string{
 			tagName,
 		}, nil).Once()
-		mockTagReader.On("GetAliases", testCtx, reversedTagID).Return([]string{}, nil).Once()
+		db.Tag.On("GetAliases", testCtx, reversedTagID).Return([]string{}, nil).Once()
 
-		doTest(mockTagReader, mockImageReader, test)
+		doTest(db, test)
 	}
 }

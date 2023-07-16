@@ -11,12 +11,7 @@ import (
 )
 
 type Importer struct {
-	ReaderWriter        models.ImageReaderWriter
-	FileFinder          models.FileReader
-	StudioWriter        models.StudioReaderWriter
-	GalleryFinder       models.GalleryReader
-	PerformerWriter     models.PerformerReaderWriter
-	TagWriter           models.TagReaderWriter
+	Repository          models.Repository
 	Input               jsonschema.Image
 	MissingRefBehaviour models.ImportMissingRefEnum
 
@@ -89,7 +84,7 @@ func (i *Importer) populateFiles(ctx context.Context) error {
 
 	for _, ref := range i.Input.Files {
 		path := ref
-		f, err := i.FileFinder.FindByPath(ctx, path)
+		f, err := i.Repository.File.FindByPath(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error finding file: %w", err)
 		}
@@ -108,7 +103,7 @@ func (i *Importer) populateFiles(ctx context.Context) error {
 
 func (i *Importer) populateStudio(ctx context.Context) error {
 	if i.Input.Studio != "" {
-		studio, err := i.StudioWriter.FindByName(ctx, i.Input.Studio, false)
+		studio, err := i.Repository.Studio.FindByName(ctx, i.Input.Studio, false)
 		if err != nil {
 			return fmt.Errorf("error finding studio by name: %v", err)
 		}
@@ -141,7 +136,7 @@ func (i *Importer) createStudio(ctx context.Context, name string) (int, error) {
 	newStudio := models.NewStudio()
 	newStudio.Name = name
 
-	err := i.StudioWriter.Create(ctx, &newStudio)
+	err := i.Repository.Studio.Create(ctx, &newStudio)
 	if err != nil {
 		return 0, err
 	}
@@ -154,10 +149,10 @@ func (i *Importer) locateGallery(ctx context.Context, ref jsonschema.GalleryRef)
 	var err error
 	switch {
 	case ref.FolderPath != "":
-		galleries, err = i.GalleryFinder.FindByPath(ctx, ref.FolderPath)
+		galleries, err = i.Repository.Gallery.FindByPath(ctx, ref.FolderPath)
 	case len(ref.ZipFiles) > 0:
 		for _, p := range ref.ZipFiles {
-			galleries, err = i.GalleryFinder.FindByPath(ctx, p)
+			galleries, err = i.Repository.Gallery.FindByPath(ctx, p)
 			if err != nil {
 				break
 			}
@@ -167,7 +162,7 @@ func (i *Importer) locateGallery(ctx context.Context, ref jsonschema.GalleryRef)
 			}
 		}
 	case ref.Title != "":
-		galleries, err = i.GalleryFinder.FindUserGalleryByTitle(ctx, ref.Title)
+		galleries, err = i.Repository.Gallery.FindUserGalleryByTitle(ctx, ref.Title)
 	}
 
 	var ret *models.Gallery
@@ -205,7 +200,7 @@ func (i *Importer) populateGalleries(ctx context.Context) error {
 func (i *Importer) populatePerformers(ctx context.Context) error {
 	if len(i.Input.Performers) > 0 {
 		names := i.Input.Performers
-		performers, err := i.PerformerWriter.FindByNames(ctx, names, false)
+		performers, err := i.Repository.Performer.FindByNames(ctx, names, false)
 		if err != nil {
 			return err
 		}
@@ -253,7 +248,7 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 		newPerformer := models.NewPerformer()
 		newPerformer.Name = name
 
-		err := i.PerformerWriter.Create(ctx, &newPerformer)
+		err := i.Repository.Performer.Create(ctx, &newPerformer)
 		if err != nil {
 			return nil, err
 		}
@@ -266,10 +261,37 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 
 func (i *Importer) populateTags(ctx context.Context) error {
 	if len(i.Input.Tags) > 0 {
+		names := i.Input.Tags
 
-		tags, err := importTags(ctx, i.TagWriter, i.Input.Tags, i.MissingRefBehaviour)
+		tags, err := i.Repository.Tag.FindByNames(ctx, names, false)
 		if err != nil {
 			return err
+		}
+
+		var pluckedNames []string
+		for _, tag := range tags {
+			pluckedNames = append(pluckedNames, tag.Name)
+		}
+
+		missingTags := stringslice.StrFilter(names, func(name string) bool {
+			return !stringslice.StrInclude(pluckedNames, name)
+		})
+
+		if len(missingTags) > 0 {
+			if i.MissingRefBehaviour == models.ImportMissingRefEnumFail {
+				return fmt.Errorf("tags [%s] not found", strings.Join(missingTags, ", "))
+			}
+
+			if i.MissingRefBehaviour == models.ImportMissingRefEnumCreate {
+				createdTags, err := i.createTags(ctx, missingTags)
+				if err != nil {
+					return fmt.Errorf("error creating tags: %v", err)
+				}
+
+				tags = append(tags, createdTags...)
+			}
+
+			// ignore if MissingRefBehaviour set to Ignore
 		}
 
 		for _, t := range tags {
@@ -278,6 +300,23 @@ func (i *Importer) populateTags(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (i *Importer) createTags(ctx context.Context, names []string) ([]*models.Tag, error) {
+	var ret []*models.Tag
+	for _, name := range names {
+		newTag := models.NewTag()
+		newTag.Name = name
+
+		err := i.Repository.Tag.Create(ctx, &newTag)
+		if err != nil {
+			return nil, err
+		}
+
+		ret = append(ret, &newTag)
+	}
+
+	return ret, nil
 }
 
 func (i *Importer) PostImport(ctx context.Context, id int) error {
@@ -301,7 +340,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 	var err error
 
 	for _, f := range i.image.Files.List() {
-		existing, err = i.ReaderWriter.FindByFileID(ctx, f.Base().ID)
+		existing, err = i.Repository.Image.FindByFileID(ctx, f.Base().ID)
 		if err != nil {
 			return nil, err
 		}
@@ -321,7 +360,7 @@ func (i *Importer) Create(ctx context.Context) (*int, error) {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}
 
-	err := i.ReaderWriter.Create(ctx, &i.image, fileIDs)
+	err := i.Repository.Image.Create(ctx, &i.image, fileIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error creating image: %v", err)
 	}
@@ -335,62 +374,10 @@ func (i *Importer) Update(ctx context.Context, id int) error {
 	image := i.image
 	image.ID = id
 	i.ID = id
-	err := i.ReaderWriter.Update(ctx, &image)
+	err := i.Repository.Image.Update(ctx, &image)
 	if err != nil {
 		return fmt.Errorf("error updating existing image: %v", err)
 	}
 
 	return nil
-}
-
-func importTags(ctx context.Context, tagWriter models.TagReaderWriter, names []string, missingRefBehaviour models.ImportMissingRefEnum) ([]*models.Tag, error) {
-	tags, err := tagWriter.FindByNames(ctx, names, false)
-	if err != nil {
-		return nil, err
-	}
-
-	var pluckedNames []string
-	for _, tag := range tags {
-		pluckedNames = append(pluckedNames, tag.Name)
-	}
-
-	missingTags := stringslice.StrFilter(names, func(name string) bool {
-		return !stringslice.StrInclude(pluckedNames, name)
-	})
-
-	if len(missingTags) > 0 {
-		if missingRefBehaviour == models.ImportMissingRefEnumFail {
-			return nil, fmt.Errorf("tags [%s] not found", strings.Join(missingTags, ", "))
-		}
-
-		if missingRefBehaviour == models.ImportMissingRefEnumCreate {
-			createdTags, err := createTags(ctx, tagWriter, missingTags)
-			if err != nil {
-				return nil, fmt.Errorf("error creating tags: %v", err)
-			}
-
-			tags = append(tags, createdTags...)
-		}
-
-		// ignore if MissingRefBehaviour set to Ignore
-	}
-
-	return tags, nil
-}
-
-func createTags(ctx context.Context, tagWriter models.TagReaderWriter, names []string) ([]*models.Tag, error) {
-	var ret []*models.Tag
-	for _, name := range names {
-		newTag := models.NewTag()
-		newTag.Name = name
-
-		err := tagWriter.Create(ctx, &newTag)
-		if err != nil {
-			return nil, err
-		}
-
-		ret = append(ret, &newTag)
-	}
-
-	return ret, nil
 }

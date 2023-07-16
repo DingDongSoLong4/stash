@@ -1,7 +1,6 @@
 package studio
 
 import (
-	"context"
 	"errors"
 
 	"github.com/stashapp/stash/pkg/models"
@@ -163,41 +162,40 @@ func initTestTable() {
 
 func TestToJSON(t *testing.T) {
 	initTestTable()
-	ctx := context.Background()
 
-	mockStudioReader := &mocks.StudioReaderWriter{}
+	db := mocks.NewDatabase()
 
 	imageErr := errors.New("error getting image")
 
-	mockStudioReader.On("GetImage", ctx, studioID).Return(imageBytes, nil).Once()
-	mockStudioReader.On("GetImage", ctx, noImageID).Return(nil, nil).Once()
-	mockStudioReader.On("GetImage", ctx, errImageID).Return(nil, imageErr).Once()
-	mockStudioReader.On("GetImage", ctx, missingParentStudioID).Return(imageBytes, nil).Maybe()
-	mockStudioReader.On("GetImage", ctx, errStudioID).Return(imageBytes, nil).Maybe()
-	mockStudioReader.On("GetImage", ctx, errAliasID).Return(imageBytes, nil).Maybe()
+	db.Studio.On("GetImage", testCtx, studioID).Return(imageBytes, nil).Once()
+	db.Studio.On("GetImage", testCtx, noImageID).Return(nil, nil).Once()
+	db.Studio.On("GetImage", testCtx, errImageID).Return(nil, imageErr).Once()
+	db.Studio.On("GetImage", testCtx, missingParentStudioID).Return(imageBytes, nil).Maybe()
+	db.Studio.On("GetImage", testCtx, errStudioID).Return(imageBytes, nil).Maybe()
+	db.Studio.On("GetImage", testCtx, errAliasID).Return(imageBytes, nil).Maybe()
 
 	parentStudioErr := errors.New("error getting parent studio")
 
-	mockStudioReader.On("Find", ctx, parentStudioID).Return(&parentStudio, nil)
-	mockStudioReader.On("Find", ctx, missingStudioID).Return(nil, nil)
-	mockStudioReader.On("Find", ctx, errParentStudioID).Return(nil, parentStudioErr)
+	db.Studio.On("Find", testCtx, parentStudioID).Return(&parentStudio, nil)
+	db.Studio.On("Find", testCtx, missingStudioID).Return(nil, nil)
+	db.Studio.On("Find", testCtx, errParentStudioID).Return(nil, parentStudioErr)
 
 	aliasErr := errors.New("error getting aliases")
 
-	mockStudioReader.On("GetAliases", ctx, studioID).Return([]string{"alias"}, nil).Once()
-	mockStudioReader.On("GetAliases", ctx, noImageID).Return(nil, nil).Once()
-	mockStudioReader.On("GetAliases", ctx, errImageID).Return(nil, nil).Once()
-	mockStudioReader.On("GetAliases", ctx, missingParentStudioID).Return(nil, nil).Once()
-	mockStudioReader.On("GetAliases", ctx, errAliasID).Return(nil, aliasErr).Once()
+	db.Studio.On("GetAliases", testCtx, studioID).Return([]string{"alias"}, nil).Once()
+	db.Studio.On("GetAliases", testCtx, noImageID).Return(nil, nil).Once()
+	db.Studio.On("GetAliases", testCtx, errImageID).Return(nil, nil).Once()
+	db.Studio.On("GetAliases", testCtx, missingParentStudioID).Return(nil, nil).Once()
+	db.Studio.On("GetAliases", testCtx, errAliasID).Return(nil, aliasErr).Once()
 
-	mockStudioReader.On("GetStashIDs", ctx, studioID).Return(stashIDs, nil).Once()
-	mockStudioReader.On("GetStashIDs", ctx, noImageID).Return(nil, nil).Once()
-	mockStudioReader.On("GetStashIDs", ctx, missingParentStudioID).Return(stashIDs, nil).Once()
-	mockStudioReader.On("GetStashIDs", ctx, errImageID).Return(stashIDs, nil).Once()
+	db.Studio.On("GetStashIDs", testCtx, studioID).Return(stashIDs, nil).Once()
+	db.Studio.On("GetStashIDs", testCtx, noImageID).Return(nil, nil).Once()
+	db.Studio.On("GetStashIDs", testCtx, missingParentStudioID).Return(stashIDs, nil).Once()
+	db.Studio.On("GetStashIDs", testCtx, errImageID).Return(stashIDs, nil).Once()
 
 	for i, s := range scenarios {
 		studio := s.input
-		json, err := ToJSON(ctx, mockStudioReader, &studio)
+		json, err := ToJSON(testCtx, db.Studio, &studio)
 
 		switch {
 		case !s.err && err != nil:
@@ -209,5 +207,5 @@ func TestToJSON(t *testing.T) {
 		}
 	}
 
-	mockStudioReader.AssertExpectations(t)
+	db.Studio.AssertExpectations(t)
 }

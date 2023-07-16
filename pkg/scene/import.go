@@ -12,13 +12,7 @@ import (
 )
 
 type Importer struct {
-	ReaderWriter        models.SceneReaderWriter
-	FileFinder          models.FileReader
-	StudioWriter        models.StudioReaderWriter
-	GalleryFinder       models.GalleryReader
-	PerformerWriter     models.PerformerReaderWriter
-	MovieWriter         models.MovieReaderWriter
-	TagWriter           models.TagReaderWriter
+	Repository          models.Repository
 	Input               jsonschema.Scene
 	MissingRefBehaviour models.ImportMissingRefEnum
 	FileNamingAlgorithm models.HashAlgorithm
@@ -115,7 +109,7 @@ func (i *Importer) populateFiles(ctx context.Context) error {
 
 	for _, ref := range i.Input.Files {
 		path := ref
-		f, err := i.FileFinder.FindByPath(ctx, path)
+		f, err := i.Repository.File.FindByPath(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error finding file: %w", err)
 		}
@@ -134,7 +128,7 @@ func (i *Importer) populateFiles(ctx context.Context) error {
 
 func (i *Importer) populateStudio(ctx context.Context) error {
 	if i.Input.Studio != "" {
-		studio, err := i.StudioWriter.FindByName(ctx, i.Input.Studio, false)
+		studio, err := i.Repository.Studio.FindByName(ctx, i.Input.Studio, false)
 		if err != nil {
 			return fmt.Errorf("error finding studio by name: %v", err)
 		}
@@ -167,7 +161,7 @@ func (i *Importer) createStudio(ctx context.Context, name string) (int, error) {
 	newStudio := models.NewStudio()
 	newStudio.Name = name
 
-	err := i.StudioWriter.Create(ctx, &newStudio)
+	err := i.Repository.Studio.Create(ctx, &newStudio)
 	if err != nil {
 		return 0, err
 	}
@@ -180,10 +174,10 @@ func (i *Importer) locateGallery(ctx context.Context, ref jsonschema.GalleryRef)
 	var err error
 	switch {
 	case ref.FolderPath != "":
-		galleries, err = i.GalleryFinder.FindByPath(ctx, ref.FolderPath)
+		galleries, err = i.Repository.Gallery.FindByPath(ctx, ref.FolderPath)
 	case len(ref.ZipFiles) > 0:
 		for _, p := range ref.ZipFiles {
-			galleries, err = i.GalleryFinder.FindByPath(ctx, p)
+			galleries, err = i.Repository.Gallery.FindByPath(ctx, p)
 			if err != nil {
 				break
 			}
@@ -193,7 +187,7 @@ func (i *Importer) locateGallery(ctx context.Context, ref jsonschema.GalleryRef)
 			}
 		}
 	case ref.Title != "":
-		galleries, err = i.GalleryFinder.FindUserGalleryByTitle(ctx, ref.Title)
+		galleries, err = i.Repository.Gallery.FindUserGalleryByTitle(ctx, ref.Title)
 	}
 
 	var ret *models.Gallery
@@ -228,7 +222,7 @@ func (i *Importer) populateGalleries(ctx context.Context) error {
 func (i *Importer) populatePerformers(ctx context.Context) error {
 	if len(i.Input.Performers) > 0 {
 		names := i.Input.Performers
-		performers, err := i.PerformerWriter.FindByNames(ctx, names, false)
+		performers, err := i.Repository.Performer.FindByNames(ctx, names, false)
 		if err != nil {
 			return err
 		}
@@ -276,7 +270,7 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 		newPerformer := models.NewPerformer()
 		newPerformer.Name = name
 
-		err := i.PerformerWriter.Create(ctx, &newPerformer)
+		err := i.Repository.Performer.Create(ctx, &newPerformer)
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +284,7 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 func (i *Importer) populateMovies(ctx context.Context) error {
 	if len(i.Input.Movies) > 0 {
 		for _, inputMovie := range i.Input.Movies {
-			movie, err := i.MovieWriter.FindByName(ctx, inputMovie.MovieName, false)
+			movie, err := i.Repository.Movie.FindByName(ctx, inputMovie.MovieName, false)
 			if err != nil {
 				return fmt.Errorf("error finding scene movie: %v", err)
 			}
@@ -336,7 +330,7 @@ func (i *Importer) createMovie(ctx context.Context, name string) (int, error) {
 	newMovie := models.NewMovie()
 	newMovie.Name = name
 
-	err := i.MovieWriter.Create(ctx, &newMovie)
+	err := i.Repository.Movie.Create(ctx, &newMovie)
 	if err != nil {
 		return 0, err
 	}
@@ -347,7 +341,7 @@ func (i *Importer) createMovie(ctx context.Context, name string) (int, error) {
 func (i *Importer) populateTags(ctx context.Context) error {
 	if len(i.Input.Tags) > 0 {
 
-		tags, err := importTags(ctx, i.TagWriter, i.Input.Tags, i.MissingRefBehaviour)
+		tags, err := importTags(ctx, i.Repository.Tag, i.Input.Tags, i.MissingRefBehaviour)
 		if err != nil {
 			return err
 		}
@@ -362,7 +356,7 @@ func (i *Importer) populateTags(ctx context.Context) error {
 
 func (i *Importer) PostImport(ctx context.Context, id int) error {
 	if len(i.coverImageData) > 0 {
-		if err := i.ReaderWriter.UpdateCover(ctx, id, i.coverImageData); err != nil {
+		if err := i.Repository.Scene.UpdateCover(ctx, id, i.coverImageData); err != nil {
 			return fmt.Errorf("error setting scene images: %v", err)
 		}
 	}
@@ -387,7 +381,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 	var err error
 
 	for _, f := range i.scene.Files.List() {
-		existing, err = i.ReaderWriter.FindByFileID(ctx, f.ID)
+		existing, err = i.Repository.Scene.FindByFileID(ctx, f.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +400,7 @@ func (i *Importer) Create(ctx context.Context) (*int, error) {
 	for _, f := range i.scene.Files.List() {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}
-	if err := i.ReaderWriter.Create(ctx, &i.scene, fileIDs); err != nil {
+	if err := i.Repository.Scene.Create(ctx, &i.scene, fileIDs); err != nil {
 		return nil, fmt.Errorf("error creating scene: %v", err)
 	}
 
@@ -419,7 +413,7 @@ func (i *Importer) Update(ctx context.Context, id int) error {
 	scene := i.scene
 	scene.ID = id
 	i.ID = id
-	if err := i.ReaderWriter.Update(ctx, &scene); err != nil {
+	if err := i.Repository.Scene.Update(ctx, &scene); err != nil {
 		return fmt.Errorf("error updating existing scene: %v", err)
 	}
 

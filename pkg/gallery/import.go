@@ -11,12 +11,7 @@ import (
 )
 
 type Importer struct {
-	ReaderWriter        models.GalleryReaderWriter
-	StudioWriter        models.StudioReaderWriter
-	PerformerWriter     models.PerformerReaderWriter
-	TagWriter           models.TagReaderWriter
-	FileFinder          models.FileReader
-	FolderFinder        models.FolderReader
+	Repository          models.Repository
 	Input               jsonschema.Gallery
 	MissingRefBehaviour models.ImportMissingRefEnum
 
@@ -80,7 +75,7 @@ func (i *Importer) galleryJSONToGallery(galleryJSON jsonschema.Gallery) models.G
 
 func (i *Importer) populateStudio(ctx context.Context) error {
 	if i.Input.Studio != "" {
-		studio, err := i.StudioWriter.FindByName(ctx, i.Input.Studio, false)
+		studio, err := i.Repository.Studio.FindByName(ctx, i.Input.Studio, false)
 		if err != nil {
 			return fmt.Errorf("error finding studio by name: %v", err)
 		}
@@ -113,7 +108,7 @@ func (i *Importer) createStudio(ctx context.Context, name string) (int, error) {
 	newStudio := models.NewStudio()
 	newStudio.Name = name
 
-	err := i.StudioWriter.Create(ctx, &newStudio)
+	err := i.Repository.Studio.Create(ctx, &newStudio)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +119,7 @@ func (i *Importer) createStudio(ctx context.Context, name string) (int, error) {
 func (i *Importer) populatePerformers(ctx context.Context) error {
 	if len(i.Input.Performers) > 0 {
 		names := i.Input.Performers
-		performers, err := i.PerformerWriter.FindByNames(ctx, names, false)
+		performers, err := i.Repository.Performer.FindByNames(ctx, names, false)
 		if err != nil {
 			return err
 		}
@@ -172,7 +167,7 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 		newPerformer := models.NewPerformer()
 		newPerformer.Name = name
 
-		err := i.PerformerWriter.Create(ctx, &newPerformer)
+		err := i.Repository.Performer.Create(ctx, &newPerformer)
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +181,7 @@ func (i *Importer) createPerformers(ctx context.Context, names []string) ([]*mod
 func (i *Importer) populateTags(ctx context.Context) error {
 	if len(i.Input.Tags) > 0 {
 		names := i.Input.Tags
-		tags, err := i.TagWriter.FindByNames(ctx, names, false)
+		tags, err := i.Repository.Tag.FindByNames(ctx, names, false)
 		if err != nil {
 			return err
 		}
@@ -231,7 +226,7 @@ func (i *Importer) createTags(ctx context.Context, names []string) ([]*models.Ta
 		newTag := models.NewTag()
 		newTag.Name = name
 
-		err := i.TagWriter.Create(ctx, &newTag)
+		err := i.Repository.Tag.Create(ctx, &newTag)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +242,7 @@ func (i *Importer) populateFilesFolder(ctx context.Context) error {
 
 	for _, ref := range i.Input.ZipFiles {
 		path := ref
-		f, err := i.FileFinder.FindByPath(ctx, path)
+		f, err := i.Repository.File.FindByPath(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error finding file: %w", err)
 		}
@@ -263,7 +258,7 @@ func (i *Importer) populateFilesFolder(ctx context.Context) error {
 
 	if i.Input.FolderPath != "" {
 		path := i.Input.FolderPath
-		f, err := i.FolderFinder.FindByPath(ctx, path)
+		f, err := i.Repository.Folder.FindByPath(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error finding folder: %w", err)
 		}
@@ -304,7 +299,7 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 	switch {
 	case len(i.gallery.Files.List()) > 0:
 		for _, f := range i.gallery.Files.List() {
-			existing, err := i.ReaderWriter.FindByFileID(ctx, f.Base().ID)
+			existing, err := i.Repository.Gallery.FindByFileID(ctx, f.Base().ID)
 			if err != nil {
 				return nil, err
 			}
@@ -314,9 +309,9 @@ func (i *Importer) FindExistingID(ctx context.Context) (*int, error) {
 			}
 		}
 	case i.gallery.FolderID != nil:
-		existing, err = i.ReaderWriter.FindByFolderID(ctx, *i.gallery.FolderID)
+		existing, err = i.Repository.Gallery.FindByFolderID(ctx, *i.gallery.FolderID)
 	default:
-		existing, err = i.ReaderWriter.FindUserGalleryByTitle(ctx, i.gallery.Title)
+		existing, err = i.Repository.Gallery.FindUserGalleryByTitle(ctx, i.gallery.Title)
 	}
 
 	if err != nil {
@@ -336,7 +331,7 @@ func (i *Importer) Create(ctx context.Context) (*int, error) {
 	for _, f := range i.gallery.Files.List() {
 		fileIDs = append(fileIDs, f.Base().ID)
 	}
-	err := i.ReaderWriter.Create(ctx, &i.gallery, fileIDs)
+	err := i.Repository.Gallery.Create(ctx, &i.gallery, fileIDs)
 	if err != nil {
 		return nil, fmt.Errorf("error creating gallery: %v", err)
 	}
@@ -348,7 +343,7 @@ func (i *Importer) Create(ctx context.Context) (*int, error) {
 func (i *Importer) Update(ctx context.Context, id int) error {
 	gallery := i.gallery
 	gallery.ID = id
-	err := i.ReaderWriter.Update(ctx, &gallery)
+	err := i.Repository.Gallery.Update(ctx, &gallery)
 	if err != nil {
 		return fmt.Errorf("error updating existing gallery: %v", err)
 	}
