@@ -129,7 +129,7 @@ type ImageReader interface {
 }
 
 type ImageWriter interface {
-	Create(ctx context.Context, newImage *ImageCreateInput) error
+	Create(ctx context.Context, newImage *Image, fileIDs []FileID) error
 	Update(ctx context.Context, updatedImage *Image) error
 	UpdatePartial(ctx context.Context, id int, partial ImagePartial) (*Image, error)
 	Destroy(ctx context.Context, id int) error
