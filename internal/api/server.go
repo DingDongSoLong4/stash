@@ -82,11 +82,10 @@ func Start() error {
 		return errors.New(message)
 	}
 
-	txnManager := manager.GetInstance().Repository
+	repo := manager.GetInstance().Repository
 
 	dataloaders := loaders.Middleware{
-		DatabaseProvider: txnManager,
-		Repository:       txnManager,
+		Repository: repo,
 	}
 
 	r.Use(dataloaders.Middleware)
@@ -96,8 +95,7 @@ func Start() error {
 	imageService := manager.GetInstance().ImageService
 	galleryService := manager.GetInstance().GalleryService
 	resolver := &Resolver{
-		txnManager:     txnManager,
-		repository:     txnManager,
+		repository:     repo,
 		sceneService:   sceneService,
 		imageService:   imageService,
 		galleryService: galleryService,
@@ -145,32 +143,32 @@ func Start() error {
 	})
 
 	r.Mount("/performer", performerRoutes{
-		txnManager:      txnManager,
-		performerFinder: txnManager.Performer,
+		txnManager:      repo,
+		performerFinder: repo.Performer,
 	}.Routes())
 	r.Mount("/scene", sceneRoutes{
-		txnManager:        txnManager,
-		sceneFinder:       txnManager.Scene,
-		fileFinder:        txnManager.File,
-		sceneMarkerFinder: txnManager.SceneMarker,
-		tagFinder:         txnManager.Tag,
+		txnManager:        repo,
+		sceneFinder:       repo.Scene,
+		fileFinder:        repo.File,
+		sceneMarkerFinder: repo.SceneMarker,
+		tagFinder:         repo.Tag,
 	}.Routes())
 	r.Mount("/image", imageRoutes{
-		txnManager:  txnManager,
-		imageFinder: txnManager.Image,
-		fileFinder:  txnManager.File,
+		txnManager:  repo,
+		imageFinder: repo.Image,
+		fileFinder:  repo.File,
 	}.Routes())
 	r.Mount("/studio", studioRoutes{
-		txnManager:   txnManager,
-		studioFinder: txnManager.Studio,
+		txnManager:   repo,
+		studioFinder: repo.Studio,
 	}.Routes())
 	r.Mount("/movie", movieRoutes{
-		txnManager:  txnManager,
-		movieFinder: txnManager.Movie,
+		txnManager:  repo,
+		movieFinder: repo.Movie,
 	}.Routes())
 	r.Mount("/tag", tagRoutes{
-		txnManager: txnManager,
-		tagFinder:  txnManager.Tag,
+		txnManager: repo,
+		tagFinder:  repo.Tag,
 	}.Routes())
 	r.Mount("/downloads", downloadsRoutes{}.Routes())
 

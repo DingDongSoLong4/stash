@@ -15,7 +15,8 @@ type ScanHandler struct {
 	CreatorUpdater     models.GalleryReaderWriter
 	SceneFinderUpdater models.SceneReaderWriter
 	ImageFinderUpdater models.ImageReaderWriter
-	PluginCache        *plugin.Cache
+
+	PluginCache *plugin.Cache
 }
 
 func (h *ScanHandler) Handle(ctx context.Context, f models.File, oldFile models.File) error {

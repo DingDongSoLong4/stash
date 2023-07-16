@@ -360,10 +360,10 @@ func (me *contentDirectoryService) handleBrowseMetadata(obj object, host string)
 	} else {
 		var scene *models.Scene
 
-		if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
-			scene, err = me.repository.SceneFinder.Find(ctx, sceneID)
+		if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
+			scene, err = me.repository.Scene.Find(ctx, sceneID)
 			if scene != nil {
-				err = scene.LoadPrimaryFile(ctx, me.repository.FileFinder)
+				err = scene.LoadPrimaryFile(ctx, me.repository.File)
 			}
 
 			if err != nil {
@@ -452,7 +452,7 @@ func getSortDirection(sceneFilter *models.SceneFilterType, sort string) models.S
 func (me *contentDirectoryService) getVideos(sceneFilter *models.SceneFilterType, parentID string, host string) []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
 		sort := me.VideoSortOrder
 		direction := getSortDirection(sceneFilter, sort)
 		findFilter := &models.FindFilterType{
@@ -461,7 +461,7 @@ func (me *contentDirectoryService) getVideos(sceneFilter *models.SceneFilterType
 			Direction: &direction,
 		}
 
-		scenes, total, err := scene.QueryWithCount(ctx, me.repository.SceneFinder, sceneFilter, findFilter)
+		scenes, total, err := scene.QueryWithCount(ctx, me.repository.Scene, sceneFilter, findFilter)
 		if err != nil {
 			return err
 		}
@@ -472,13 +472,13 @@ func (me *contentDirectoryService) getVideos(sceneFilter *models.SceneFilterType
 				parentID:    parentID,
 			}
 
-			objs, err = pager.getPages(ctx, me.repository.SceneFinder, total)
+			objs, err = pager.getPages(ctx, me.repository.Scene, total)
 			if err != nil {
 				return err
 			}
 		} else {
 			for _, s := range scenes {
-				if err := s.LoadPrimaryFile(ctx, me.repository.FileFinder); err != nil {
+				if err := s.LoadPrimaryFile(ctx, me.repository.File); err != nil {
 					return err
 				}
 
@@ -497,7 +497,7 @@ func (me *contentDirectoryService) getVideos(sceneFilter *models.SceneFilterType
 func (me *contentDirectoryService) getPageVideos(sceneFilter *models.SceneFilterType, parentID string, page int, host string) []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
 		pager := scenePager{
 			sceneFilter: sceneFilter,
 			parentID:    parentID,
@@ -506,7 +506,7 @@ func (me *contentDirectoryService) getPageVideos(sceneFilter *models.SceneFilter
 		sort := me.VideoSortOrder
 		direction := getSortDirection(sceneFilter, sort)
 		var err error
-		objs, err = pager.getPageVideos(ctx, me.repository.SceneFinder, me.repository.FileFinder, page, host, sort, direction)
+		objs, err = pager.getPageVideos(ctx, me.repository.Scene, me.repository.File, page, host, sort, direction)
 		if err != nil {
 			return err
 		}
@@ -540,8 +540,8 @@ func (me *contentDirectoryService) getAllScenes(host string) []interface{} {
 func (me *contentDirectoryService) getStudios() []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
-		studios, err := me.repository.StudioFinder.All(ctx)
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
+		studios, err := me.repository.Studio.All(ctx)
 		if err != nil {
 			return err
 		}
@@ -579,8 +579,8 @@ func (me *contentDirectoryService) getStudioScenes(paths []string, host string) 
 func (me *contentDirectoryService) getTags() []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
-		tags, err := me.repository.TagFinder.All(ctx)
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
+		tags, err := me.repository.Tag.All(ctx)
 		if err != nil {
 			return err
 		}
@@ -618,8 +618,8 @@ func (me *contentDirectoryService) getTagScenes(paths []string, host string) []i
 func (me *contentDirectoryService) getPerformers() []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
-		performers, err := me.repository.PerformerFinder.All(ctx)
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
+		performers, err := me.repository.Performer.All(ctx)
 		if err != nil {
 			return err
 		}
@@ -657,8 +657,8 @@ func (me *contentDirectoryService) getPerformerScenes(paths []string, host strin
 func (me *contentDirectoryService) getMovies() []interface{} {
 	var objs []interface{}
 
-	if err := txn.WithReadTxn(context.TODO(), me.txnManager, func(ctx context.Context) error {
-		movies, err := me.repository.MovieFinder.All(ctx)
+	if err := txn.WithReadTxn(context.TODO(), me.repository, func(ctx context.Context) error {
+		movies, err := me.repository.Movie.All(ctx)
 		if err != nil {
 			return err
 		}

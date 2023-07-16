@@ -18,11 +18,7 @@ const (
 )
 
 type autotagScraper struct {
-	// repository   models.Repository
-	txnManager      txn.Manager
-	performerReader models.PerformerReader
-	studioReader    models.StudioReader
-	tagReader       models.TagReader
+	repository Repository
 
 	globalConfig GlobalConfig
 }
@@ -95,22 +91,23 @@ func (s autotagScraper) viaScene(ctx context.Context, _client *http.Client, scen
 	const trimExt = false
 
 	// populate performers, studio and tags based on scene path
-	if err := txn.WithReadTxn(ctx, s.txnManager, func(ctx context.Context) error {
+	r := s.repository
+	if err := txn.WithReadTxn(ctx, s.repository, func(ctx context.Context) error {
 		path := scene.Path
 		if path == "" {
 			return nil
 		}
 
-		performers, err := autotagMatchPerformers(ctx, path, s.performerReader, trimExt)
+		performers, err := autotagMatchPerformers(ctx, path, r.Performer, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaScene: %w", err)
 		}
-		studio, err := autotagMatchStudio(ctx, path, s.studioReader, trimExt)
+		studio, err := autotagMatchStudio(ctx, path, r.Studio, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaScene: %w", err)
 		}
 
-		tags, err := autotagMatchTags(ctx, path, s.tagReader, trimExt)
+		tags, err := autotagMatchTags(ctx, path, r.Tag, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaScene: %w", err)
 		}
@@ -144,18 +141,19 @@ func (s autotagScraper) viaGallery(ctx context.Context, _client *http.Client, ga
 	var ret *ScrapedGallery
 
 	// populate performers, studio and tags based on scene path
-	if err := txn.WithReadTxn(ctx, s.txnManager, func(ctx context.Context) error {
+	r := s.repository
+	if err := txn.WithReadTxn(ctx, r, func(ctx context.Context) error {
 		path := gallery.Path
-		performers, err := autotagMatchPerformers(ctx, path, s.performerReader, trimExt)
+		performers, err := autotagMatchPerformers(ctx, path, r.Performer, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaGallery: %w", err)
 		}
-		studio, err := autotagMatchStudio(ctx, path, s.studioReader, trimExt)
+		studio, err := autotagMatchStudio(ctx, path, r.Studio, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaGallery: %w", err)
 		}
 
-		tags, err := autotagMatchTags(ctx, path, s.tagReader, trimExt)
+		tags, err := autotagMatchTags(ctx, path, r.Tag, trimExt)
 		if err != nil {
 			return fmt.Errorf("autotag scraper viaGallery: %w", err)
 		}
@@ -208,13 +206,10 @@ func (s autotagScraper) spec() Scraper {
 	}
 }
 
-func getAutoTagScraper(txnManager txn.Manager, repo Repository, globalConfig GlobalConfig) scraper {
+func getAutoTagScraper(repo Repository, globalConfig GlobalConfig) scraper {
 	base := autotagScraper{
-		txnManager:      txnManager,
-		performerReader: repo.PerformerFinder,
-		studioReader:    repo.StudioFinder,
-		tagReader:       repo.TagFinder,
-		globalConfig:    globalConfig,
+		repository:   repo,
+		globalConfig: globalConfig,
 	}
 
 	return base

@@ -20,11 +20,27 @@ import (
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/match"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 )
 
+type Repository struct {
+	models.Database
+
+	Scene   models.SceneReaderWriter
+	Image   models.ImageReaderWriter
+	Gallery models.GalleryReaderWriter
+}
+
+func NewRepository(repo models.Repository) Repository {
+	return Repository{
+		Database: repo.Database,
+		Scene:    repo.Scene,
+		Image:    repo.Image,
+		Gallery:  repo.Gallery,
+	}
+}
+
 type Tagger struct {
-	TxnManager txn.Manager
+	Repository Repository
 	Cache      *match.Cache
 }
 

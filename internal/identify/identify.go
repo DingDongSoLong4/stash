@@ -15,6 +15,25 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
+type Repository struct {
+	models.Database
+
+	Scene     models.SceneReaderWriter
+	Studio    models.StudioReaderWriter
+	Performer models.PerformerReaderWriter
+	Tag       models.TagReaderWriter
+}
+
+func NewRepository(repo models.Repository) Repository {
+	return Repository{
+		Database:  repo.Database,
+		Scene:     repo.Scene,
+		Studio:    repo.Studio,
+		Performer: repo.Performer,
+		Tag:       repo.Tag,
+	}
+}
+
 var (
 	ErrSkipSingleNamePerformer = errors.New("a performer was skipped because they only had a single name and no disambiguation")
 )
@@ -43,18 +62,15 @@ type ScraperSource struct {
 }
 
 type SceneIdentifier struct {
-	SceneReaderUpdater models.SceneReaderWriter
-	StudioCreator      models.StudioReaderWriter
-	PerformerCreator   models.PerformerReaderWriter
-	TagCreatorFinder   models.TagReaderWriter
+	Repository Repository
 
 	DefaultOptions              *MetadataOptions
 	Sources                     []ScraperSource
 	SceneUpdatePostHookExecutor SceneUpdatePostHookExecutor
 }
 
-func (t *SceneIdentifier) Identify(ctx context.Context, txnManager txn.Manager, scene *models.Scene) error {
-	result, err := t.scrapeScene(ctx, txnManager, scene)
+func (t *SceneIdentifier) Identify(ctx context.Context, scene *models.Scene) error {
+	result, err := t.scrapeScene(ctx, scene)
 	var multipleMatchErr *MultipleMatchesFoundError
 	if err != nil {
 		if !errors.As(err, &multipleMatchErr) {
@@ -70,7 +86,7 @@ func (t *SceneIdentifier) Identify(ctx context.Context, txnManager txn.Manager, 
 			options := t.getOptions(multipleMatchErr.Source)
 			if options.SkipMultipleMatchTag != nil && len(*options.SkipMultipleMatchTag) > 0 {
 				// Tag it with the multiple results tag
-				err := t.addTagToScene(ctx, txnManager, scene, *options.SkipMultipleMatchTag)
+				err := t.addTagToScene(ctx, scene, *options.SkipMultipleMatchTag)
 				if err != nil {
 					return err
 				}
@@ -83,7 +99,7 @@ func (t *SceneIdentifier) Identify(ctx context.Context, txnManager txn.Manager, 
 	}
 
 	// results were found, modify the scene
-	if err := t.modifyScene(ctx, txnManager, scene, result); err != nil {
+	if err := t.modifyScene(ctx, scene, result); err != nil {
 		return fmt.Errorf("error modifying scene: %v", err)
 	}
 
@@ -95,7 +111,7 @@ type scrapeResult struct {
 	source ScraperSource
 }
 
-func (t *SceneIdentifier) scrapeScene(ctx context.Context, txnManager txn.Manager, scene *models.Scene) (*scrapeResult, error) {
+func (t *SceneIdentifier) scrapeScene(ctx context.Context, scene *models.Scene) (*scrapeResult, error) {
 	// iterate through the input sources
 	for _, source := range t.Sources {
 		// scrape using the source
@@ -173,14 +189,10 @@ func (t *SceneIdentifier) getSceneUpdater(ctx context.Context, s *models.Scene, 
 	scraped := result.result
 
 	rel := sceneRelationships{
-		sceneReader:              t.SceneReaderUpdater,
-		studioCreator:            t.StudioCreator,
-		performerCreator:         t.PerformerCreator,
-		tagCreatorFinder:         t.TagCreatorFinder,
-		scene:                    s,
-		result:                   result,
-		fieldOptions:             fieldOptions,
-		skipSingleNamePerformers: utils.IsTrue(options.SkipSingleNamePerformers),
+		repository:   t.Repository,
+		scene:        s,
+		result:       result,
+		fieldOptions: fieldOptions,
 	}
 
 	setOrganized := utils.IsTrue(options.SetOrganized)
@@ -256,20 +268,21 @@ func (t *SceneIdentifier) getSceneUpdater(ctx context.Context, s *models.Scene, 
 	return ret, nil
 }
 
-func (t *SceneIdentifier) modifyScene(ctx context.Context, txnManager txn.Manager, s *models.Scene, result *scrapeResult) error {
+func (t *SceneIdentifier) modifyScene(ctx context.Context, s *models.Scene, result *scrapeResult) error {
 	var updater *scene.UpdateSet
-	if err := txn.WithTxn(ctx, txnManager, func(ctx context.Context) error {
+	r := t.Repository
+	if err := txn.WithTxn(ctx, r, func(ctx context.Context) error {
 		// load scene relationships
-		if err := s.LoadURLs(ctx, t.SceneReaderUpdater); err != nil {
+		if err := s.LoadURLs(ctx, r.Scene); err != nil {
 			return err
 		}
-		if err := s.LoadPerformerIDs(ctx, t.SceneReaderUpdater); err != nil {
+		if err := s.LoadPerformerIDs(ctx, r.Scene); err != nil {
 			return err
 		}
-		if err := s.LoadTagIDs(ctx, t.SceneReaderUpdater); err != nil {
+		if err := s.LoadTagIDs(ctx, r.Scene); err != nil {
 			return err
 		}
-		if err := s.LoadStashIDs(ctx, t.SceneReaderUpdater); err != nil {
+		if err := s.LoadStashIDs(ctx, r.Scene); err != nil {
 			return err
 		}
 
@@ -285,7 +298,7 @@ func (t *SceneIdentifier) modifyScene(ctx context.Context, txnManager txn.Manage
 			return nil
 		}
 
-		if _, err := updater.Update(ctx, t.SceneReaderUpdater); err != nil {
+		if _, err := updater.Update(ctx, r.Scene); err != nil {
 			return fmt.Errorf("error updating scene: %w", err)
 		}
 
@@ -311,14 +324,15 @@ func (t *SceneIdentifier) modifyScene(ctx context.Context, txnManager txn.Manage
 	return nil
 }
 
-func (t *SceneIdentifier) addTagToScene(ctx context.Context, txnManager txn.Manager, s *models.Scene, tagToAdd string) error {
-	if err := txn.WithTxn(ctx, txnManager, func(ctx context.Context) error {
+func (t *SceneIdentifier) addTagToScene(ctx context.Context, s *models.Scene, tagToAdd string) error {
+	r := t.Repository
+	if err := txn.WithTxn(ctx, r, func(ctx context.Context) error {
 		tagID, err := strconv.Atoi(tagToAdd)
 		if err != nil {
 			return fmt.Errorf("error converting tag ID %s: %w", tagToAdd, err)
 		}
 
-		if err := s.LoadTagIDs(ctx, t.SceneReaderUpdater); err != nil {
+		if err := s.LoadTagIDs(ctx, r.Scene); err != nil {
 			return err
 		}
 		existing := s.TagIDs.List()
@@ -328,11 +342,11 @@ func (t *SceneIdentifier) addTagToScene(ctx context.Context, txnManager txn.Mana
 			return nil
 		}
 
-		if err := scene.AddTag(ctx, t.SceneReaderUpdater, s, tagID); err != nil {
+		if err := scene.AddTag(ctx, r.Scene, s, tagID); err != nil {
 			return err
 		}
 
-		ret, err := t.TagCreatorFinder.Find(ctx, tagID)
+		ret, err := r.Tag.Find(ctx, tagID)
 		if err != nil {
 			logger.Infof("Added tag id %s to skipped scene %s", tagToAdd, s.Path)
 		} else {

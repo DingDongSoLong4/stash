@@ -7,15 +7,13 @@ import (
 	"github.com/stashapp/stash/pkg/hash/videophash"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 )
 
 type GeneratePhashTask struct {
+	repository          models.Repository
 	File                *models.VideoFile
 	Overwrite           bool
 	fileNamingAlgorithm models.HashAlgorithm
-	txnManager          txn.Manager
-	fileUpdater         models.FileReaderWriter
 }
 
 func (t *GeneratePhashTask) GetDescription() string {
@@ -34,8 +32,9 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 		return
 	}
 
-	if err := txn.WithTxn(ctx, t.txnManager, func(ctx context.Context) error {
-		qb := t.fileUpdater
+	r := t.repository
+	if err := r.WithTxn(ctx, func(ctx context.Context) error {
+		qb := r.File
 		hashValue := int64(*hash)
 		t.File.Fingerprints = t.File.Fingerprints.AppendUnique(models.Fingerprint{
 			Type:        models.FingerprintTypePhash,

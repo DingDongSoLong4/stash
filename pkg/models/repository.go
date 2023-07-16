@@ -1,17 +1,18 @@
 package models
 
 import (
+	"context"
+
 	"github.com/stashapp/stash/pkg/txn"
 )
 
-type TxnManager interface {
+type Database interface {
 	txn.Manager
 	txn.DatabaseProvider
-	Reset() error
 }
 
 type Repository struct {
-	TxnManager
+	Database
 
 	File           FileReaderWriter
 	Folder         FolderReaderWriter
@@ -25,4 +26,16 @@ type Repository struct {
 	Studio         StudioReaderWriter
 	Tag            TagReaderWriter
 	SavedFilter    SavedFilterReaderWriter
+}
+
+func (r *Repository) WithTxn(ctx context.Context, fn txn.TxnFunc) error {
+	return txn.WithTxn(ctx, r, fn)
+}
+
+func (r *Repository) WithReadTxn(ctx context.Context, fn txn.TxnFunc) error {
+	return txn.WithReadTxn(ctx, r, fn)
+}
+
+func (r *Repository) WithDB(ctx context.Context, fn txn.TxnFunc) error {
+	return txn.WithDatabase(ctx, r, fn)
 }

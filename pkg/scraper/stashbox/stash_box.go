@@ -29,22 +29,33 @@ import (
 )
 
 type Repository struct {
+	models.Database
+
 	Scene     models.SceneReader
 	Performer models.PerformerReader
 	Tag       models.TagReader
 	Studio    models.StudioReader
 }
 
+func NewRepository(repo models.Repository) Repository {
+	return Repository{
+		Database:  repo.Database,
+		Scene:     repo.Scene,
+		Performer: repo.Performer,
+		Tag:       repo.Tag,
+		Studio:    repo.Studio,
+	}
+}
+
 // Client represents the client interface to a stash-box server instance.
 type Client struct {
 	client     *graphql.Client
-	txnManager txn.Manager
 	repository Repository
 	box        models.StashBox
 }
 
 // NewClient returns a new instance of a stash-box client.
-func NewClient(box models.StashBox, txnManager txn.Manager, repo Repository) *Client {
+func NewClient(box models.StashBox, repo Repository) *Client {
 	authHeader := func(req *http.Request) {
 		req.Header.Set("ApiKey", box.APIKey)
 	}
@@ -55,7 +66,6 @@ func NewClient(box models.StashBox, txnManager txn.Manager, repo Repository) *Cl
 
 	return &Client{
 		client:     client,
-		txnManager: txnManager,
 		repository: repo,
 		box:        box,
 	}
@@ -102,7 +112,7 @@ func (c Client) FindStashBoxSceneByFingerprints(ctx context.Context, sceneID int
 func (c Client) FindStashBoxScenesByFingerprints(ctx context.Context, ids []int) ([][]*scraper.ScrapedScene, error) {
 	var fingerprints [][]*graphql.FingerprintQueryInput
 
-	if err := txn.WithReadTxn(ctx, c.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(ctx, c.repository, func(ctx context.Context) error {
 		qb := c.repository.Scene
 
 		for _, sceneID := range ids {
@@ -216,7 +226,7 @@ func (c Client) SubmitStashBoxFingerprints(ctx context.Context, sceneIDs []strin
 
 	var fingerprints []graphql.FingerprintSubmission
 
-	if err := txn.WithReadTxn(ctx, c.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(ctx, c.repository, func(ctx context.Context) error {
 		qb := c.repository.Scene
 
 		for _, sceneID := range ids {
@@ -356,7 +366,7 @@ func (c Client) FindStashBoxPerformersByNames(ctx context.Context, performerIDs 
 
 	var performers []*models.Performer
 
-	if err := txn.WithReadTxn(ctx, c.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(ctx, c.repository, func(ctx context.Context) error {
 		qb := c.repository.Performer
 
 		for _, performerID := range ids {
@@ -390,7 +400,7 @@ func (c Client) FindStashBoxPerformersByPerformerNames(ctx context.Context, perf
 
 	var performers []*models.Performer
 
-	if err := txn.WithReadTxn(ctx, c.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(ctx, c.repository, func(ctx context.Context) error {
 		qb := c.repository.Performer
 
 		for _, performerID := range ids {
@@ -692,7 +702,7 @@ func (c Client) sceneFragmentToScrapedScene(ctx context.Context, s *graphql.Scen
 		ss.URL = &s.Urls[0].URL
 	}
 
-	if err := txn.WithReadTxn(ctx, c.txnManager, func(ctx context.Context) error {
+	if err := txn.WithReadTxn(ctx, c.repository, func(ctx context.Context) error {
 		pqb := c.repository.Performer
 		tqb := c.repository.Tag
 

@@ -79,8 +79,11 @@ func getStudioTagger(p *models.Studio, aliases []string, cache *match.Cache) []t
 }
 
 // StudioScenes searches for scenes whose path matches the provided studio name and tags the scene with the studio, if studio is not already set on the scene.
-func (tagger *Tagger) StudioScenes(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw models.SceneReaderWriter) error {
+func (tagger *Tagger) StudioScenes(ctx context.Context, p *models.Studio, paths []string, aliases []string) error {
 	t := getStudioTagger(p, aliases, tagger.Cache)
+
+	repo := tagger.Repository
+	rw := repo.Scene
 
 	for _, tt := range t {
 		if err := tt.tagScenes(ctx, paths, rw, func(o *models.Scene) (bool, error) {
@@ -93,7 +96,7 @@ func (tagger *Tagger) StudioScenes(ctx context.Context, p *models.Studio, paths 
 			scenePartial := models.NewScenePartial()
 			scenePartial.StudioID = models.NewOptionalInt(p.ID)
 
-			if err := txn.WithTxn(ctx, tagger.TxnManager, func(ctx context.Context) error {
+			if err := txn.WithTxn(ctx, repo, func(ctx context.Context) error {
 				_, err := rw.UpdatePartial(ctx, o.ID, scenePartial)
 				return err
 			}); err != nil {
@@ -109,8 +112,11 @@ func (tagger *Tagger) StudioScenes(ctx context.Context, p *models.Studio, paths 
 }
 
 // StudioImages searches for images whose path matches the provided studio name and tags the image with the studio, if studio is not already set on the image.
-func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw models.ImageReaderWriter) error {
+func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths []string, aliases []string) error {
 	t := getStudioTagger(p, aliases, tagger.Cache)
+
+	repo := tagger.Repository
+	rw := repo.Image
 
 	for _, tt := range t {
 		if err := tt.tagImages(ctx, paths, rw, func(i *models.Image) (bool, error) {
@@ -123,7 +129,7 @@ func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths 
 			imagePartial := models.NewImagePartial()
 			imagePartial.StudioID = models.NewOptionalInt(p.ID)
 
-			if err := txn.WithTxn(ctx, tagger.TxnManager, func(ctx context.Context) error {
+			if err := txn.WithTxn(ctx, repo, func(ctx context.Context) error {
 				_, err := rw.UpdatePartial(ctx, i.ID, imagePartial)
 				return err
 			}); err != nil {
@@ -139,8 +145,11 @@ func (tagger *Tagger) StudioImages(ctx context.Context, p *models.Studio, paths 
 }
 
 // StudioGalleries searches for galleries whose path matches the provided studio name and tags the gallery with the studio, if studio is not already set on the gallery.
-func (tagger *Tagger) StudioGalleries(ctx context.Context, p *models.Studio, paths []string, aliases []string, rw models.GalleryReaderWriter) error {
+func (tagger *Tagger) StudioGalleries(ctx context.Context, p *models.Studio, paths []string, aliases []string) error {
 	t := getStudioTagger(p, aliases, tagger.Cache)
+
+	repo := tagger.Repository
+	rw := repo.Gallery
 
 	for _, tt := range t {
 		if err := tt.tagGalleries(ctx, paths, rw, func(o *models.Gallery) (bool, error) {
@@ -153,7 +162,7 @@ func (tagger *Tagger) StudioGalleries(ctx context.Context, p *models.Studio, pat
 			galleryPartial := models.NewGalleryPartial()
 			galleryPartial.StudioID = models.NewOptionalInt(p.ID)
 
-			if err := txn.WithTxn(ctx, tagger.TxnManager, func(ctx context.Context) error {
+			if err := txn.WithTxn(ctx, repo, func(ctx context.Context) error {
 				_, err := rw.UpdatePartial(ctx, o.ID, galleryPartial)
 				return err
 			}); err != nil {

@@ -16,10 +16,7 @@ import (
 )
 
 type sceneRelationships struct {
-	sceneReader              models.SceneReader
-	studioCreator            models.StudioReaderWriter
-	performerCreator         models.PerformerReaderWriter
-	tagCreatorFinder         models.TagReaderWriter
+	repository               Repository
 	scene                    *models.Scene
 	result                   *scrapeResult
 	fieldOptions             map[string]*FieldOptions
@@ -50,7 +47,7 @@ func (g sceneRelationships) studio(ctx context.Context) (*int, error) {
 			return &studioID, nil
 		}
 	} else if createMissing {
-		return createMissingStudio(ctx, endpoint, g.studioCreator, scraped)
+		return createMissingStudio(ctx, endpoint, g.repository.Studio, scraped)
 	}
 
 	return nil, nil
@@ -88,7 +85,7 @@ func (g sceneRelationships) performers(ctx context.Context, ignoreMale bool) ([]
 			continue
 		}
 
-		performerID, err := getPerformerID(ctx, endpoint, g.performerCreator, p, createMissing, g.skipSingleNamePerformers)
+		performerID, err := getPerformerID(ctx, endpoint, g.repository.Performer, p, createMissing, g.skipSingleNamePerformers)
 		if err != nil {
 			if errors.Is(err, ErrSkipSingleNamePerformer) {
 				singleNamePerformerSkipped = true
@@ -152,7 +149,7 @@ func (g sceneRelationships) tags(ctx context.Context) ([]int, error) {
 		} else if createMissing {
 			newTag := models.NewTag()
 			newTag.Name = t.Name
-			err := g.tagCreatorFinder.Create(ctx, &newTag)
+			err := g.repository.Tag.Create(ctx, &newTag)
 			if err != nil {
 				return nil, fmt.Errorf("error creating tag: %w", err)
 			}
@@ -230,7 +227,7 @@ func (g sceneRelationships) cover(ctx context.Context) ([]byte, error) {
 	}
 
 	// always overwrite if present
-	existingCover, err := g.sceneReader.GetCover(ctx, g.scene.ID)
+	existingCover, err := g.repository.Scene.GetCover(ctx, g.scene.ID)
 	if err != nil {
 		logger.Errorf("Error getting scene cover: %v", err)
 	}

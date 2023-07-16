@@ -118,7 +118,7 @@ func (s *scanJob) detectFolderMove(ctx context.Context, file scanFile) (*models.
 		}
 
 		// check if the file exists in the database based on basename, size and mod time
-		existing, err := s.Repository.FileStore.FindByFileInfo(ctx, info, size)
+		existing, err := s.Repository.File.FindByFileInfo(ctx, info, size)
 		if err != nil {
 			return fmt.Errorf("checking for existing file %q: %w", path, err)
 		}
@@ -140,7 +140,7 @@ func (s *scanJob) detectFolderMove(ctx context.Context, file scanFile) (*models.
 
 			if c == nil {
 				// need to check if the folder exists in the filesystem
-				pf, err := s.Repository.FolderStore.Find(ctx, e.Base().ParentFolderID)
+				pf, err := s.Repository.Folder.Find(ctx, e.Base().ParentFolderID)
 				if err != nil {
 					return fmt.Errorf("getting parent folder %d: %w", e.Base().ParentFolderID, err)
 				}
@@ -164,7 +164,7 @@ func (s *scanJob) detectFolderMove(ctx context.Context, file scanFile) (*models.
 
 				// parent folder is missing, possible candidate
 				// count the total number of files in the existing folder
-				count, err := s.Repository.FileStore.CountByFolderID(ctx, parentFolderID)
+				count, err := s.Repository.File.CountByFolderID(ctx, parentFolderID)
 				if err != nil {
 					return fmt.Errorf("counting files in folder %d: %w", parentFolderID, err)
 				}

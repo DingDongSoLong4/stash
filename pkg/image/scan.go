@@ -19,10 +19,6 @@ var (
 	ErrNotImageFile = errors.New("not an image file")
 )
 
-type ScanConfig interface {
-	GetCreateGalleriesFromFolders() bool
-}
-
 type ScanGenerator interface {
 	Generate(ctx context.Context, i *models.Image, f models.File) error
 }
@@ -31,13 +27,11 @@ type ScanHandler struct {
 	CreatorUpdater models.ImageReaderWriter
 	GalleryFinder  models.GalleryReaderWriter
 
+	PluginCache   *plugin.Cache
 	ScanGenerator ScanGenerator
 
-	ScanConfig ScanConfig
-
-	PluginCache *plugin.Cache
-
-	Paths *paths.Paths
+	CreateGalleriesFromFolders bool
+	Paths                      *paths.Paths
 }
 
 func (h *ScanHandler) validate() error {
@@ -49,9 +43,6 @@ func (h *ScanHandler) validate() error {
 	}
 	if h.GalleryFinder == nil {
 		return errors.New("GalleryFinder is required")
-	}
-	if h.ScanConfig == nil {
-		return errors.New("ScanConfig is required")
 	}
 	if h.Paths == nil {
 		return errors.New("Paths is required")
@@ -317,7 +308,7 @@ func (h *ScanHandler) getOrCreateGallery(ctx context.Context, f models.File) (*m
 		return nil, fmt.Errorf("Could not test Path %s: %w", folderPath, err)
 	}
 
-	if forceGallery || (h.ScanConfig.GetCreateGalleriesFromFolders() && !exemptGallery) {
+	if forceGallery || (h.CreateGalleriesFromFolders && !exemptGallery) {
 		return h.getOrCreateFolderBasedGallery(ctx, f)
 	}
 

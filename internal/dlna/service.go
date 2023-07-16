@@ -10,16 +10,29 @@ import (
 
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/txn"
 )
 
 type Repository struct {
-	SceneFinder     models.SceneReader
-	FileFinder      models.FileReader
-	StudioFinder    models.StudioReader
-	TagFinder       models.TagReader
-	PerformerFinder models.PerformerReader
-	MovieFinder     models.MovieReader
+	models.Database
+
+	File      models.FileReader
+	Scene     models.SceneReader
+	Studio    models.StudioReader
+	Tag       models.TagReader
+	Performer models.PerformerReader
+	Movie     models.MovieReader
+}
+
+func NewRepository(repo models.Repository) Repository {
+	return Repository{
+		Database:  repo.Database,
+		File:      repo.File,
+		Scene:     repo.Scene,
+		Studio:    repo.Studio,
+		Tag:       repo.Tag,
+		Performer: repo.Performer,
+		Movie:     repo.Movie,
+	}
 }
 
 type Status struct {
@@ -60,7 +73,6 @@ type Config interface {
 }
 
 type Service struct {
-	txnManager     txn.Manager
 	repository     Repository
 	config         Config
 	sceneServer    sceneServer
@@ -133,9 +145,8 @@ func (s *Service) init() error {
 	}
 
 	s.server = &Server{
-		txnManager:         s.txnManager,
-		sceneServer:        s.sceneServer,
 		repository:         s.repository,
+		sceneServer:        s.sceneServer,
 		ipWhitelistManager: s.ipWhitelistMgr,
 		Interfaces:         interfaces,
 		HTTPConn: func() net.Listener {
@@ -197,9 +208,8 @@ func (s *Service) init() error {
 // }
 
 // NewService initialises and returns a new DLNA service.
-func NewService(txnManager txn.Manager, repo Repository, cfg Config, sceneServer sceneServer) *Service {
+func NewService(repo Repository, cfg Config, sceneServer sceneServer) *Service {
 	ret := &Service{
-		txnManager:  txnManager,
 		repository:  repo,
 		sceneServer: sceneServer,
 		config:      cfg,

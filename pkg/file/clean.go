@@ -114,12 +114,12 @@ func (j *cleanJob) execute(ctx context.Context) error {
 
 	if err := txn.WithReadTxn(ctx, j.Repository, func(ctx context.Context) error {
 		var err error
-		fileCount, err = j.Repository.FileStore.CountAllInPaths(ctx, j.options.Paths)
+		fileCount, err = j.Repository.File.CountAllInPaths(ctx, j.options.Paths)
 		if err != nil {
 			return err
 		}
 
-		folderCount, err = j.Repository.FolderStore.CountAllInPaths(ctx, j.options.Paths)
+		folderCount, err = j.Repository.Folder.CountAllInPaths(ctx, j.options.Paths)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func (j *cleanJob) assessFiles(ctx context.Context, toDelete *deleteSet) error {
 				return nil
 			}
 
-			files, err := j.Repository.FileStore.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
+			files, err := j.Repository.File.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
 			if err != nil {
 				return fmt.Errorf("error querying for files: %w", err)
 			}
@@ -224,7 +224,7 @@ func (j *cleanJob) assessFiles(ctx context.Context, toDelete *deleteSet) error {
 // flagFolderForDelete adds folders to the toDelete set, with the leaf folders added first
 func (j *cleanJob) flagFileForDelete(ctx context.Context, toDelete *deleteSet, f models.File) error {
 	// add contained files first
-	containedFiles, err := j.Repository.FileStore.FindByZipFileID(ctx, f.Base().ID)
+	containedFiles, err := j.Repository.File.FindByZipFileID(ctx, f.Base().ID)
 	if err != nil {
 		return fmt.Errorf("error finding contained files for %q: %w", f.Base().Path, err)
 	}
@@ -235,7 +235,7 @@ func (j *cleanJob) flagFileForDelete(ctx context.Context, toDelete *deleteSet, f
 	}
 
 	// add contained folders as well
-	containedFolders, err := j.Repository.FolderStore.FindByZipFileID(ctx, f.Base().ID)
+	containedFolders, err := j.Repository.Folder.FindByZipFileID(ctx, f.Base().ID)
 	if err != nil {
 		return fmt.Errorf("error finding contained folders for %q: %w", f.Base().Path, err)
 	}
@@ -262,7 +262,7 @@ func (j *cleanJob) assessFolders(ctx context.Context, toDelete *deleteSet) error
 				return nil
 			}
 
-			folders, err := j.Repository.FolderStore.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
+			folders, err := j.Repository.Folder.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
 			if err != nil {
 				return fmt.Errorf("error querying for folders: %w", err)
 			}
@@ -387,7 +387,7 @@ func (j *cleanJob) deleteFile(ctx context.Context, fileID models.FileID, fn stri
 			return err
 		}
 
-		return j.Repository.FileStore.Destroy(ctx, fileID)
+		return j.Repository.File.Destroy(ctx, fileID)
 	}); err != nil {
 		logger.Errorf("Error deleting file %q from database: %s", fn, err.Error())
 		return
@@ -404,7 +404,7 @@ func (j *cleanJob) deleteFolder(ctx context.Context, folderID models.FolderID, f
 			return err
 		}
 
-		return j.Repository.FolderStore.Destroy(ctx, folderID)
+		return j.Repository.Folder.Destroy(ctx, folderID)
 	}); err != nil {
 		logger.Errorf("Error deleting folder %q from database: %s", fn, err.Error())
 		return

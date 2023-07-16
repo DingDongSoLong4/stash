@@ -23,10 +23,10 @@ type ScanGenerator interface {
 
 type ScanHandler struct {
 	CreatorUpdater models.SceneReaderWriter
-
-	ScanGenerator  ScanGenerator
 	CaptionUpdater models.FileReaderWriter
-	PluginCache    *plugin.Cache
+
+	PluginCache   *plugin.Cache
+	ScanGenerator ScanGenerator
 
 	FileNamingAlgorithm models.HashAlgorithm
 	Paths               *paths.Paths
