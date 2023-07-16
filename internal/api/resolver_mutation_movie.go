@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/stashapp/stash/internal/static"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -49,12 +50,6 @@ func (r *mutationResolver) MovieCreate(ctx context.Context, input MovieCreateInp
 		return nil, fmt.Errorf("converting studio id: %w", err)
 	}
 
-	// HACK: if back image is being set, set the front image to the default.
-	// This is because we can't have a null front image with a non-null back image.
-	if input.FrontImage == nil && input.BackImage != nil {
-		input.FrontImage = &models.DefaultMovieImage
-	}
-
 	// Process the base 64 encoded image string
 	var frontimageData []byte
 	if input.FrontImage != nil {
@@ -71,6 +66,12 @@ func (r *mutationResolver) MovieCreate(ctx context.Context, input MovieCreateInp
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// HACK: if back image is being set, set the front image to the default.
+	// This is because we can't have a null front image with a non-null back image.
+	if len(frontimageData) == 0 && len(backimageData) != 0 {
+		frontimageData = static.ReadAll(static.DefaultMovieImage)
 	}
 
 	// Start the transaction and save the movie

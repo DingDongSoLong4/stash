@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
+	"github.com/stashapp/stash/internal/static"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/utils"
@@ -54,8 +55,9 @@ func (rs movieRoutes) FrontImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// fallback to default image
 	if len(image) == 0 {
-		image, _ = utils.ProcessBase64Image(models.DefaultMovieImage)
+		image = static.ReadAll(static.DefaultMovieImage)
 	}
 
 	utils.ServeImage(w, r, image)
@@ -79,8 +81,9 @@ func (rs movieRoutes) BackImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// fallback to default image
 	if len(image) == 0 {
-		image, _ = utils.ProcessBase64Image(models.DefaultMovieImage)
+		image = static.ReadAll(static.DefaultMovieImage)
 	}
 
 	utils.ServeImage(w, r, image)
