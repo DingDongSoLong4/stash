@@ -91,7 +91,7 @@ func NewDatabase() *Database {
 	folderStore := NewFolderStore()
 	blobStore := NewBlobStore(BlobStoreOptions{})
 
-	ret := &Database{
+	db := &Database{
 		Blobs:          blobStore,
 		File:           fileStore,
 		Folder:         folderStore,
@@ -105,10 +105,11 @@ func NewDatabase() *Database {
 		Tag:            NewTagStore(blobStore),
 		Movie:          NewMovieStore(blobStore),
 		SavedFilter:    NewSavedFilterStore(),
-		lockChan:       make(chan struct{}, 1),
+
+		lockChan: make(chan struct{}, 1),
 	}
 
-	return ret
+	return db
 }
 
 func (db *Database) SetBlobStoreOptions(options BlobStoreOptions) {
@@ -126,13 +127,22 @@ func (db *Database) Ready() error {
 
 // Open initializes the database. If the database is new, then it
 // performs a full migration to the latest schema version. Otherwise, any
-// necessary migrations must be run separately using RunMigrations.
-// Returns true if the database is new.
-func (db *Database) Open(dbPath string) error {
+// necessary migrations must be run separately using Migrate.
+func (db *Database) Open() error {
 	db.lockNoCtx()
 	defer db.unlock()
 
-	db.dbPath = dbPath
+	return db.open()
+}
+
+func (db *Database) open() error {
+	if db.db != nil {
+		err := db.db.Close()
+		if err != nil {
+			return fmt.Errorf("closing existing database connection: %w", err)
+		}
+		db.db = nil
+	}
 
 	databaseSchemaVersion, err := db.getDatabaseSchemaVersion()
 	if err != nil {
@@ -143,7 +153,7 @@ func (db *Database) Open(dbPath string) error {
 
 	if databaseSchemaVersion == 0 {
 		// new database, just run the migrations
-		if err := db.RunMigrations(); err != nil {
+		if err := db.runMigrations(); err != nil {
 			return fmt.Errorf("error running initial schema migrations: %v", err)
 		}
 	} else {
@@ -155,7 +165,7 @@ func (db *Database) Open(dbPath string) error {
 		}
 
 		// if migration is needed, then don't open the connection
-		if db.needsMigration() {
+		if databaseSchemaVersion != appSchemaVersion {
 			return &MigrationNeededError{
 				CurrentSchemaVersion:  databaseSchemaVersion,
 				RequiredSchemaVersion: appSchemaVersion,
@@ -163,20 +173,17 @@ func (db *Database) Open(dbPath string) error {
 		}
 	}
 
-	// RunMigrations may have opened a connection already
-	if db.db == nil {
-		const disableForeignKeys = false
-		db.db, err = db.open(disableForeignKeys)
-		if err != nil {
-			return err
-		}
+	const disableForeignKeys = false
+	db.db, err = db.openDB(disableForeignKeys)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // lock locks the database for writing.
-// This method will block until the lock is acquired of the context is cancelled.
+// This method will block until the lock is acquired or the context is cancelled.
 func (db *Database) lock(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
@@ -206,6 +213,10 @@ func (db *Database) Close() error {
 	db.lockNoCtx()
 	defer db.unlock()
 
+	return db.close()
+}
+
+func (db *Database) close() error {
 	if db.db != nil {
 		if err := db.db.Close(); err != nil {
 			return err
@@ -217,7 +228,7 @@ func (db *Database) Close() error {
 	return nil
 }
 
-func (db *Database) open(disableForeignKeys bool) (*sqlx.DB, error) {
+func (db *Database) openDB(disableForeignKeys bool) (*sqlx.DB, error) {
 	// https://github.com/mattn/go-sqlite3
 	url := "file:" + db.dbPath + "?_journal=WAL&_sync=NORMAL&_busy_timeout=50"
 	if !disableForeignKeys {
@@ -229,23 +240,30 @@ func (db *Database) open(disableForeignKeys bool) (*sqlx.DB, error) {
 	conn.SetMaxIdleConns(dbConns)
 	conn.SetConnMaxIdleTime(dbConnTimeout * time.Second)
 	if err != nil {
-		return nil, fmt.Errorf("db.Open(): %w", err)
+		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
 	return conn, nil
 }
 
 func (db *Database) Remove() error {
-	databasePath := db.dbPath
-	err := db.Close()
+	db.lockNoCtx()
+	defer db.unlock()
 
+	return db.remove()
+}
+
+func (db *Database) remove() error {
+	databasePath := db.dbPath
+
+	err := db.close()
 	if err != nil {
-		return errors.New("Error closing database: " + err.Error())
+		return fmt.Errorf("closing database: %w", err)
 	}
 
 	err = os.Remove(databasePath)
 	if err != nil {
-		return errors.New("Error removing database: " + err.Error())
+		return fmt.Errorf("removing database: %w", err)
 	}
 
 	// remove the -shm, -wal files ( if they exist )
@@ -254,7 +272,7 @@ func (db *Database) Remove() error {
 		if exists, _ := fsutil.FileExists(wf); exists {
 			err = os.Remove(wf)
 			if err != nil {
-				return errors.New("Error removing database: " + err.Error())
+				return fmt.Errorf("removing database: %w", err)
 			}
 		}
 	}
@@ -263,33 +281,35 @@ func (db *Database) Remove() error {
 }
 
 func (db *Database) Reset() error {
-	databasePath := db.dbPath
-	if err := db.Remove(); err != nil {
+	db.lockNoCtx()
+	defer db.unlock()
+
+	if err := db.remove(); err != nil {
 		return err
 	}
 
-	if err := db.Open(databasePath); err != nil {
-		return fmt.Errorf("[reset DB] unable to initialize: %w", err)
+	if err := db.open(); err != nil {
+		return fmt.Errorf("initializing new database: %w", err)
 	}
 
 	return nil
 }
 
-// Backup the database. If db is nil, then uses the existing database
-// connection.
+// Backup the database. Will open a temporary database connection if necessary.
 func (db *Database) Backup(backupPath string) error {
-	thisDB := db.db
-	if thisDB == nil {
+	conn := db.db
+	if conn == nil {
 		var err error
-		thisDB, err = sqlx.Connect(sqlite3Driver, "file:"+db.dbPath+"?_fk=true")
+		const disableForeignKeys = false
+		conn, err = db.openDB(disableForeignKeys)
 		if err != nil {
-			return fmt.Errorf("open database %s failed: %v", db.dbPath, err)
+			return err
 		}
-		defer thisDB.Close()
+		defer conn.Close()
 	}
 
-	logger.Infof("Backing up database into: %s", backupPath)
-	_, err := thisDB.Exec(`VACUUM INTO "` + backupPath + `"`)
+	logger.Infof("Backing up database to %s", backupPath)
+	_, err := conn.Exec(`VACUUM INTO "` + backupPath + `"`)
 	if err != nil {
 		return fmt.Errorf("vacuum failed: %v", err)
 	}
@@ -298,8 +318,8 @@ func (db *Database) Backup(backupPath string) error {
 }
 
 func (db *Database) Anonymise(outPath string) error {
+	logger.Infof("Anonymising database to %s", outPath)
 	anon, err := NewAnonymiser(db, outPath)
-
 	if err != nil {
 		return err
 	}
@@ -308,13 +328,17 @@ func (db *Database) Anonymise(outPath string) error {
 }
 
 func (db *Database) RestoreFromBackup(backupPath string) error {
-	logger.Infof("Restoring backup database %s into %s", backupPath, db.dbPath)
-	return os.Rename(backupPath, db.dbPath)
-}
+	db.lockNoCtx()
+	defer db.unlock()
 
-// Migrate the database
-func (db *Database) needsMigration() bool {
-	return db.schemaVersion != appSchemaVersion
+	// ensure db is closed
+	err := db.close()
+	if err != nil {
+		return fmt.Errorf("closing database: %w", err)
+	}
+
+	logger.Infof("Restoring from backup database %s", backupPath)
+	return os.Rename(backupPath, db.dbPath)
 }
 
 func (db *Database) AppSchemaVersion() uint {
@@ -323,6 +347,20 @@ func (db *Database) AppSchemaVersion() uint {
 
 func (db *Database) DatabasePath() string {
 	return db.dbPath
+}
+
+func (db *Database) SetDatabasePath(dbPath string) error {
+	db.lockNoCtx()
+	defer db.unlock()
+
+	// ensure db is closed
+	if db.db != nil {
+		return errors.New("database is open")
+	}
+
+	db.dbPath = dbPath
+
+	return nil
 }
 
 func (db *Database) DatabaseBackupPath(backupDirectoryPath string) string {
@@ -356,7 +394,7 @@ func (db *Database) getMigrate() (*migrate.Migrate, error) {
 	}
 
 	const disableForeignKeys = true
-	conn, err := db.open(disableForeignKeys)
+	conn, err := db.openDB(disableForeignKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -386,8 +424,27 @@ func (db *Database) getDatabaseSchemaVersion() (uint, error) {
 	return ret, nil
 }
 
-// Migrate the database
-func (db *Database) RunMigrations() error {
+// Migrate the database. Will use temporary database connections,
+// the database must be reopened to be used afterwards.
+func (db *Database) Migrate() error {
+	db.lockNoCtx()
+	defer db.unlock()
+
+	return db.runMigrations()
+}
+
+// Vacuum runs a VACUUM on the database, rebuilding the database file into a minimal amount of disk space.
+func (db *Database) Vacuum(ctx context.Context) error {
+	conn := db.db
+	if conn == nil {
+		return ErrDatabaseNotInitialized
+	}
+
+	_, err := conn.ExecContext(ctx, "VACUUM")
+	return err
+}
+
+func (db *Database) runMigrations() error {
 	ctx := context.Background()
 
 	m, err := db.getMigrate()
@@ -427,35 +484,26 @@ func (db *Database) RunMigrations() error {
 	// update the schema version
 	db.schemaVersion, _, _ = m.Version()
 
-	// re-initialise the database
-	const disableForeignKeys = false
-	db.db, err = db.open(disableForeignKeys)
-	if err != nil {
-		return fmt.Errorf("re-initializing the database: %w", err)
-	}
-
 	// optimize database after migration
-	db.optimise()
 
-	return nil
-}
+	const disableForeignKeys = false
+	conn, err := db.openDB(disableForeignKeys)
+	if err != nil {
+		return fmt.Errorf("reopening the database: %w", err)
+	}
+	defer conn.Close()
 
-func (db *Database) optimise() {
 	logger.Info("Optimizing database")
-	_, err := db.db.Exec("ANALYZE")
+	_, err = conn.Exec("ANALYZE")
 	if err != nil {
 		logger.Warnf("error while performing post-migration optimization: %v", err)
 	}
-	_, err = db.db.Exec("VACUUM")
+	_, err = conn.Exec("VACUUM")
 	if err != nil {
 		logger.Warnf("error while performing post-migration vacuum: %v", err)
 	}
-}
 
-// Vacuum runs a VACUUM on the database, rebuilding the database file into a minimal amount of disk space.
-func (db *Database) Vacuum(ctx context.Context) error {
-	_, err := db.db.ExecContext(ctx, "VACUUM")
-	return err
+	return nil
 }
 
 func (db *Database) runCustomMigrations(ctx context.Context, fns []customMigrationFunc) error {
@@ -470,12 +518,12 @@ func (db *Database) runCustomMigrations(ctx context.Context, fns []customMigrati
 
 func (db *Database) runCustomMigration(ctx context.Context, fn customMigrationFunc) error {
 	const disableForeignKeys = false
-	d, err := db.open(disableForeignKeys)
+	d, err := db.openDB(disableForeignKeys)
 	if err != nil {
 		return err
 	}
-
 	defer d.Close()
+
 	if err := fn(ctx, d); err != nil {
 		return err
 	}

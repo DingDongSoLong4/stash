@@ -49,6 +49,10 @@ func (*Database) AddPostCommitHook(ctx context.Context, hook txn.TxnFunc) {
 func (*Database) AddPostRollbackHook(ctx context.Context, hook txn.TxnFunc) {
 }
 
+func (*Database) Ready() error {
+	return nil
+}
+
 func (*Database) IsLocked(err error) bool {
 	return false
 }

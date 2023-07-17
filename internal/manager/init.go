@@ -287,7 +287,11 @@ func (s *Manager) postInit(ctx context.Context) error {
 		})
 	}
 
-	if err := s.Database.Open(s.Config.GetDatabasePath()); err != nil {
+	if err := s.Database.SetDatabasePath(s.Config.GetDatabasePath()); err != nil {
+		return err
+	}
+
+	if err := s.Database.Open(); err != nil {
 		var migrationNeededErr *sqlite.MigrationNeededError
 		if errors.As(err, &migrationNeededErr) {
 			logger.Warn(err)

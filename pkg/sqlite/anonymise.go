@@ -28,12 +28,20 @@ type Anonymiser struct {
 }
 
 func NewAnonymiser(db *Database, outPath string) (*Anonymiser, error) {
-	if _, err := db.db.Exec(fmt.Sprintf(`VACUUM INTO "%s"`, outPath)); err != nil {
+	conn := db.db
+	if conn == nil {
+		return nil, ErrDatabaseNotInitialized
+	}
+
+	if _, err := conn.Exec(fmt.Sprintf(`VACUUM INTO "%s"`, outPath)); err != nil {
 		return nil, fmt.Errorf("vacuuming into %s: %w", outPath, err)
 	}
 
 	newDB := NewDatabase()
-	if err := newDB.Open(outPath); err != nil {
+	if err := newDB.SetDatabasePath(outPath); err != nil {
+		return nil, err
+	}
+	if err := newDB.Open(); err != nil {
 		return nil, fmt.Errorf("opening %s: %w", outPath, err)
 	}
 
@@ -58,7 +66,7 @@ func (db *Anonymiser) Anonymise(ctx context.Context) error {
 			func() error { return db.anonymiseStudios(ctx) },
 			func() error { return db.anonymiseTags(ctx) },
 			func() error { return db.anonymiseMovies(ctx) },
-			func() error { db.optimise(); return nil },
+			func() error { return db.Vacuum(ctx) },
 		})
 	}(); err != nil {
 		// delete the database

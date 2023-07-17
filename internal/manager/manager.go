@@ -277,7 +277,7 @@ func (s *Manager) Migrate(ctx context.Context, input MigrateInput) error {
 		return fmt.Errorf("error backing up database: %s", err)
 	}
 
-	if err := database.RunMigrations(); err != nil {
+	if err := database.Migrate(); err != nil {
 		errStr := fmt.Sprintf("error performing migration: %s", err)
 
 		// roll back to the backed up version
@@ -289,6 +289,11 @@ func (s *Manager) Migrate(ctx context.Context, input MigrateInput) error {
 		}
 
 		return errors.New(errStr)
+	}
+
+	// reopen after migration
+	if err := database.Open(); err != nil {
+		return fmt.Errorf("error reopening database: %s", err)
 	}
 
 	// if no backup path was provided, then delete the created backup

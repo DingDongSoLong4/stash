@@ -10,6 +10,7 @@ type Manager interface {
 	Commit(ctx context.Context) error
 	Rollback(ctx context.Context) error
 
+	Ready() error
 	IsLocked(err error) bool
 }
 
@@ -53,6 +54,10 @@ func WithReadTxn(ctx context.Context, m Manager, fn TxnFunc) error {
 }
 
 func withTxn(ctx context.Context, m Manager, fn TxnFunc, exclusive bool, execCompleteOnLocked bool) error {
+	if err := m.Ready(); err != nil {
+		return err
+	}
+
 	// post-hooks should be executed with the outside context
 	txnCtx, err := begin(ctx, m, exclusive)
 	if err != nil {
