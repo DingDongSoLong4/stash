@@ -16,37 +16,32 @@ import (
 
 // Cleaner scans through stored file and folder instances and removes those that are no longer present on disk.
 type Cleaner struct {
-	FS         models.FS
-	Repository Repository
+	Paths []string
 
 	Handlers []CleanHandler
+
+	// PathFilter are used to determine if a file should be included.
+	// Excluded files are marked for cleaning.
+	PathFilter PathFilter
+
+	// Do a dry run. Don't delete any files
+	DryRun bool
+
+	Repository Repository
+	FS         models.FS
 }
 
 type cleanJob struct {
 	*Cleaner
 
 	progress *job.Progress
-	options  CleanOptions
 }
 
-// ScanOptions provides options for scanning files.
-type CleanOptions struct {
-	Paths []string
-
-	// Do a dry run. Don't delete any files
-	DryRun bool
-
-	// PathFilter are used to determine if a file should be included.
-	// Excluded files are marked for cleaning.
-	PathFilter PathFilter
-}
-
-// Clean starts the clean process.
-func (s *Cleaner) Clean(ctx context.Context, options CleanOptions, progress *job.Progress) {
+// Execute starts the clean process.
+func (s *Cleaner) Execute(ctx context.Context, progress *job.Progress) {
 	j := &cleanJob{
 		Cleaner:  s,
 		progress: progress,
-		options:  options,
 	}
 
 	if err := j.execute(ctx); err != nil {
@@ -114,12 +109,12 @@ func (j *cleanJob) execute(ctx context.Context) error {
 
 	if err := txn.WithReadTxn(ctx, j.Repository, func(ctx context.Context) error {
 		var err error
-		fileCount, err = j.Repository.File.CountAllInPaths(ctx, j.options.Paths)
+		fileCount, err = j.Repository.File.CountAllInPaths(ctx, j.Paths)
 		if err != nil {
 			return err
 		}
 
-		folderCount, err = j.Repository.Folder.CountAllInPaths(ctx, j.options.Paths)
+		folderCount, err = j.Repository.Folder.CountAllInPaths(ctx, j.Paths)
 		if err != nil {
 			return err
 		}
@@ -140,7 +135,7 @@ func (j *cleanJob) execute(ctx context.Context) error {
 		return err
 	}
 
-	if j.options.DryRun && toDelete.len() > 0 {
+	if j.DryRun && toDelete.len() > 0 {
 		// add progress for files that would've been deleted
 		progress.AddProcessed(toDelete.len())
 		return nil
@@ -178,7 +173,7 @@ func (j *cleanJob) assessFiles(ctx context.Context, toDelete *deleteSet) error {
 				return nil
 			}
 
-			files, err := j.Repository.File.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
+			files, err := j.Repository.File.FindAllInPaths(ctx, j.Paths, batchSize, offset)
 			if err != nil {
 				return fmt.Errorf("error querying for files: %w", err)
 			}
@@ -262,7 +257,7 @@ func (j *cleanJob) assessFolders(ctx context.Context, toDelete *deleteSet) error
 				return nil
 			}
 
-			folders, err := j.Repository.Folder.FindAllInPaths(ctx, j.options.Paths, batchSize, offset)
+			folders, err := j.Repository.Folder.FindAllInPaths(ctx, j.Paths, batchSize, offset)
 			if err != nil {
 				return fmt.Errorf("error querying for folders: %w", err)
 			}
@@ -331,7 +326,7 @@ func (j *cleanJob) shouldClean(ctx context.Context, f models.File) bool {
 	}
 
 	// run through path filter, if returns false then the file should be cleaned
-	filter := j.options.PathFilter
+	filter := j.PathFilter
 
 	// don't log anything - assume filter will have logged the reason
 	return !filter.Accept(ctx, path, info)
@@ -371,7 +366,7 @@ func (j *cleanJob) shouldCleanFolder(ctx context.Context, f *models.Folder) bool
 	}
 
 	// run through path filter, if returns false then the file should be cleaned
-	filter := j.options.PathFilter
+	filter := j.PathFilter
 
 	// don't log anything - assume filter will have logged the reason
 	return !filter.Accept(ctx, path, info)

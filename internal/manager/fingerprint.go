@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/stashapp/stash/internal/manager/config"
+	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/hash/md5"
 	"github.com/stashapp/stash/pkg/hash/oshash"
 	"github.com/stashapp/stash/pkg/logger"
@@ -13,7 +14,8 @@ import (
 )
 
 type fingerprintCalculator struct {
-	Config *config.Config
+	Config           *config.Config
+	ExtensionMatcher *file.ExtensionMatcher
 }
 
 func (c *fingerprintCalculator) calculateOshash(f *models.BaseFile, o models.FileOpener) (*models.Fingerprint, error) {
@@ -63,7 +65,7 @@ func (c *fingerprintCalculator) CalculateFingerprints(f *models.BaseFile, o mode
 	var ret []models.Fingerprint
 	calculateMD5 := true
 
-	if useAsVideo(f.Path) {
+	if c.ExtensionMatcher.UseAsVideo(f.Path) {
 		var (
 			fp  *models.Fingerprint
 			err error

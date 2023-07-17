@@ -24,16 +24,16 @@ type generatedPaths struct {
 }
 
 func newGeneratedPaths(path string) *generatedPaths {
-	gp := generatedPaths{}
-	gp.Screenshots = filepath.Join(path, "screenshots")
-	gp.Thumbnails = filepath.Join(path, "thumbnails")
-	gp.Vtt = filepath.Join(path, "vtt")
-	gp.Markers = filepath.Join(path, "markers")
-	gp.Transcodes = filepath.Join(path, "transcodes")
-	gp.Downloads = filepath.Join(path, "download_stage")
-	gp.Tmp = filepath.Join(path, "tmp")
-	gp.InteractiveHeatmap = filepath.Join(path, "interactive_heatmaps")
-	return &gp
+	return &generatedPaths{
+		Screenshots:        filepath.Join(path, "screenshots"),
+		Thumbnails:         filepath.Join(path, "thumbnails"),
+		Vtt:                filepath.Join(path, "vtt"),
+		Markers:            filepath.Join(path, "markers"),
+		Transcodes:         filepath.Join(path, "transcodes"),
+		Downloads:          filepath.Join(path, "download_stage"),
+		Tmp:                filepath.Join(path, "tmp"),
+		InteractiveHeatmap: filepath.Join(path, "interactive_heatmaps"),
+	}
 }
 
 func (gp *generatedPaths) GetTmpPath(fileName string) string {

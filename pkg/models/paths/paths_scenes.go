@@ -7,14 +7,13 @@ import (
 )
 
 type scenePaths struct {
-	generatedPaths
+	*generatedPaths
 }
 
-func newScenePaths(p Paths) *scenePaths {
-	sp := scenePaths{
-		generatedPaths: *p.Generated,
+func newScenePaths(gp *generatedPaths) *scenePaths {
+	return &scenePaths{
+		generatedPaths: gp,
 	}
-	return &sp
 }
 
 func (sp *scenePaths) GetLegacyScreenshotPath(checksum string) string {

@@ -15,9 +15,6 @@ import (
 	"github.com/stashapp/stash/internal/log"
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/ffmpeg"
-	"github.com/stashapp/stash/pkg/file"
-	file_image "github.com/stashapp/stash/pkg/file/image"
-	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/image"
@@ -94,34 +91,6 @@ func Initialize() (*Manager, error) {
 	dlnaRepository := dlna.NewRepository(repo)
 	dlnaService := dlna.NewService(dlnaRepository, cfg, sceneServer)
 
-	scanner := &file.Scanner{
-		Repository: file.NewRepository(repo),
-		FileDecorators: []file.Decorator{
-			&file.FilteredDecorator{
-				Decorator: &video.Decorator{
-					FFProbe: ffProbe,
-				},
-				Filter: file.FilterFunc(videoFileFilter),
-			},
-			&file.FilteredDecorator{
-				Decorator: &file_image.Decorator{
-					FFProbe: ffProbe,
-				},
-				Filter: file.FilterFunc(imageFileFilter),
-			},
-		},
-		FingerprintCalculator: &fingerprintCalculator{cfg},
-		FS:                    &file.OsFS{},
-	}
-
-	cleaner := &file.Cleaner{
-		FS:         &file.OsFS{},
-		Repository: file.NewRepository(repo),
-		Handlers: []file.CleanHandler{
-			&cleanHandler{},
-		},
-	}
-
 	mgr := &Manager{
 		Config: cfg,
 		Logger: l,
@@ -149,9 +118,6 @@ func Initialize() (*Manager, error) {
 		SceneService:   sceneService,
 		ImageService:   imageService,
 		GalleryService: galleryService,
-
-		Scanner: scanner,
-		Cleaner: cleaner,
 
 		scanSubs: &subscriptionManager{},
 	}

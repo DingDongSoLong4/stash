@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/remeh/sizedwaitgroup"
+	"github.com/stashapp/stash/pkg/job"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/txn"
@@ -51,12 +52,28 @@ const (
 // If the file is not a renamed file, then the decorators are fired and the file is created, then
 // the applicable handlers are fired.
 type Scanner struct {
-	FS                    models.FS
-	Repository            Repository
-	FingerprintCalculator FingerprintCalculator
+	Paths []string
 
 	// FileDecorators are applied to files as they are scanned.
 	FileDecorators []Decorator
+
+	// Handlers are called after a file has been scanned.
+	Handlers []Handler
+
+	// ZipFileExtensions is a list of file extensions that are considered zip files.
+	// Extension does not include the . character.
+	ZipFileExtensions []string
+
+	// ScanFilters are used to determine if a file should be scanned.
+	ScanFilters []PathFilter
+
+	// HandlerRequiredFilters are used to determine if an unchanged file needs to be handled
+	HandlerRequiredFilters []Filter
+
+	Repository            Repository
+	FingerprintCalculator FingerprintCalculator
+	FS                    models.FS
+	ParallelTasks         int
 }
 
 // FingerprintCalculator calculates a fingerprint for the provided file.
@@ -64,22 +81,10 @@ type FingerprintCalculator interface {
 	CalculateFingerprints(f *models.BaseFile, o models.FileOpener, useExisting bool) ([]models.Fingerprint, error)
 }
 
-// ProgressReporter is used to report progress of the scan.
-type ProgressReporter interface {
-	AddTotal(total int)
-	Increment()
-	Definite()
-	ExecuteTask(description string, fn func())
-}
-
 type scanJob struct {
 	*Scanner
 
-	// handlers are called after a file has been scanned.
-	handlers []Handler
-
-	ProgressReports ProgressReporter
-	options         ScanOptions
+	progress *job.Progress
 
 	startTime      time.Time
 	fileQueue      chan scanFile
@@ -92,30 +97,11 @@ type scanJob struct {
 	txnRetryer txn.Retryer
 }
 
-// ScanOptions provides options for scanning files.
-type ScanOptions struct {
-	Paths []string
-
-	// ZipFileExtensions is a list of file extensions that are considered zip files.
-	// Extension does not include the . character.
-	ZipFileExtensions []string
-
-	// ScanFilters are used to determine if a file should be scanned.
-	ScanFilters []PathFilter
-
-	// HandlerRequiredFilters are used to determine if an unchanged file needs to be handled
-	HandlerRequiredFilters []Filter
-
-	ParallelTasks int
-}
-
-// Scan starts the scanning process.
-func (s *Scanner) Scan(ctx context.Context, handlers []Handler, options ScanOptions, progressReporter ProgressReporter) {
+// Execute starts the scanning process.
+func (s *Scanner) Execute(ctx context.Context, progress *job.Progress) {
 	job := &scanJob{
-		Scanner:         s,
-		handlers:        handlers,
-		ProgressReports: progressReporter,
-		options:         options,
+		Scanner:  s,
+		progress: progress,
 		txnRetryer: txn.Retryer{
 			Manager: s.Repository,
 			Retries: maxRetries,
@@ -140,7 +126,7 @@ func (s *scanJob) withDB(ctx context.Context, fn func(ctx context.Context) error
 }
 
 func (s *scanJob) execute(ctx context.Context) {
-	paths := s.options.Paths
+	paths := s.Paths
 	logger.Infof("scanning %d paths", len(paths))
 	s.startTime = time.Now()
 
@@ -176,7 +162,7 @@ func (s *scanJob) execute(ctx context.Context) {
 
 func (s *scanJob) queueFiles(ctx context.Context, paths []string) error {
 	var err error
-	s.ProgressReports.ExecuteTask("Walking directory tree", func() {
+	s.progress.ExecuteTask("Walking directory tree", func() {
 		for _, p := range paths {
 			err = symWalk(s.FS, p, s.queueFileFunc(ctx, s.FS, nil))
 			if err != nil {
@@ -187,10 +173,8 @@ func (s *scanJob) queueFiles(ctx context.Context, paths []string) error {
 
 	close(s.fileQueue)
 
-	if s.ProgressReports != nil {
-		s.ProgressReports.AddTotal(s.count)
-		s.ProgressReports.Definite()
-	}
+	s.progress.AddTotal(s.count)
+	s.progress.Definite()
 
 	return err
 }
@@ -263,7 +247,7 @@ func (s *scanJob) queueFileFunc(ctx context.Context, f models.FS, zipFile *scanF
 
 		// if zip file is present, we handle immediately
 		if zipFile != nil {
-			s.ProgressReports.ExecuteTask("Scanning "+path, func() {
+			s.progress.ExecuteTask("Scanning "+path, func() {
 				if err := s.handleFile(ctx, ff); err != nil {
 					if !errors.Is(err, context.Canceled) {
 						logger.Errorf("error processing %q: %v", path, err)
@@ -298,8 +282,8 @@ func getFileSize(f models.FS, path string, info fs.FileInfo) (int64, error) {
 
 func (s *scanJob) acceptEntry(ctx context.Context, path string, info fs.FileInfo) bool {
 	// always accept if there's no filters
-	accept := len(s.options.ScanFilters) == 0
-	for _, filter := range s.options.ScanFilters {
+	accept := len(s.ScanFilters) == 0
+	for _, filter := range s.ScanFilters {
 		// accept if any filter accepts the file
 		if filter.Accept(ctx, path, info) {
 			accept = true
@@ -328,7 +312,7 @@ func (s *scanJob) scanZipFile(ctx context.Context, f scanFile) error {
 }
 
 func (s *scanJob) processQueue(ctx context.Context) error {
-	parallelTasks := s.options.ParallelTasks
+	parallelTasks := s.ParallelTasks
 	if parallelTasks < 1 {
 		parallelTasks = 1
 	}
@@ -385,13 +369,13 @@ func (s *scanJob) processQueue(ctx context.Context) error {
 func (s *scanJob) incrementProgress(f scanFile) {
 	// don't increment for files inside zip files since these aren't
 	// counted during the initial walking
-	if s.ProgressReports != nil && f.ZipFile == nil {
-		s.ProgressReports.Increment()
+	if f.ZipFile == nil {
+		s.progress.Increment()
 	}
 }
 
 func (s *scanJob) processQueueItem(ctx context.Context, f scanFile) {
-	s.ProgressReports.ExecuteTask("Scanning "+f.Path, func() {
+	s.progress.ExecuteTask("Scanning "+f.Path, func() {
 		var err error
 		if f.info.IsDir() {
 			err = s.handleFolder(ctx, f)
@@ -649,7 +633,7 @@ func (s *scanJob) handleFile(ctx context.Context, f scanFile) error {
 
 func (s *scanJob) isZipFile(path string) bool {
 	fExt := filepath.Ext(path)
-	for _, ext := range s.options.ZipFileExtensions {
+	for _, ext := range s.ZipFileExtensions {
 		if strings.EqualFold(fExt, "."+ext) {
 			return true
 		}
@@ -742,7 +726,7 @@ func (s *scanJob) fireDecorators(ctx context.Context, fs models.FS, f models.Fil
 }
 
 func (s *scanJob) fireHandlers(ctx context.Context, f models.File, oldFile models.File) error {
-	for _, h := range s.handlers {
+	for _, h := range s.Handlers {
 		if err := h.Handle(ctx, f, oldFile); err != nil {
 			return err
 		}
@@ -887,8 +871,8 @@ func (s *scanJob) handleRename(ctx context.Context, f models.File, fp []models.F
 }
 
 func (s *scanJob) isHandlerRequired(ctx context.Context, f models.File) bool {
-	accept := len(s.options.HandlerRequiredFilters) == 0
-	for _, filter := range s.options.HandlerRequiredFilters {
+	accept := len(s.HandlerRequiredFilters) == 0
+	for _, filter := range s.HandlerRequiredFilters {
 		// accept if any filter accepts the file
 		if filter.Accept(ctx, f) {
 			accept = true

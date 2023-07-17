@@ -6,14 +6,13 @@ import (
 )
 
 type sceneMarkerPaths struct {
-	generatedPaths
+	*generatedPaths
 }
 
-func newSceneMarkerPaths(p Paths) *sceneMarkerPaths {
-	sp := sceneMarkerPaths{
-		generatedPaths: *p.Generated,
+func newSceneMarkerPaths(gp *generatedPaths) *sceneMarkerPaths {
+	return &sceneMarkerPaths{
+		generatedPaths: gp,
 	}
-	return &sp
 }
 
 func (sp *sceneMarkerPaths) GetVideoPreviewPath(checksum string, seconds int) string {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/stashapp/stash/internal/manager/config"
@@ -14,35 +15,70 @@ import (
 	"github.com/stashapp/stash/pkg/job"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/plugin"
 	"github.com/stashapp/stash/pkg/scene"
 )
 
-type cleaner interface {
-	Clean(ctx context.Context, options file.CleanOptions, progress *job.Progress)
+type CleanJob struct {
+	Input models.CleanMetadataInput
+
+	Repository   models.Repository
+	SceneService SceneService
+	ImageService ImageService
+	Paths        *paths.Paths
+	PluginCache  *plugin.Cache
+	ScanSubs     *subscriptionManager
 }
 
-type cleanJob struct {
-	cleaner      cleaner
-	repository   models.Repository
-	input        models.CleanMetadataInput
-	sceneService SceneService
-	imageService ImageService
-	scanSubs     *subscriptionManager
-}
+func (j *CleanJob) Execute(ctx context.Context, progress *job.Progress) {
+	if job.IsCancelled(ctx) {
+		logger.Info("Stopping due to user request")
+		return
+	}
 
-func (j *cleanJob) Execute(ctx context.Context, progress *job.Progress) {
-	logger.Infof("Starting cleaning of tracked files")
 	start := time.Now()
-	if j.input.DryRun {
+
+	logger.Infof("Starting cleaning of tracked files")
+	if j.Input.DryRun {
 		logger.Infof("Running in Dry Mode")
 	}
 
-	j.cleaner.Clean(ctx, file.CleanOptions{
-		Paths:      j.input.Paths,
-		DryRun:     j.input.DryRun,
-		PathFilter: newCleanFilter(instance.Config),
-	}, progress)
+	cfg := config.GetInstance()
+
+	stashPaths := cfg.GetStashPaths()
+	videoFileNamingAlgorithm := cfg.GetVideoFileNamingAlgorithm()
+
+	extensionMatcher := &file.ExtensionMatcher{
+		CreateImageClipsFromVideos: cfg.IsCreateImageClipsFromVideos(),
+		StashPaths:                 stashPaths,
+	}
+
+	cleaner := &file.Cleaner{
+		Paths: j.Input.Paths,
+		Handlers: []file.CleanHandler{
+			&cleanHandler{
+				repository:     j.Repository,
+				sceneService:   j.SceneService,
+				imageService:   j.ImageService,
+				paths:          j.Paths,
+				pluginCache:    j.PluginCache,
+				fileNamingAlgo: videoFileNamingAlgorithm,
+			},
+		},
+		PathFilter: &cleanFilter{
+			stashPaths:        stashPaths,
+			generatedPath:     cfg.GetGeneratedPath(),
+			videoExcludeRegex: generateRegexps(cfg.GetExcludes()),
+			imageExcludeRegex: generateRegexps(cfg.GetImageExcludes()),
+			extensionMatcher:  extensionMatcher,
+		},
+		DryRun:     j.Input.DryRun,
+		Repository: file.NewRepository(j.Repository),
+		FS:         &file.OsFS{},
+	}
+
+	cleaner.Execute(ctx, progress)
 
 	if job.IsCancelled(ctx) {
 		logger.Info("Stopping due to user request")
@@ -51,16 +87,16 @@ func (j *cleanJob) Execute(ctx context.Context, progress *job.Progress) {
 
 	j.cleanEmptyGalleries(ctx)
 
-	j.scanSubs.notify()
+	j.ScanSubs.notify()
 	elapsed := time.Since(start)
 	logger.Info(fmt.Sprintf("Finished Cleaning (%s)", elapsed))
 }
 
-func (j *cleanJob) cleanEmptyGalleries(ctx context.Context) {
+func (j *CleanJob) cleanEmptyGalleries(ctx context.Context) {
 	const batchSize = 1000
 	var toClean []int
 	findFilter := models.BatchFindFilter(batchSize)
-	r := j.repository
+	r := j.Repository
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
 		found := true
 		for found {
@@ -82,7 +118,7 @@ func (j *cleanJob) cleanEmptyGalleries(ctx context.Context) {
 					continue
 				}
 
-				if len(j.input.Paths) > 0 && !fsutil.IsPathInDirs(j.input.Paths, g.Path) {
+				if len(j.Input.Paths) > 0 && !fsutil.IsPathInDirs(j.Input.Paths, g.Path) {
 					continue
 				}
 
@@ -99,17 +135,14 @@ func (j *cleanJob) cleanEmptyGalleries(ctx context.Context) {
 		return
 	}
 
-	if !j.input.DryRun {
+	if !j.Input.DryRun {
 		for _, id := range toClean {
-			j.deleteGallery(ctx, id)
+			j.deleteGallery(ctx, r, id)
 		}
 	}
 }
 
-func (j *cleanJob) deleteGallery(ctx context.Context, id int) {
-	pluginCache := GetInstance().PluginCache
-
-	r := j.repository
+func (j *CleanJob) deleteGallery(ctx context.Context, r models.Repository, id int) {
 	qb := r.Gallery
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
 		g, err := qb.Find(ctx, id)
@@ -129,7 +162,7 @@ func (j *cleanJob) deleteGallery(ctx context.Context, id int) {
 			return err
 		}
 
-		pluginCache.RegisterPostHooks(ctx, id, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
+		j.PluginCache.RegisterPostHooks(ctx, id, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
 			Checksum: g.PrimaryChecksum(),
 			Path:     g.Path,
 		}, nil)
@@ -141,19 +174,11 @@ func (j *cleanJob) deleteGallery(ctx context.Context, id int) {
 }
 
 type cleanFilter struct {
-	scanFilter
-}
-
-func newCleanFilter(c *config.Config) *cleanFilter {
-	return &cleanFilter{
-		scanFilter: scanFilter{
-			extensionConfig:   newExtensionConfig(c),
-			stashPaths:        c.GetStashPaths(),
-			generatedPath:     c.GetGeneratedPath(),
-			videoExcludeRegex: generateRegexps(c.GetExcludes()),
-			imageExcludeRegex: generateRegexps(c.GetImageExcludes()),
-		},
-	}
+	stashPaths        models.StashConfigs
+	generatedPath     string
+	videoExcludeRegex []*regexp.Regexp
+	imageExcludeRegex []*regexp.Regexp
+	extensionMatcher  *file.ExtensionMatcher
 }
 
 func (f *cleanFilter) Accept(ctx context.Context, path string, info fs.FileInfo) bool {
@@ -200,11 +225,11 @@ func (f *cleanFilter) shouldCleanFolder(path string, s *models.StashConfig) bool
 
 func (f *cleanFilter) shouldCleanFile(path string, info fs.FileInfo, stash *models.StashConfig) bool {
 	switch {
-	case info.IsDir() || fsutil.MatchExtension(path, f.zipExt):
+	case info.IsDir() || f.extensionMatcher.IsZip(path):
 		return f.shouldCleanGallery(path, stash)
-	case useAsVideo(path):
+	case f.extensionMatcher.UseAsVideo(path):
 		return f.shouldCleanVideoFile(path, stash)
-	case useAsImage(path):
+	case f.extensionMatcher.UseAsImage(path):
 		return f.shouldCleanImage(path, stash)
 	default:
 		logger.Infof("File extension does not match any media extensions. Marking to clean: \"%s\"", path)
@@ -254,7 +279,15 @@ func (f *cleanFilter) shouldCleanImage(path string, stash *models.StashConfig) b
 	return false
 }
 
-type cleanHandler struct{}
+type cleanHandler struct {
+	repository   models.Repository
+	sceneService SceneService
+	imageService ImageService
+
+	paths          *paths.Paths
+	pluginCache    *plugin.Cache
+	fileNamingAlgo models.HashAlgorithm
+}
 
 func (h *cleanHandler) HandleFile(ctx context.Context, fileDeleter *file.Deleter, fileID models.FileID) error {
 	if err := h.handleRelatedScenes(ctx, fileDeleter, fileID); err != nil {
@@ -275,19 +308,16 @@ func (h *cleanHandler) HandleFolder(ctx context.Context, fileDeleter *file.Delet
 }
 
 func (h *cleanHandler) handleRelatedScenes(ctx context.Context, fileDeleter *file.Deleter, fileID models.FileID) error {
-	mgr := GetInstance()
-	sceneQB := mgr.Repository.Scene
+	sceneQB := h.repository.Scene
 	scenes, err := sceneQB.FindByFileID(ctx, fileID)
 	if err != nil {
 		return err
 	}
 
-	fileNamingAlgo := mgr.Config.GetVideoFileNamingAlgorithm()
-
 	sceneFileDeleter := &scene.FileDeleter{
 		Deleter:        fileDeleter,
-		FileNamingAlgo: fileNamingAlgo,
-		Paths:          mgr.Paths,
+		FileNamingAlgo: h.fileNamingAlgo,
+		Paths:          h.paths,
 	}
 
 	for _, scene := range scenes {
@@ -298,11 +328,11 @@ func (h *cleanHandler) handleRelatedScenes(ctx context.Context, fileDeleter *fil
 		// only delete if the scene has no other files
 		if len(scene.Files.List()) <= 1 {
 			logger.Infof("Deleting scene %q since it has no other related files", scene.DisplayName())
-			if err := mgr.SceneService.Destroy(ctx, scene, sceneFileDeleter, true, false); err != nil {
+			if err := h.sceneService.Destroy(ctx, scene, sceneFileDeleter, true, false); err != nil {
 				return err
 			}
 
-			mgr.PluginCache.RegisterPostHooks(ctx, scene.ID, plugin.SceneDestroyPost, plugin.SceneDestroyInput{
+			h.pluginCache.RegisterPostHooks(ctx, scene.ID, plugin.SceneDestroyPost, plugin.SceneDestroyInput{
 				Checksum: scene.Checksum,
 				OSHash:   scene.OSHash,
 				Path:     scene.Path,
@@ -320,7 +350,7 @@ func (h *cleanHandler) handleRelatedScenes(ctx context.Context, fileDeleter *fil
 			scenePartial := models.NewScenePartial()
 			scenePartial.PrimaryFileID = &newPrimaryID
 
-			if _, err := mgr.Repository.Scene.UpdatePartial(ctx, scene.ID, scenePartial); err != nil {
+			if _, err := h.repository.Scene.UpdatePartial(ctx, scene.ID, scenePartial); err != nil {
 				return err
 			}
 		}
@@ -330,8 +360,7 @@ func (h *cleanHandler) handleRelatedScenes(ctx context.Context, fileDeleter *fil
 }
 
 func (h *cleanHandler) handleRelatedGalleries(ctx context.Context, fileID models.FileID) error {
-	mgr := GetInstance()
-	qb := mgr.Repository.Gallery
+	qb := h.repository.Gallery
 	galleries, err := qb.FindByFileID(ctx, fileID)
 	if err != nil {
 		return err
@@ -349,7 +378,7 @@ func (h *cleanHandler) handleRelatedGalleries(ctx context.Context, fileID models
 				return err
 			}
 
-			mgr.PluginCache.RegisterPostHooks(ctx, g.ID, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
+			h.pluginCache.RegisterPostHooks(ctx, g.ID, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
 				Checksum: g.PrimaryChecksum(),
 				Path:     g.Path,
 			}, nil)
@@ -366,7 +395,7 @@ func (h *cleanHandler) handleRelatedGalleries(ctx context.Context, fileID models
 			galleryPartial := models.NewGalleryPartial()
 			galleryPartial.PrimaryFileID = &newPrimaryID
 
-			if _, err := mgr.Repository.Gallery.UpdatePartial(ctx, g.ID, galleryPartial); err != nil {
+			if _, err := h.repository.Gallery.UpdatePartial(ctx, g.ID, galleryPartial); err != nil {
 				return err
 			}
 		}
@@ -376,8 +405,7 @@ func (h *cleanHandler) handleRelatedGalleries(ctx context.Context, fileID models
 }
 
 func (h *cleanHandler) deleteRelatedFolderGalleries(ctx context.Context, folderID models.FolderID) error {
-	mgr := GetInstance()
-	qb := mgr.Repository.Gallery
+	qb := h.repository.Gallery
 	galleries, err := qb.FindByFolderID(ctx, folderID)
 	if err != nil {
 		return err
@@ -389,7 +417,7 @@ func (h *cleanHandler) deleteRelatedFolderGalleries(ctx context.Context, folderI
 			return err
 		}
 
-		mgr.PluginCache.RegisterPostHooks(ctx, g.ID, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
+		h.pluginCache.RegisterPostHooks(ctx, g.ID, plugin.GalleryDestroyPost, plugin.GalleryDestroyInput{
 			// No checksum for folders
 			// Checksum: g.Checksum(),
 			Path: g.Path,
@@ -400,8 +428,7 @@ func (h *cleanHandler) deleteRelatedFolderGalleries(ctx context.Context, folderI
 }
 
 func (h *cleanHandler) handleRelatedImages(ctx context.Context, fileDeleter *file.Deleter, fileID models.FileID) error {
-	mgr := GetInstance()
-	imageQB := mgr.Repository.Image
+	imageQB := h.repository.Image
 	images, err := imageQB.FindByFileID(ctx, fileID)
 	if err != nil {
 		return err
@@ -409,7 +436,7 @@ func (h *cleanHandler) handleRelatedImages(ctx context.Context, fileDeleter *fil
 
 	imageFileDeleter := &image.FileDeleter{
 		Deleter: fileDeleter,
-		Paths:   mgr.Paths,
+		Paths:   h.paths,
 	}
 
 	for _, i := range images {
@@ -419,11 +446,11 @@ func (h *cleanHandler) handleRelatedImages(ctx context.Context, fileDeleter *fil
 
 		if len(i.Files.List()) <= 1 {
 			logger.Infof("Deleting image %q since it has no other related files", i.DisplayName())
-			if err := mgr.ImageService.Destroy(ctx, i, imageFileDeleter, true, false); err != nil {
+			if err := h.imageService.Destroy(ctx, i, imageFileDeleter, true, false); err != nil {
 				return err
 			}
 
-			mgr.PluginCache.RegisterPostHooks(ctx, i.ID, plugin.ImageDestroyPost, plugin.ImageDestroyInput{
+			h.pluginCache.RegisterPostHooks(ctx, i.ID, plugin.ImageDestroyPost, plugin.ImageDestroyInput{
 				Checksum: i.Checksum,
 				Path:     i.Path,
 			}, nil)
@@ -440,7 +467,7 @@ func (h *cleanHandler) handleRelatedImages(ctx context.Context, fileDeleter *fil
 			imagePartial := models.NewImagePartial()
 			imagePartial.PrimaryFileID = &newPrimaryID
 
-			if _, err := mgr.Repository.Image.UpdatePartial(ctx, i.ID, imagePartial); err != nil {
+			if _, err := h.repository.Image.UpdatePartial(ctx, i.ID, imagePartial); err != nil {
 				return err
 			}
 		}

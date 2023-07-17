@@ -12,67 +12,10 @@ import (
 	"time"
 
 	"github.com/stashapp/stash/internal/identify"
-	"github.com/stashapp/stash/internal/manager/config"
-	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/job"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 )
-
-func useAsVideo(pathname string) bool {
-	config := config.GetInstance()
-	if config.IsCreateImageClipsFromVideos() && config.GetStashPaths().GetStashFromDirPath(pathname).ExcludeVideo {
-		return false
-	}
-	return isVideo(pathname)
-}
-
-func useAsImage(pathname string) bool {
-	config := config.GetInstance()
-	if config.IsCreateImageClipsFromVideos() && config.GetStashPaths().GetStashFromDirPath(pathname).ExcludeVideo {
-		return isImage(pathname) || isVideo(pathname)
-	}
-	return isImage(pathname)
-}
-
-func isZip(pathname string) bool {
-	gExt := config.GetInstance().GetGalleryExtensions()
-	return fsutil.MatchExtension(pathname, gExt)
-}
-
-func isVideo(pathname string) bool {
-	vidExt := config.GetInstance().GetVideoExtensions()
-	return fsutil.MatchExtension(pathname, vidExt)
-}
-
-func isImage(pathname string) bool {
-	imgExt := config.GetInstance().GetImageExtensions()
-	return fsutil.MatchExtension(pathname, imgExt)
-}
-
-func getScanPaths(inputPaths []string) []*models.StashConfig {
-	stashPaths := config.GetInstance().GetStashPaths()
-
-	if len(inputPaths) == 0 {
-		return stashPaths
-	}
-
-	var ret models.StashConfigs
-	for _, p := range inputPaths {
-		s := stashPaths.GetStashFromDirPath(p)
-		if s == nil {
-			logger.Warnf("%s is not in the configured stash paths", p)
-			continue
-		}
-
-		// make a copy, changing the path
-		ss := *s
-		ss.Path = p
-		ret = append(ret, &ss)
-	}
-
-	return ret
-}
 
 // ScanSubscribe subscribes to a notification that is triggered when a
 // scan or clean is complete.
@@ -90,9 +33,8 @@ func (s *Manager) RunSingleTask(ctx context.Context, t Task) int {
 
 func (s *Manager) Scan(ctx context.Context, input models.ScanMetadataInput) (int, error) {
 	scanJob := ScanJob{
-		scanner:       s.Scanner,
-		input:         input,
-		subscriptions: s.scanSubs,
+		Manager: s,
+		Input:   input,
 	}
 
 	return s.JobManager.Add(ctx, "Scanning...", &scanJob), nil
@@ -284,13 +226,14 @@ func (s *Manager) Identify(ctx context.Context, input identify.Options) int {
 }
 
 func (s *Manager) Clean(ctx context.Context, input models.CleanMetadataInput) int {
-	j := cleanJob{
-		cleaner:      s.Cleaner,
-		repository:   s.Repository,
-		sceneService: s.SceneService,
-		imageService: s.ImageService,
-		input:        input,
-		scanSubs:     s.scanSubs,
+	j := CleanJob{
+		Input:        input,
+		Repository:   s.Repository,
+		SceneService: s.SceneService,
+		ImageService: s.ImageService,
+		Paths:        s.Paths,
+		PluginCache:  s.PluginCache,
+		ScanSubs:     s.scanSubs,
 	}
 
 	return s.JobManager.Add(ctx, "Cleaning...", &j)
