@@ -10,12 +10,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 )
 
-type SceneStreamEndpoint struct {
-	URL      string  `json:"url"`
-	MimeType *string `json:"mime_type"`
-	Label    *string `json:"label"`
-}
-
 type endpointType struct {
 	label     string
 	mimeType  string
@@ -75,7 +69,7 @@ func GetVideoFileContainer(file *models.VideoFile) (ffmpeg.Container, error) {
 	return container, nil
 }
 
-func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStreamingTranscodeSize models.StreamingResolutionEnum) ([]*SceneStreamEndpoint, error) {
+func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStreamingTranscodeSize models.StreamingResolutionEnum) ([]*models.SceneStreamEndpoint, error) {
 	if scene == nil {
 		return nil, fmt.Errorf("nil scene")
 	}
@@ -112,7 +106,7 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 		return maxStreamingResolution.GetMinResolution() >= minResolution
 	}
 
-	makeStreamEndpoint := func(t endpointType, resolution models.StreamingResolutionEnum) *SceneStreamEndpoint {
+	makeStreamEndpoint := func(t endpointType, resolution models.StreamingResolutionEnum) *models.SceneStreamEndpoint {
 		url := *directStreamURL
 		url.Path += t.extension
 
@@ -137,14 +131,14 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 			}
 		}
 
-		return &SceneStreamEndpoint{
+		return &models.SceneStreamEndpoint{
 			URL:      url.String(),
 			MimeType: &t.mimeType,
 			Label:    &label,
 		}
 	}
 
-	var endpoints []*SceneStreamEndpoint
+	var endpoints []*models.SceneStreamEndpoint
 
 	// direct stream should only apply when the audio codec is supported
 	audioCodec := ffmpeg.MissingUnsupported
@@ -164,10 +158,10 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 		endpoints = append(endpoints, makeStreamEndpoint(mkvEndpointType, ""))
 	}
 
-	mp4Streams := []*SceneStreamEndpoint{}
-	webmStreams := []*SceneStreamEndpoint{}
-	hlsStreams := []*SceneStreamEndpoint{}
-	dashStreams := []*SceneStreamEndpoint{}
+	mp4Streams := []*models.SceneStreamEndpoint{}
+	webmStreams := []*models.SceneStreamEndpoint{}
+	hlsStreams := []*models.SceneStreamEndpoint{}
+	dashStreams := []*models.SceneStreamEndpoint{}
 
 	if includeSceneStreamPath(models.StreamingResolutionEnumOriginal) {
 		mp4Streams = append(mp4Streams, makeStreamEndpoint(mp4EndpointType, models.StreamingResolutionEnumOriginal))

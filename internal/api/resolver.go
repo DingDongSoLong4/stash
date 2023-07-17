@@ -9,7 +9,6 @@ import (
 
 	"github.com/stashapp/stash/internal/build"
 	"github.com/stashapp/stash/internal/manager"
-	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
@@ -33,7 +32,7 @@ type resolverConfig interface {
 	GetAPIKey() string
 	GetVideoFileNamingAlgorithm() models.HashAlgorithm
 	GetMaxStreamingTranscodeSize() models.StreamingResolutionEnum
-	GetStashPaths() config.StashConfigs
+	GetStashPaths() models.StashConfigs
 	GetStashBoxes() []*models.StashBox
 	GetVideoExtensions() []string
 	GetImageExtensions() []string

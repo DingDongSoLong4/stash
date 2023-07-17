@@ -284,3 +284,9 @@ type VideoCaption struct {
 func (c VideoCaption) Path(filePath string) string {
 	return filepath.Join(filepath.Dir(filePath), c.Filename)
 }
+
+type SceneStreamEndpoint struct {
+	URL      string  `json:"url"`
+	MimeType *string `json:"mime_type"`
+	Label    *string `json:"label"`
+}

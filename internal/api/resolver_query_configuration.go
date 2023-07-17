@@ -242,7 +242,7 @@ func makeConfigUIResult() map[string]interface{} {
 	return config.GetInstance().GetUIConfiguration()
 }
 
-func (r *queryResolver) ValidateStashBoxCredentials(ctx context.Context, input config.StashBoxInput) (*StashBoxValidationResult, error) {
+func (r *queryResolver) ValidateStashBoxCredentials(ctx context.Context, input models.StashBoxInput) (*StashBoxValidationResult, error) {
 	box := models.StashBox{Endpoint: input.Endpoint, APIKey: input.APIKey}
 	client := stashbox.NewClient(box, r.stashboxRepository())
 

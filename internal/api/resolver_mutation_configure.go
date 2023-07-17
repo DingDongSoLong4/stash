@@ -16,12 +16,12 @@ import (
 
 var ErrOverriddenConfig = errors.New("cannot set overridden value")
 
-func (r *mutationResolver) Setup(ctx context.Context, input manager.SetupInput) (bool, error) {
+func (r *mutationResolver) Setup(ctx context.Context, input models.SetupInput) (bool, error) {
 	err := r.manager.Setup(ctx, input)
 	return err == nil, err
 }
 
-func (r *mutationResolver) Migrate(ctx context.Context, input manager.MigrateInput) (bool, error) {
+func (r *mutationResolver) Migrate(ctx context.Context, input models.MigrateInput) (bool, error) {
 	err := r.manager.Migrate(ctx, input)
 	return err == nil, err
 }
@@ -146,7 +146,7 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 	}
 
 	if input.BlobsStorage != nil && *input.BlobsStorage != c.GetBlobsStorage() {
-		if *input.BlobsStorage == config.BlobStorageTypeFilesystem && c.GetBlobsPath() == "" {
+		if *input.BlobsStorage == models.BlobStorageTypeFilesystem && c.GetBlobsPath() == "" {
 			return makeConfigGeneralResult(), fmt.Errorf("blobs path must be set when using filesystem storage")
 		}
 

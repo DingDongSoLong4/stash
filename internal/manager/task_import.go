@@ -36,7 +36,7 @@ type ImportTask struct {
 	BaseDir             string
 	TmpZip              string
 	Reset               bool
-	DuplicateBehaviour  ImportDuplicateEnum
+	DuplicateBehaviour  models.ImportDuplicateEnum
 	MissingRefBehaviour models.ImportMissingRefEnum
 
 	fileNamingAlgorithm models.HashAlgorithm
@@ -67,7 +67,7 @@ func (t *ImportTask) Start(ctx context.Context) {
 
 	// set default behaviour if not provided
 	if !t.DuplicateBehaviour.IsValid() {
-		t.DuplicateBehaviour = ImportDuplicateEnumFail
+		t.DuplicateBehaviour = models.ImportDuplicateEnumFail
 	}
 	if !t.MissingRefBehaviour.IsValid() {
 		t.MissingRefBehaviour = models.ImportMissingRefEnumFail
@@ -395,7 +395,7 @@ func (t *ImportTask) importFile(ctx context.Context, fileJSON jsonschema.DirEntr
 	}
 
 	// ignore duplicate files - don't overwrite
-	if err := performImport(ctx, fileImporter, ImportDuplicateEnumIgnore); err != nil {
+	if err := performImport(ctx, fileImporter, models.ImportDuplicateEnumIgnore); err != nil {
 		return err
 	}
 

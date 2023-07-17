@@ -30,7 +30,7 @@ type scanner interface {
 
 type ScanJob struct {
 	scanner       scanner
-	input         ScanMetadataInput
+	input         models.ScanMetadataInput
 	subscriptions *subscriptionManager
 }
 
@@ -212,7 +212,7 @@ func (f *handlerRequiredFilter) Accept(ctx context.Context, ff models.File) bool
 type scanFilter struct {
 	extensionConfig
 	repository        models.Repository
-	stashPaths        config.StashConfigs
+	stashPaths        models.StashConfigs
 	generatedPath     string
 	videoExcludeRegex []*regexp.Regexp
 	imageExcludeRegex []*regexp.Regexp
@@ -304,7 +304,7 @@ func galleryFileFilter(ctx context.Context, f models.File) bool {
 	return isZip(f.Base().Basename)
 }
 
-func getScanHandlers(options ScanMetadataInput, taskQueue *job.TaskQueue, progress *job.Progress) []file.Handler {
+func getScanHandlers(options models.ScanMetadataInput, taskQueue *job.TaskQueue, progress *job.Progress) []file.Handler {
 	mgr := GetInstance()
 	c := mgr.Config
 	repo := mgr.Repository
@@ -359,7 +359,7 @@ func getScanHandlers(options ScanMetadataInput, taskQueue *job.TaskQueue, progre
 }
 
 type imageGenerators struct {
-	input     ScanMetadataInput
+	input     models.ScanMetadataInput
 	taskQueue *job.TaskQueue
 	progress  *job.Progress
 
@@ -459,7 +459,7 @@ func (g *imageGenerators) generateThumbnail(ctx context.Context, i *models.Image
 }
 
 type sceneGenerators struct {
-	input     ScanMetadataInput
+	input     models.ScanMetadataInput
 	taskQueue *job.TaskQueue
 	progress  *job.Progress
 
@@ -519,7 +519,7 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 	if t.ScanGeneratePreviews {
 		progress.AddTotal(1)
 		previewsFn := func(ctx context.Context) {
-			options := getGeneratePreviewOptions(GeneratePreviewOptionsInput{})
+			options := getGeneratePreviewOptions(models.GeneratePreviewOptionsInput{})
 
 			generator := &generate.Generator{
 				Encoder:      mgr.FFMpeg,

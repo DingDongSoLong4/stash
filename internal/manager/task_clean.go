@@ -25,7 +25,7 @@ type cleaner interface {
 type cleanJob struct {
 	cleaner      cleaner
 	repository   models.Repository
-	input        CleanMetadataInput
+	input        models.CleanMetadataInput
 	sceneService SceneService
 	imageService ImageService
 	scanSubs     *subscriptionManager
@@ -160,7 +160,7 @@ func (f *cleanFilter) Accept(ctx context.Context, path string, info fs.FileInfo)
 	//  #1102 - clean anything in generated path
 	generatedPath := f.generatedPath
 
-	var stash *config.StashConfig
+	var stash *models.StashConfig
 	fileOrFolder := "File"
 
 	if info.IsDir() {
@@ -187,7 +187,7 @@ func (f *cleanFilter) Accept(ctx context.Context, path string, info fs.FileInfo)
 	return !f.shouldCleanFile(path, info, stash)
 }
 
-func (f *cleanFilter) shouldCleanFolder(path string, s *config.StashConfig) bool {
+func (f *cleanFilter) shouldCleanFolder(path string, s *models.StashConfig) bool {
 	// only delete folders where it is excluded from everything
 	pathExcludeTest := path + string(filepath.Separator)
 	if (s.ExcludeVideo || matchFileRegex(pathExcludeTest, f.videoExcludeRegex)) && (s.ExcludeImage || matchFileRegex(pathExcludeTest, f.imageExcludeRegex)) {
@@ -198,7 +198,7 @@ func (f *cleanFilter) shouldCleanFolder(path string, s *config.StashConfig) bool
 	return false
 }
 
-func (f *cleanFilter) shouldCleanFile(path string, info fs.FileInfo, stash *config.StashConfig) bool {
+func (f *cleanFilter) shouldCleanFile(path string, info fs.FileInfo, stash *models.StashConfig) bool {
 	switch {
 	case info.IsDir() || fsutil.MatchExtension(path, f.zipExt):
 		return f.shouldCleanGallery(path, stash)
@@ -212,7 +212,7 @@ func (f *cleanFilter) shouldCleanFile(path string, info fs.FileInfo, stash *conf
 	}
 }
 
-func (f *cleanFilter) shouldCleanVideoFile(path string, stash *config.StashConfig) bool {
+func (f *cleanFilter) shouldCleanVideoFile(path string, stash *models.StashConfig) bool {
 	if stash.ExcludeVideo {
 		logger.Infof("File in stash library that excludes video. Marking to clean: \"%s\"", path)
 		return true
@@ -226,7 +226,7 @@ func (f *cleanFilter) shouldCleanVideoFile(path string, stash *config.StashConfi
 	return false
 }
 
-func (f *cleanFilter) shouldCleanGallery(path string, stash *config.StashConfig) bool {
+func (f *cleanFilter) shouldCleanGallery(path string, stash *models.StashConfig) bool {
 	if stash.ExcludeImage {
 		logger.Infof("File in stash library that excludes images. Marking to clean: \"%s\"", path)
 		return true
@@ -240,7 +240,7 @@ func (f *cleanFilter) shouldCleanGallery(path string, stash *config.StashConfig)
 	return false
 }
 
-func (f *cleanFilter) shouldCleanImage(path string, stash *config.StashConfig) bool {
+func (f *cleanFilter) shouldCleanImage(path string, stash *models.StashConfig) bool {
 	if stash.ExcludeImage {
 		logger.Infof("File in stash library that excludes images. Marking to clean: \"%s\"", path)
 		return true

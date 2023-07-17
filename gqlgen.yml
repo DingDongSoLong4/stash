@@ -63,62 +63,11 @@ models:
       # override fingerprint field
       fingerprints:
         fieldName: FingerprintSlice
-  # autobind on config causes generation issues
-  BlobsStorageType:
-    model: github.com/stashapp/stash/internal/manager/config.BlobsStorageType
-  StashConfig:
-    model: github.com/stashapp/stash/internal/manager/config.StashConfig
-  StashConfigInput:
-    model: github.com/stashapp/stash/internal/manager/config.StashConfigInput
-  StashBoxInput:
-    model: github.com/stashapp/stash/internal/manager/config.StashBoxInput
-  ConfigImageLightboxResult:
-    model: github.com/stashapp/stash/internal/manager/config.ConfigImageLightboxResult
-  ImageLightboxDisplayMode:
-    model: github.com/stashapp/stash/internal/manager/config.ImageLightboxDisplayMode
-  ImageLightboxScrollMode:
-    model: github.com/stashapp/stash/internal/manager/config.ImageLightboxScrollMode
-  ConfigDisableDropdownCreate:
-    model: github.com/stashapp/stash/internal/manager/config.ConfigDisableDropdownCreate
-  ScanMetadataOptions:
-    model:  github.com/stashapp/stash/internal/manager/config.ScanMetadataOptions
-  AutoTagMetadataOptions:
-    model: github.com/stashapp/stash/internal/manager/config.AutoTagMetadataOptions
-  SystemStatus:
-    model: github.com/stashapp/stash/internal/manager.SystemStatus
-  SystemStatusEnum:
-    model: github.com/stashapp/stash/internal/manager.SystemStatusEnum
-  ImportDuplicateEnum:
-    model: github.com/stashapp/stash/internal/manager.ImportDuplicateEnum
-  SetupInput:
-    model: github.com/stashapp/stash/internal/manager.SetupInput
-  MigrateInput:
-    model: github.com/stashapp/stash/internal/manager.MigrateInput
-  ScanMetadataInput:
-    model: github.com/stashapp/stash/internal/manager.ScanMetadataInput
-  GenerateMetadataInput:
-    model: github.com/stashapp/stash/internal/manager.GenerateMetadataInput
-  GeneratePreviewOptionsInput:
-    model: github.com/stashapp/stash/internal/manager.GeneratePreviewOptionsInput
-  AutoTagMetadataInput:
-    model: github.com/stashapp/stash/internal/manager.AutoTagMetadataInput
-  CleanMetadataInput:
-    model: github.com/stashapp/stash/internal/manager.CleanMetadataInput
-  StashBoxBatchPerformerTagInput:
-    model: github.com/stashapp/stash/internal/manager.StashBoxBatchPerformerTagInput
-  SceneStreamEndpoint:
-    model: github.com/stashapp/stash/internal/manager.SceneStreamEndpoint
-  ExportObjectTypeInput:
-    model: github.com/stashapp/stash/internal/manager.ExportObjectTypeInput
-  ExportObjectsInput:
-    model: github.com/stashapp/stash/internal/manager.ExportObjectsInput
-  ImportObjectsInput:
-    model: github.com/stashapp/stash/internal/manager.ImportObjectsInput
-  ScanMetaDataFilterInput:
-    model: github.com/stashapp/stash/internal/manager.ScanMetaDataFilterInput
   # renamed types
   BulkUpdateIdMode:
     model: github.com/stashapp/stash/pkg/models.RelationshipUpdateMode
+  ScanMetaDataFilterInput:
+    model: github.com/stashapp/stash/pkg/models.ScanMetadataFilterInput
   DLNAStatus:
     model: github.com/stashapp/stash/internal/dlna.Status
   DLNAIP:

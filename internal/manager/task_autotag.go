@@ -20,7 +20,7 @@ import (
 
 type autoTagJob struct {
 	repository models.Repository
-	input      AutoTagMetadataInput
+	input      models.AutoTagMetadataInput
 
 	cache match.Cache
 }
@@ -40,7 +40,7 @@ func (j *autoTagJob) Execute(ctx context.Context, progress *job.Progress) {
 	logger.Infof("Finished auto-tag after %s", time.Since(begin).String())
 }
 
-func (j *autoTagJob) isFileBasedAutoTag(input AutoTagMetadataInput) bool {
+func (j *autoTagJob) isFileBasedAutoTag(input models.AutoTagMetadataInput) bool {
 	const wildcard = "*"
 	performerIds := input.Performers
 	studioIds := input.Studios

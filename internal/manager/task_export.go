@@ -39,6 +39,7 @@ type ExportTask struct {
 
 	fileNamingAlgorithm models.HashAlgorithm
 
+	input      models.ExportObjectsInput
 	scenes     *exportSpec
 	images     *exportSpec
 	performers *exportSpec
@@ -52,28 +53,12 @@ type ExportTask struct {
 	DownloadHash string
 }
 
-type ExportObjectTypeInput struct {
-	Ids []string `json:"ids"`
-	All *bool    `json:"all"`
-}
-
-type ExportObjectsInput struct {
-	Scenes              *ExportObjectTypeInput `json:"scenes"`
-	Images              *ExportObjectTypeInput `json:"images"`
-	Studios             *ExportObjectTypeInput `json:"studios"`
-	Performers          *ExportObjectTypeInput `json:"performers"`
-	Tags                *ExportObjectTypeInput `json:"tags"`
-	Movies              *ExportObjectTypeInput `json:"movies"`
-	Galleries           *ExportObjectTypeInput `json:"galleries"`
-	IncludeDependencies *bool                  `json:"includeDependencies"`
-}
-
 type exportSpec struct {
 	IDs []int
 	all bool
 }
 
-func newExportSpec(input *ExportObjectTypeInput) *exportSpec {
+func newExportSpec(input *models.ExportObjectTypeInput) *exportSpec {
 	if input == nil {
 		return &exportSpec{}
 	}
@@ -96,6 +81,14 @@ func (t *ExportTask) Start(ctx context.Context) {
 	workerCount := runtime.GOMAXPROCS(0) // set worker count to number of cpus available
 
 	startTime := time.Now()
+
+	t.scenes = newExportSpec(t.input.Scenes)
+	t.images = newExportSpec(t.input.Images)
+	t.performers = newExportSpec(t.input.Performers)
+	t.movies = newExportSpec(t.input.Movies)
+	t.tags = newExportSpec(t.input.Tags)
+	t.studios = newExportSpec(t.input.Studios)
+	t.galleries = newExportSpec(t.input.Galleries)
 
 	if t.full {
 		t.baseDir = config.GetInstance().GetMetadataPath()

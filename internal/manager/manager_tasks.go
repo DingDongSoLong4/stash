@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
-
 	"github.com/stashapp/stash/internal/identify"
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/fsutil"
@@ -52,14 +50,14 @@ func isImage(pathname string) bool {
 	return fsutil.MatchExtension(pathname, imgExt)
 }
 
-func getScanPaths(inputPaths []string) []*config.StashConfig {
+func getScanPaths(inputPaths []string) []*models.StashConfig {
 	stashPaths := config.GetInstance().GetStashPaths()
 
 	if len(inputPaths) == 0 {
 		return stashPaths
 	}
 
-	var ret config.StashConfigs
+	var ret models.StashConfigs
 	for _, p := range inputPaths {
 		s := stashPaths.GetStashFromDirPath(p)
 		if s == nil {
@@ -90,22 +88,7 @@ func (s *Manager) RunSingleTask(ctx context.Context, t Task) int {
 	return s.JobManager.Add(ctx, t.GetDescription(), j)
 }
 
-type ScanMetadataInput struct {
-	Paths []string `json:"paths"`
-
-	config.ScanMetadataOptions `mapstructure:",squash"`
-
-	// Filter options for the scan
-	Filter *ScanMetaDataFilterInput `json:"filter"`
-}
-
-// Filter options for meta data scannning
-type ScanMetaDataFilterInput struct {
-	// If set, files with a modification time before this time point are ignored by the scan
-	MinModTime *time.Time `json:"minModTime"`
-}
-
-func (s *Manager) Scan(ctx context.Context, input ScanMetadataInput) (int, error) {
+func (s *Manager) Scan(ctx context.Context, input models.ScanMetadataInput) (int, error) {
 	scanJob := ScanJob{
 		scanner:       s.Scanner,
 		input:         input,
@@ -126,7 +109,7 @@ func (s *Manager) Import(ctx context.Context) (int, error) {
 		resetter:            s.Database,
 		BaseDir:             metadataPath,
 		Reset:               true,
-		DuplicateBehaviour:  ImportDuplicateEnumFail,
+		DuplicateBehaviour:  models.ImportDuplicateEnumFail,
 		MissingRefBehaviour: models.ImportMissingRefEnumFail,
 		fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
 	}
@@ -134,13 +117,7 @@ func (s *Manager) Import(ctx context.Context) (int, error) {
 	return s.RunSingleTask(ctx, &t), nil
 }
 
-type ImportObjectsInput struct {
-	File                graphql.Upload              `json:"file"`
-	DuplicateBehaviour  ImportDuplicateEnum         `json:"duplicateBehaviour"`
-	MissingRefBehaviour models.ImportMissingRefEnum `json:"missingRefBehaviour"`
-}
-
-func (s *Manager) ImportObjects(ctx context.Context, input ImportObjectsInput) (int, error) {
+func (s *Manager) ImportObjects(ctx context.Context, input models.ImportObjectsInput) (int, error) {
 	baseDir, err := s.Paths.Generated.TempDir("import")
 	if err != nil {
 		logger.Errorf("error creating temporary directory for import: %s", err.Error())
@@ -194,7 +171,7 @@ func (s *Manager) Export(ctx context.Context) (int, error) {
 	return s.JobManager.Add(ctx, "Exporting...", j), nil
 }
 
-func (s *Manager) ExportObjects(ctx context.Context, input ExportObjectsInput, baseURL string) (*string, error) {
+func (s *Manager) ExportObjects(ctx context.Context, input models.ExportObjectsInput, baseURL string) (*string, error) {
 	includeDeps := false
 	if input.IncludeDependencies != nil {
 		includeDeps = *input.IncludeDependencies
@@ -203,13 +180,7 @@ func (s *Manager) ExportObjects(ctx context.Context, input ExportObjectsInput, b
 	t := ExportTask{
 		repository:          s.Repository,
 		fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
-		scenes:              newExportSpec(input.Scenes),
-		images:              newExportSpec(input.Images),
-		performers:          newExportSpec(input.Performers),
-		movies:              newExportSpec(input.Movies),
-		tags:                newExportSpec(input.Tags),
-		studios:             newExportSpec(input.Studios),
-		galleries:           newExportSpec(input.Galleries),
+		input:               input,
 		includeDependencies: includeDeps,
 	}
 
@@ -225,7 +196,7 @@ func (s *Manager) ExportObjects(ctx context.Context, input ExportObjectsInput, b
 	return nil, nil
 }
 
-func (s *Manager) Generate(ctx context.Context, input GenerateMetadataInput) (int, error) {
+func (s *Manager) Generate(ctx context.Context, input models.GenerateMetadataInput) (int, error) {
 	if err := s.Paths.Generated.EnsureTmpDir(); err != nil {
 		logger.Warnf("could not generate temporary directory: %v", err)
 	}
@@ -290,18 +261,7 @@ func (s *Manager) generateScreenshot(ctx context.Context, sceneId string, at *fl
 	return s.JobManager.Add(ctx, fmt.Sprintf("Generating screenshot for scene id %s", sceneId), j)
 }
 
-type AutoTagMetadataInput struct {
-	// Paths to tag, null for all files
-	Paths []string `json:"paths"`
-	// IDs of performers to tag files with, or "*" for all
-	Performers []string `json:"performers"`
-	// IDs of studios to tag files with, or "*" for all
-	Studios []string `json:"studios"`
-	// IDs of tags to tag files with, or "*" for all
-	Tags []string `json:"tags"`
-}
-
-func (s *Manager) AutoTag(ctx context.Context, input AutoTagMetadataInput) int {
+func (s *Manager) AutoTag(ctx context.Context, input models.AutoTagMetadataInput) int {
 	j := autoTagJob{
 		repository: s.Repository,
 		input:      input,
@@ -323,13 +283,7 @@ func (s *Manager) Identify(ctx context.Context, input identify.Options) int {
 	return s.JobManager.Add(ctx, "Identifying...", &j)
 }
 
-type CleanMetadataInput struct {
-	Paths []string `json:"paths"`
-	// Do a dry run. Don't delete any files
-	DryRun bool `json:"dryRun"`
-}
-
-func (s *Manager) Clean(ctx context.Context, input CleanMetadataInput) int {
+func (s *Manager) Clean(ctx context.Context, input models.CleanMetadataInput) int {
 	j := cleanJob{
 		cleaner:      s.Cleaner,
 		repository:   s.Repository,
@@ -390,21 +344,7 @@ func (s *Manager) MigrateHash(ctx context.Context) int {
 	return s.JobManager.Add(ctx, "Migrating scene hashes...", j)
 }
 
-// If neither performer_ids nor performer_names are set, tag all performers
-type StashBoxBatchPerformerTagInput struct {
-	// Stash endpoint to use for the performer tagging
-	Endpoint int `json:"endpoint"`
-	// Fields to exclude when executing the performer tagging
-	ExcludeFields []string `json:"exclude_fields"`
-	// Refresh performers already tagged by StashBox if true. Only tag performers with no StashBox tagging if false
-	Refresh bool `json:"refresh"`
-	// If set, only tag these performer ids
-	PerformerIds []string `json:"performer_ids"`
-	// If set, only tag these performer names
-	PerformerNames []string `json:"performer_names"`
-}
-
-func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input StashBoxBatchPerformerTagInput) int {
+func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.StashBoxBatchPerformerTagInput) int {
 	j := job.MakeJobExec(func(ctx context.Context, progress *job.Progress) {
 		logger.Infof("Initiating stash-box batch performer tag")
 

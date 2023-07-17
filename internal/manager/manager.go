@@ -78,8 +78,8 @@ func (s *Manager) SetBlobStoreOptions() {
 	blobsPath := s.Config.GetBlobsPath()
 
 	s.Database.SetBlobStoreOptions(sqlite.BlobStoreOptions{
-		UseFilesystem: storageType == config.BlobStorageTypeFilesystem,
-		UseDatabase:   storageType == config.BlobStorageTypeDatabase,
+		UseFilesystem: storageType == models.BlobStorageTypeFilesystem,
+		UseDatabase:   storageType == models.BlobStorageTypeDatabase,
 		Path:          blobsPath,
 	})
 }
@@ -146,7 +146,7 @@ func (s *Manager) RefreshDLNA() {
 	}
 }
 
-func setSetupDefaults(input *SetupInput) {
+func setSetupDefaults(input *models.SetupInput) {
 	if input.ConfigLocation == "" {
 		input.ConfigLocation = filepath.Join(fsutil.GetHomeDirectory(), ".stash", "config.yml")
 	}
@@ -164,7 +164,7 @@ func setSetupDefaults(input *SetupInput) {
 	}
 }
 
-func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
+func (s *Manager) Setup(ctx context.Context, input models.SetupInput) error {
 	setSetupDefaults(&input)
 	c := s.Config
 
@@ -225,9 +225,9 @@ func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
 		}
 
 		s.Config.Set(config.BlobsPath, input.BlobsLocation)
-		s.Config.Set(config.BlobsStorage, config.BlobStorageTypeFilesystem)
+		s.Config.Set(config.BlobsStorage, models.BlobStorageTypeFilesystem)
 	} else {
-		s.Config.Set(config.BlobsStorage, config.BlobStorageTypeDatabase)
+		s.Config.Set(config.BlobsStorage, models.BlobStorageTypeDatabase)
 	}
 
 	// set the configuration
@@ -255,7 +255,7 @@ func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
 	return nil
 }
 
-func (s *Manager) Migrate(ctx context.Context, input MigrateInput) error {
+func (s *Manager) Migrate(ctx context.Context, input models.MigrateInput) error {
 	database := s.Database
 
 	// always backup so that we can roll back to the previous version if
@@ -376,21 +376,21 @@ func (s *Manager) AnonymiseDatabase(download bool) (string, string, error) {
 	return outPath, outName, nil
 }
 
-func (s *Manager) GetSystemStatus() *SystemStatus {
+func (s *Manager) GetSystemStatus() *models.SystemStatus {
 	database := s.Database
-	status := SystemStatusEnumOk
+	status := models.SystemStatusEnumOk
 	dbSchema := int(database.Version())
 	dbPath := database.DatabasePath()
 	appSchema := int(database.AppSchemaVersion())
 	configFile := s.Config.GetConfigFile()
 
 	if s.Config.IsNewSystem() {
-		status = SystemStatusEnumSetup
+		status = models.SystemStatusEnumSetup
 	} else if dbSchema < appSchema {
-		status = SystemStatusEnumNeedsMigration
+		status = models.SystemStatusEnumNeedsMigration
 	}
 
-	return &SystemStatus{
+	return &models.SystemStatus{
 		DatabaseSchema: &dbSchema,
 		DatabasePath:   &dbPath,
 		AppSchema:      appSchema,

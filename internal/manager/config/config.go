@@ -516,11 +516,11 @@ func (i *Config) getStringMapString(key string) map[string]string {
 // GetStathPaths returns the configured stash library paths.
 // Works opposite to the usual case - it will return the override
 // value only if the main value is not set.
-func (i *Config) GetStashPaths() StashConfigs {
+func (i *Config) GetStashPaths() models.StashConfigs {
 	i.RLock()
 	defer i.RUnlock()
 
-	var ret StashConfigs
+	var ret models.StashConfigs
 
 	v := i.main
 	if !v.IsSet(Stash) {
@@ -532,7 +532,7 @@ func (i *Config) GetStashPaths() StashConfigs {
 		ss := v.GetStringSlice(Stash)
 		ret = nil
 		for _, path := range ss {
-			toAdd := &StashConfig{
+			toAdd := &models.StashConfig{
 				Path: path,
 			}
 			ret = append(ret, toAdd)
@@ -554,13 +554,13 @@ func (i *Config) GetBlobsPath() string {
 	return i.getString(BlobsPath)
 }
 
-func (i *Config) GetBlobsStorage() BlobsStorageType {
-	ret := BlobsStorageType(i.getString(BlobsStorage))
+func (i *Config) GetBlobsStorage() models.BlobsStorageType {
+	ret := models.BlobsStorageType(i.getString(BlobsStorage))
 
 	if !ret.IsValid() {
 		// default to database storage
 		// for legacy systems this is probably the safer option
-		ret = BlobStorageTypeDatabase
+		ret = models.BlobStorageTypeDatabase
 	}
 
 	return ret
@@ -923,13 +923,7 @@ func (i *Config) ValidateCredentials(username string, password string) bool {
 
 var stashBoxRe = regexp.MustCompile("^http.*graphql$")
 
-type StashBoxInput struct {
-	Endpoint string `json:"endpoint"`
-	APIKey   string `json:"api_key"`
-	Name     string `json:"name"`
-}
-
-func (i *Config) ValidateStashBoxes(boxes []*StashBoxInput) error {
+func (i *Config) ValidateStashBoxes(boxes []*models.StashBoxInput) error {
 	isMulti := len(boxes) > 1
 
 	for _, box := range boxes {
@@ -1065,18 +1059,18 @@ func (i *Config) getSlideshowDelay() int {
 	return ret
 }
 
-func (i *Config) GetImageLightboxOptions() ConfigImageLightboxResult {
+func (i *Config) GetImageLightboxOptions() models.ConfigImageLightboxResult {
 	i.RLock()
 	defer i.RUnlock()
 
 	delay := i.getSlideshowDelay()
 
-	ret := ConfigImageLightboxResult{
+	ret := models.ConfigImageLightboxResult{
 		SlideshowDelay: &delay,
 	}
 
 	if v := i.viperWith(ImageLightboxDisplayModeKey); v != nil {
-		mode := ImageLightboxDisplayMode(v.GetString(ImageLightboxDisplayModeKey))
+		mode := models.ImageLightboxDisplayMode(v.GetString(ImageLightboxDisplayModeKey))
 		ret.DisplayMode = &mode
 	}
 	if v := i.viperWith(ImageLightboxScaleUp); v != nil {
@@ -1088,7 +1082,7 @@ func (i *Config) GetImageLightboxOptions() ConfigImageLightboxResult {
 		ret.ResetZoomOnNav = &value
 	}
 	if v := i.viperWith(ImageLightboxScrollModeKey); v != nil {
-		mode := ImageLightboxScrollMode(v.GetString(ImageLightboxScrollModeKey))
+		mode := models.ImageLightboxScrollMode(v.GetString(ImageLightboxScrollModeKey))
 		ret.ScrollMode = &mode
 	}
 	if v := i.viperWith(ImageLightboxScrollAttemptsBeforeChange); v != nil {
@@ -1098,8 +1092,8 @@ func (i *Config) GetImageLightboxOptions() ConfigImageLightboxResult {
 	return ret
 }
 
-func (i *Config) GetDisableDropdownCreate() *ConfigDisableDropdownCreate {
-	return &ConfigDisableDropdownCreate{
+func (i *Config) GetDisableDropdownCreate() *models.ConfigDisableDropdownCreate {
+	return &models.ConfigDisableDropdownCreate{
 		Performer: i.getBool(DisableDropdownCreatePerformer),
 		Studio:    i.getBool(DisableDropdownCreateStudio),
 		Tag:       i.getBool(DisableDropdownCreateTag),
@@ -1297,13 +1291,13 @@ func (i *Config) GetDefaultIdentifySettings() *identify.Options {
 // GetDefaultScanSettings returns the default Scan task settings.
 // Returns nil if the settings could not be unmarshalled, or if it
 // has not been set.
-func (i *Config) GetDefaultScanSettings() *ScanMetadataOptions {
+func (i *Config) GetDefaultScanSettings() *models.ScanMetadataOptions {
 	i.RLock()
 	defer i.RUnlock()
 	v := i.viper(DefaultScanSettings)
 
 	if v.IsSet(DefaultScanSettings) {
-		var ret ScanMetadataOptions
+		var ret models.ScanMetadataOptions
 		if err := v.UnmarshalKey(DefaultScanSettings, &ret); err != nil {
 			return nil
 		}
@@ -1316,13 +1310,13 @@ func (i *Config) GetDefaultScanSettings() *ScanMetadataOptions {
 // GetDefaultAutoTagSettings returns the default Scan task settings.
 // Returns nil if the settings could not be unmarshalled, or if it
 // has not been set.
-func (i *Config) GetDefaultAutoTagSettings() *AutoTagMetadataOptions {
+func (i *Config) GetDefaultAutoTagSettings() *models.AutoTagMetadataOptions {
 	i.RLock()
 	defer i.RUnlock()
 	v := i.viper(DefaultAutoTagSettings)
 
 	if v.IsSet(DefaultAutoTagSettings) {
-		var ret AutoTagMetadataOptions
+		var ret models.AutoTagMetadataOptions
 		if err := v.UnmarshalKey(DefaultAutoTagSettings, &ret); err != nil {
 			return nil
 		}
@@ -1492,7 +1486,7 @@ func (i *Config) Validate() error {
 		}
 	}
 
-	if i.GetBlobsStorage() == BlobStorageTypeFilesystem && i.viper(BlobsPath).GetString(BlobsPath) == "" {
+	if i.GetBlobsStorage() == models.BlobStorageTypeFilesystem && i.viper(BlobsPath).GetString(BlobsPath) == "" {
 		return MissingConfigError{
 			missingFields: []string{BlobsPath},
 		}

@@ -6,11 +6,11 @@ import (
 	"strconv"
 
 	"github.com/stashapp/stash/internal/identify"
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/logger"
+	"github.com/stashapp/stash/pkg/models"
 )
 
-func (r *mutationResolver) MetadataScan(ctx context.Context, input manager.ScanMetadataInput) (string, error) {
+func (r *mutationResolver) MetadataScan(ctx context.Context, input models.ScanMetadataInput) (string, error) {
 	jobID, err := r.manager.Scan(ctx, input)
 
 	if err != nil {
@@ -29,7 +29,7 @@ func (r *mutationResolver) MetadataImport(ctx context.Context) (string, error) {
 	return strconv.Itoa(jobID), nil
 }
 
-func (r *mutationResolver) ImportObjects(ctx context.Context, input manager.ImportObjectsInput) (string, error) {
+func (r *mutationResolver) ImportObjects(ctx context.Context, input models.ImportObjectsInput) (string, error) {
 	jobID, err := r.manager.ImportObjects(ctx, input)
 	if err != nil {
 		return "", err
@@ -47,13 +47,13 @@ func (r *mutationResolver) MetadataExport(ctx context.Context) (string, error) {
 	return strconv.Itoa(jobID), nil
 }
 
-func (r *mutationResolver) ExportObjects(ctx context.Context, input manager.ExportObjectsInput) (*string, error) {
+func (r *mutationResolver) ExportObjects(ctx context.Context, input models.ExportObjectsInput) (*string, error) {
 	baseURL, _ := ctx.Value(BaseURLCtxKey).(string)
 
 	return r.manager.ExportObjects(ctx, input, baseURL)
 }
 
-func (r *mutationResolver) MetadataGenerate(ctx context.Context, input manager.GenerateMetadataInput) (string, error) {
+func (r *mutationResolver) MetadataGenerate(ctx context.Context, input models.GenerateMetadataInput) (string, error) {
 	jobID, err := r.manager.Generate(ctx, input)
 
 	if err != nil {
@@ -63,7 +63,7 @@ func (r *mutationResolver) MetadataGenerate(ctx context.Context, input manager.G
 	return strconv.Itoa(jobID), nil
 }
 
-func (r *mutationResolver) MetadataAutoTag(ctx context.Context, input manager.AutoTagMetadataInput) (string, error) {
+func (r *mutationResolver) MetadataAutoTag(ctx context.Context, input models.AutoTagMetadataInput) (string, error) {
 	jobID := r.manager.AutoTag(ctx, input)
 	return strconv.Itoa(jobID), nil
 }
@@ -73,7 +73,7 @@ func (r *mutationResolver) MetadataIdentify(ctx context.Context, input identify.
 	return strconv.Itoa(jobID), nil
 }
 
-func (r *mutationResolver) MetadataClean(ctx context.Context, input manager.CleanMetadataInput) (string, error) {
+func (r *mutationResolver) MetadataClean(ctx context.Context, input models.CleanMetadataInput) (string, error) {
 	jobID := r.manager.Clean(ctx, input)
 	return strconv.Itoa(jobID), nil
 }

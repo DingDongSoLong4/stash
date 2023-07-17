@@ -305,7 +305,7 @@ func (r *sceneResolver) Phash(ctx context.Context, obj *models.Scene) (*string, 
 	return nil, nil
 }
 
-func (r *sceneResolver) SceneStreams(ctx context.Context, obj *models.Scene) ([]*manager.SceneStreamEndpoint, error) {
+func (r *sceneResolver) SceneStreams(ctx context.Context, obj *models.Scene) ([]*models.SceneStreamEndpoint, error) {
 	// load the primary file into the scene
 	_, err := r.getPrimaryFile(ctx, obj)
 	if err != nil {

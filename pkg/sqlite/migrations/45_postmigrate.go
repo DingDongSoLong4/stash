@@ -9,6 +9,7 @@ import (
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/hash/md5"
 	"github.com/stashapp/stash/pkg/logger"
+	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/sqlite"
 	"github.com/stashapp/stash/pkg/utils"
 )
@@ -267,9 +268,9 @@ func (m *schema45Migrator) migrateConfig(ctx context.Context) error {
 
 	// if we have blobs in the database, then default to database storage
 	// otherwise default to filesystem storage
-	defaultStorage := config.BlobStorageTypeFilesystem
+	defaultStorage := models.BlobStorageTypeFilesystem
 	if m.hasBlobs || c.GetBlobsPath() == "" {
-		defaultStorage = config.BlobStorageTypeDatabase
+		defaultStorage = models.BlobStorageTypeDatabase
 	}
 
 	logger.Infof("Setting blobs storage to %s", defaultStorage.String())
