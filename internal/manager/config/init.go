@@ -31,8 +31,8 @@ func init() {
 }
 
 // Only called once by manager.Initialize
-func Initialize() (*Instance, error) {
-	cfg := &Instance{
+func Initialize() (*Config, error) {
+	cfg := &Config{
 		main:           viper.New(),
 		overrides:      viper.New(),
 		cpuProfilePath: flags.cpuProfilePath,
@@ -76,8 +76,8 @@ func Initialize() (*Instance, error) {
 }
 
 // Called by tests to initialize an empty config
-func InitializeEmpty() *Instance {
-	cfg := &Instance{
+func InitializeEmpty() *Config {
+	cfg := &Config{
 		main:      viper.New(),
 		overrides: viper.New(),
 	}
@@ -91,7 +91,7 @@ func bindEnv(v *viper.Viper, key string) {
 	}
 }
 
-func (i *Instance) initOverrides() {
+func (i *Config) initOverrides() {
 	v := i.overrides
 
 	if err := v.BindPFlags(pflag.CommandLine); err != nil {
@@ -108,7 +108,7 @@ func (i *Instance) initOverrides() {
 	bindEnv(v, "stash")         // STASH_STASH
 }
 
-func (i *Instance) initConfig() error {
+func (i *Config) initConfig() error {
 	v := i.main
 
 	// The config file is called config.  Leave off the file extension.

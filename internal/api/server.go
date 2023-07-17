@@ -354,7 +354,7 @@ func serveFiles(w http.ResponseWriter, r *http.Request, paths []string) {
 	utils.ServeStaticContent(w, r, buffer.Bytes())
 }
 
-func cssHandler(c *config.Instance, pluginCache *plugin.Cache) func(w http.ResponseWriter, r *http.Request) {
+func cssHandler(c *config.Config, pluginCache *plugin.Cache) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// add plugin css files first
 		var paths []string
@@ -377,7 +377,7 @@ func cssHandler(c *config.Instance, pluginCache *plugin.Cache) func(w http.Respo
 	}
 }
 
-func javascriptHandler(c *config.Instance, pluginCache *plugin.Cache) func(w http.ResponseWriter, r *http.Request) {
+func javascriptHandler(c *config.Config, pluginCache *plugin.Cache) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// add plugin javascript files first
 		var paths []string
@@ -400,7 +400,7 @@ func javascriptHandler(c *config.Instance, pluginCache *plugin.Cache) func(w htt
 	}
 }
 
-func customLocalesHandler(c *config.Instance) func(w http.ResponseWriter, r *http.Request) {
+func customLocalesHandler(c *config.Config) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		buffer := bytes.Buffer{}
 
@@ -425,7 +425,7 @@ func customLocalesHandler(c *config.Instance) func(w http.ResponseWriter, r *htt
 	}
 }
 
-func makeTLSConfig(c *config.Instance) (*tls.Config, error) {
+func makeTLSConfig(c *config.Config) (*tls.Config, error) {
 	c.InitTLS()
 	certFile, keyFile := c.GetTLSFiles()
 

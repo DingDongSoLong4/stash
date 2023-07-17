@@ -182,7 +182,7 @@ func Initialize() (*Manager, error) {
 	return mgr, nil
 }
 
-func initLog(cfg *config.Instance) *log.Logger {
+func initLog(cfg *config.Config) *log.Logger {
 	l := log.NewLogger()
 	l.Init(cfg.GetLogFile(), cfg.GetLogOut(), cfg.GetLogLevel())
 	logger.Logger = l
@@ -212,7 +212,7 @@ func formatDuration(t time.Duration) string {
 	return fmt.Sprintf("%02.f:%02.f:%02.f", t.Hours(), t.Minutes(), t.Seconds())
 }
 
-func initJobManager(cfg *config.Instance) *job.Manager {
+func initJobManager(cfg *config.Config) *job.Manager {
 	ret := job.NewManager()
 
 	// desktop notifications

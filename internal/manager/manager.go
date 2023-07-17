@@ -31,7 +31,7 @@ import (
 // i.e. the values the pointers point to may change but
 // the pointers themselves will not.
 type Manager struct {
-	Config *config.Instance
+	Config *config.Config
 	Logger *log.Logger
 
 	Paths *paths.Paths
