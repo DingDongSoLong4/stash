@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/gallery"
 	"github.com/stashapp/stash/pkg/image"
@@ -324,7 +323,7 @@ func (r *mutationResolver) GalleryDestroy(ctx context.Context, input models.Gall
 	var imgsDestroyed []*models.Image
 	fileDeleter := &image.FileDeleter{
 		Deleter: file.NewDeleter(),
-		Paths:   manager.GetInstance().Paths,
+		Paths:   r.manager.Paths,
 	}
 
 	deleteGenerated := utils.IsTrue(input.DeleteGenerated)
@@ -367,7 +366,7 @@ func (r *mutationResolver) GalleryDestroy(ctx context.Context, input models.Gall
 	for _, gallery := range galleries {
 		// don't delete stash library paths
 		path := gallery.Path
-		if deleteFile && path != "" && !isStashPath(path) {
+		if deleteFile && path != "" && !r.isStashPath(path) {
 			// try to remove the folder - it is possible that it is not empty
 			// so swallow the error if present
 			_ = os.Remove(path)
@@ -394,8 +393,8 @@ func (r *mutationResolver) GalleryDestroy(ctx context.Context, input models.Gall
 	return true, nil
 }
 
-func isStashPath(path string) bool {
-	stashConfigs := manager.GetInstance().Config.GetStashPaths()
+func (r *mutationResolver) isStashPath(path string) bool {
+	stashConfigs := r.config.GetStashPaths()
 	for _, config := range stashConfigs {
 		if path == config.Path {
 			return true

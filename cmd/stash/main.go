@@ -57,7 +57,7 @@ func main() {
 	}
 	defer mgr.Shutdown()
 
-	server, err := api.Initialize()
+	server, err := api.Initialize(mgr)
 	if err != nil {
 		displayError(fmt.Errorf("initialization error: %w", err))
 		exitCode = 1

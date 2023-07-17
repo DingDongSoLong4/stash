@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/stashapp/stash/internal/log"
-	"github.com/stashapp/stash/internal/manager"
 )
 
 func getLogLevel(logType string) LogLevel {
@@ -43,8 +42,7 @@ func logEntriesFromLogItems(logItems []log.LogItem) []*LogEntry {
 func (r *subscriptionResolver) LoggingSubscribe(ctx context.Context) (<-chan []*LogEntry, error) {
 	ret := make(chan []*LogEntry, 100)
 	stop := make(chan int, 1)
-	logger := manager.GetInstance().Logger
-	logSub := logger.SubscribeToLog(stop)
+	logSub := r.manager.Logger.SubscribeToLog(stop)
 
 	go func() {
 		for {

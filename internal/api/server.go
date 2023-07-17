@@ -53,10 +53,9 @@ type Server struct {
 	manager *manager.Manager
 }
 
-func Initialize() (*Server, error) {
+func Initialize(mgr *manager.Manager) (*Server, error) {
 	initialiseImages()
 
-	mgr := manager.GetInstance()
 	c := mgr.Config
 
 	displayHost := c.GetHost()
@@ -97,7 +96,7 @@ func Initialize() (*Server, error) {
 
 	r.Use(middleware.Heartbeat("/healthz"))
 	r.Use(cors.AllowAll().Handler)
-	r.Use(authenticateHandler())
+	r.Use(authenticateHandler(c, mgr.SessionStore))
 	visitedPluginHandler := mgr.SessionStore.VisitedPluginHandler()
 	r.Use(visitedPluginHandler)
 
@@ -139,7 +138,10 @@ func Initialize() (*Server, error) {
 		sceneService:   sceneService,
 		imageService:   imageService,
 		galleryService: galleryService,
-		hookExecutor:   pluginCache,
+
+		manager:      mgr,
+		config:       c,
+		hookExecutor: pluginCache,
 	}
 
 	gqlSrv := gqlHandler.New(NewExecutableSchema(Config{Resolvers: resolver}))
@@ -196,9 +198,9 @@ func Initialize() (*Server, error) {
 
 	staticLoginUI := statigz.FileServer(ui.LoginUIBox.(fs.ReadDirFS))
 
-	r.Get(loginEndpoint, handleLogin(ui.LoginUIBox))
-	r.Post(loginEndpoint, handleLoginPost(ui.LoginUIBox))
-	r.Get(logoutEndpoint, handleLogout())
+	r.Get(loginEndpoint, server.handleLogin)
+	r.Post(loginEndpoint, server.handleLoginPost)
+	r.Get(logoutEndpoint, server.handleLogout)
 	r.HandleFunc(loginEndpoint+"/*", func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, loginEndpoint)
 		w.Header().Set("Cache-Control", "no-cache")
@@ -283,20 +285,27 @@ func (s *Server) getPerformerRoutes() chi.Router {
 func (s *Server) getSceneRoutes() chi.Router {
 	repo := s.manager.Repository
 	return sceneRoutes{
-		routes:      routes{txnManager: repo.Database},
-		scene:       repo.Scene,
-		file:        repo.File,
-		sceneMarker: repo.SceneMarker,
-		tag:         repo.Tag,
+		routes:        routes{txnManager: repo.Database},
+		scene:         repo.Scene,
+		file:          repo.File,
+		sceneMarker:   repo.SceneMarker,
+		tag:           repo.Tag,
+		config:        s.manager.Config,
+		paths:         s.manager.Paths,
+		streamManager: s.manager.StreamManager,
 	}.Routes()
 }
 
 func (s *Server) getImageRoutes() chi.Router {
 	repo := s.manager.Repository
 	return imageRoutes{
-		routes: routes{txnManager: repo.Database},
-		image:  repo.Image,
-		file:   repo.File,
+		routes:  routes{txnManager: repo.Database},
+		image:   repo.Image,
+		file:    repo.File,
+		ffmpeg:  s.manager.FFMpeg,
+		ffprobe: s.manager.FFProbe,
+		config:  s.manager.Config,
+		paths:   s.manager.Paths,
 	}.Routes()
 }
 

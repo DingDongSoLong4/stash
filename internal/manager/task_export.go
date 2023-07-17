@@ -91,28 +91,7 @@ func newExportSpec(input *ExportObjectTypeInput) *exportSpec {
 	return ret
 }
 
-func CreateExportTask(a models.HashAlgorithm, input ExportObjectsInput) *ExportTask {
-	includeDeps := false
-	if input.IncludeDependencies != nil {
-		includeDeps = *input.IncludeDependencies
-	}
-
-	return &ExportTask{
-		repository:          GetInstance().Repository,
-		fileNamingAlgorithm: a,
-		scenes:              newExportSpec(input.Scenes),
-		images:              newExportSpec(input.Images),
-		performers:          newExportSpec(input.Performers),
-		movies:              newExportSpec(input.Movies),
-		tags:                newExportSpec(input.Tags),
-		studios:             newExportSpec(input.Studios),
-		galleries:           newExportSpec(input.Galleries),
-		includeDependencies: includeDeps,
-	}
-}
-
-func (t *ExportTask) Start(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (t *ExportTask) Start(ctx context.Context) {
 	// @manager.total = Scene.count + Gallery.count + Performer.count + Studio.count + Movie.count
 	workerCount := runtime.GOMAXPROCS(0) // set worker count to number of cpus available
 

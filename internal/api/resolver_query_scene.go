@@ -35,11 +35,9 @@ func (r *queryResolver) SceneStreams(ctx context.Context, id *string) ([]*manage
 		return nil, fmt.Errorf("scene with id %d not found", sceneID)
 	}
 
-	config := manager.GetInstance().Config
-
 	baseURL, _ := ctx.Value(BaseURLCtxKey).(string)
 	builder := urlbuilders.NewSceneURLBuilder(baseURL, scene)
-	apiKey := config.GetAPIKey()
+	apiKey := r.config.GetAPIKey()
 
-	return manager.GetSceneStreamPaths(scene, builder.GetStreamURL(apiKey), config.GetMaxStreamingTranscodeSize())
+	return manager.GetSceneStreamPaths(scene, builder.GetStreamURL(apiKey), r.config.GetMaxStreamingTranscodeSize())
 }

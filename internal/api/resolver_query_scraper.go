@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
@@ -109,7 +108,7 @@ func (r *queryResolver) ScrapeSceneQuery(ctx context.Context, scraperID string, 
 		return nil, err
 	}
 
-	filterSceneTags(ret)
+	r.filterSceneTags(ret)
 	return ret, nil
 }
 
@@ -129,14 +128,14 @@ func (r *queryResolver) ScrapeScene(ctx context.Context, scraperID string, scene
 		return nil, err
 	}
 
-	filterSceneTags([]*scraper.ScrapedScene{ret})
+	r.filterSceneTags([]*scraper.ScrapedScene{ret})
 
 	return ret, nil
 }
 
 // filterSceneTags removes tags matching excluded tag patterns from the provided scraped scenes
-func filterSceneTags(scenes []*scraper.ScrapedScene) {
-	excludePatterns := manager.GetInstance().Config.GetScraperExcludeTagPatterns()
+func (r *queryResolver) filterSceneTags(scenes []*scraper.ScrapedScene) {
+	excludePatterns := r.config.GetScraperExcludeTagPatterns()
 	var excludeRegexps []*regexp.Regexp
 
 	for _, excludePattern := range excludePatterns {
@@ -190,7 +189,7 @@ func (r *queryResolver) ScrapeSceneURL(ctx context.Context, url string) (*scrape
 		return nil, err
 	}
 
-	filterSceneTags([]*scraper.ScrapedScene{ret})
+	r.filterSceneTags([]*scraper.ScrapedScene{ret})
 
 	return ret, nil
 }
@@ -302,7 +301,7 @@ func (r *queryResolver) ScrapeSingleScene(ctx context.Context, source scraper.So
 		return nil, fmt.Errorf("%w: scraper_id or stash_box_index must be set", ErrInput)
 	}
 
-	filterSceneTags(ret)
+	r.filterSceneTags(ret)
 
 	return ret, nil
 }

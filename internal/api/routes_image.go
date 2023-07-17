@@ -9,20 +9,34 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/stashapp/stash/internal/manager"
+
 	"github.com/stashapp/stash/internal/static"
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/utils"
 )
+
+type imageRoutesConfig interface {
+	GetTranscodeInputArgs() []string
+	GetTranscodeOutputArgs() []string
+	GetPreviewPreset() models.PreviewPreset
+	IsWriteImageThumbnails() bool
+}
 
 type imageRoutes struct {
 	routes
 	image models.ImageReader
 	file  models.FileReader
+
+	ffmpeg  *ffmpeg.FFMpeg
+	ffprobe *ffmpeg.FFProbe
+	config  imageRoutesConfig
+	paths   *paths.Paths
 }
 
 func (rs imageRoutes) Routes() chi.Router {
@@ -43,7 +57,7 @@ func (rs imageRoutes) Routes() chi.Router {
 
 func (rs imageRoutes) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	img := r.Context().Value(imageKey).(*models.Image)
-	filepath := manager.GetInstance().Paths.Generated.GetThumbnailPath(img.Checksum, models.DefaultGthumbWidth)
+	filepath := rs.paths.Generated.GetThumbnailPath(img.Checksum, models.DefaultGthumbWidth)
 
 	// if the thumbnail doesn't exist, encode on the fly
 	exists, _ := fsutil.FileExists(filepath)
@@ -59,12 +73,12 @@ func (rs imageRoutes) Thumbnail(w http.ResponseWriter, r *http.Request) {
 		}
 
 		clipPreviewOptions := image.ClipPreviewOptions{
-			InputArgs:  manager.GetInstance().Config.GetTranscodeInputArgs(),
-			OutputArgs: manager.GetInstance().Config.GetTranscodeOutputArgs(),
-			Preset:     manager.GetInstance().Config.GetPreviewPreset().String(),
+			InputArgs:  rs.config.GetTranscodeInputArgs(),
+			OutputArgs: rs.config.GetTranscodeOutputArgs(),
+			Preset:     rs.config.GetPreviewPreset().String(),
 		}
 
-		encoder := image.NewThumbnailEncoder(manager.GetInstance().FFMpeg, manager.GetInstance().FFProbe, clipPreviewOptions)
+		encoder := image.NewThumbnailEncoder(rs.ffmpeg, rs.ffprobe, clipPreviewOptions)
 		data, err := encoder.GetThumbnail(f, models.DefaultGthumbWidth)
 		if err != nil {
 			// don't log for unsupported image format
@@ -84,7 +98,7 @@ func (rs imageRoutes) Thumbnail(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// write the generated thumbnail to disk if enabled
-		if manager.GetInstance().Config.IsWriteImageThumbnails() {
+		if rs.config.IsWriteImageThumbnails() {
 			logger.Debugf("writing thumbnail to disk: %s", img.Path)
 			if err := fsutil.WriteFile(filepath, data); err == nil {
 				utils.ServeStaticFile(w, r, filepath)
@@ -98,7 +112,7 @@ func (rs imageRoutes) Thumbnail(w http.ResponseWriter, r *http.Request) {
 
 func (rs imageRoutes) Preview(w http.ResponseWriter, r *http.Request) {
 	img := r.Context().Value(imageKey).(*models.Image)
-	filepath := manager.GetInstance().Paths.Generated.GetClipPreviewPath(img.Checksum, models.DefaultGthumbWidth)
+	filepath := rs.paths.Generated.GetClipPreviewPath(img.Checksum, models.DefaultGthumbWidth)
 
 	// don't check if the preview exists - we'll just return a 404 if it doesn't
 	utils.ServeStaticFile(w, r, filepath)

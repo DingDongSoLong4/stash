@@ -8,8 +8,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/stashapp/stash/internal/manager"
-	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/session"
 )
@@ -24,23 +22,26 @@ const (
 		"Please read the log entry or visit https://docs.stashapp.cc/networking/authentication-required-when-accessing-stash-from-the-internet"
 )
 
+type authenticateHandlerConfig interface {
+	session.ExternalAccessConfig
+	ActivatePublicAccessTripwire(requestIP string) error
+}
+
 func allowUnauthenticated(r *http.Request) bool {
 	// #2715 - allow access to UI files
 	return strings.HasPrefix(r.URL.Path, loginEndpoint) || r.URL.Path == logoutEndpoint || r.URL.Path == "/css" || strings.HasPrefix(r.URL.Path, "/assets")
 }
 
-func authenticateHandler() func(http.Handler) http.Handler {
+func authenticateHandler(c authenticateHandlerConfig, sessionStore *session.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c := config.GetInstance()
-
 			// error if external access tripwire activated
 			if accessErr := session.CheckExternalAccessTripwire(c); accessErr != nil {
 				http.Error(w, tripwireActivatedErrMsg, http.StatusForbidden)
 				return
 			}
 
-			userID, err := manager.GetInstance().SessionStore.Authenticate(w, r)
+			userID, err := sessionStore.Authenticate(w, r)
 			if err != nil {
 				if errors.Is(err, session.ErrUnauthorized) {
 					http.Error(w, err.Error(), http.StatusInternalServerError)

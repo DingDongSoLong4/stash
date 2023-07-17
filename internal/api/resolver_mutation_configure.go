@@ -17,17 +17,17 @@ import (
 var ErrOverriddenConfig = errors.New("cannot set overridden value")
 
 func (r *mutationResolver) Setup(ctx context.Context, input manager.SetupInput) (bool, error) {
-	err := manager.GetInstance().Setup(ctx, input)
+	err := r.manager.Setup(ctx, input)
 	return err == nil, err
 }
 
 func (r *mutationResolver) Migrate(ctx context.Context, input manager.MigrateInput) (bool, error) {
-	err := manager.GetInstance().Migrate(ctx, input)
+	err := r.manager.Migrate(ctx, input)
 	return err == nil, err
 }
 
 func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGeneralInput) (*ConfigGeneralResult, error) {
-	c := config.GetInstance()
+	c := r.manager.Config
 
 	existingPaths := c.GetStashPaths()
 	if input.Stashes != nil {
@@ -276,8 +276,7 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 
 	if input.LogLevel != nil && *input.LogLevel != c.GetLogLevel() {
 		c.Set(config.LogLevel, input.LogLevel)
-		logger := manager.GetInstance().Logger
-		logger.SetLogLevel(*input.LogLevel)
+		r.manager.Logger.SetLogLevel(*input.LogLevel)
 	}
 
 	if input.Excludes != nil {
@@ -367,19 +366,18 @@ func (r *mutationResolver) ConfigureGeneral(ctx context.Context, input ConfigGen
 		return makeConfigGeneralResult(), err
 	}
 
-	mgr := manager.GetInstance()
-	mgr.RefreshConfig()
+	r.manager.RefreshConfig()
 	if refreshSessionStore {
-		mgr.RefreshSessionStore()
+		r.manager.RefreshSessionStore()
 	}
 	if refreshScraperCache {
-		mgr.RefreshScraperCache()
+		r.manager.RefreshScraperCache()
 	}
 	if refreshStreamManager {
-		mgr.RefreshStreamManager()
+		r.manager.RefreshStreamManager()
 	}
 	if refreshBlobStorage {
-		mgr.SetBlobStoreOptions()
+		r.manager.SetBlobStoreOptions()
 	}
 
 	return makeConfigGeneralResult(), nil
@@ -526,7 +524,7 @@ func (r *mutationResolver) ConfigureDlna(ctx context.Context, input ConfigDLNAIn
 	}
 
 	if refresh {
-		manager.GetInstance().RefreshDLNA()
+		r.manager.RefreshDLNA()
 	}
 
 	return makeConfigDLNAResult(), nil
@@ -561,7 +559,7 @@ func (r *mutationResolver) ConfigureScraping(ctx context.Context, input ConfigSc
 	}
 
 	if refreshScraperCache {
-		manager.GetInstance().RefreshScraperCache()
+		r.manager.RefreshScraperCache()
 	}
 	if err := c.Write(); err != nil {
 		return makeConfigScrapingResult(), err

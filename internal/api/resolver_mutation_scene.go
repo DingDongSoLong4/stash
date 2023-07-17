@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
@@ -415,13 +414,13 @@ func (r *mutationResolver) SceneDestroy(ctx context.Context, input models.SceneD
 		return false, err
 	}
 
-	fileNamingAlgo := manager.GetInstance().Config.GetVideoFileNamingAlgorithm()
+	fileNamingAlgo := r.config.GetVideoFileNamingAlgorithm()
 
 	var s *models.Scene
 	fileDeleter := &scene.FileDeleter{
 		Deleter:        file.NewDeleter(),
 		FileNamingAlgo: fileNamingAlgo,
-		Paths:          manager.GetInstance().Paths,
+		Paths:          r.manager.Paths,
 	}
 
 	deleteGenerated := utils.IsTrue(input.DeleteGenerated)
@@ -440,7 +439,7 @@ func (r *mutationResolver) SceneDestroy(ctx context.Context, input models.SceneD
 		}
 
 		// kill any running encoders
-		manager.KillRunningStreams(s, fileNamingAlgo)
+		r.manager.KillRunningStreams(s)
 
 		return r.sceneService.Destroy(ctx, s, fileDeleter, deleteGenerated, deleteFile)
 	}); err != nil {
@@ -464,12 +463,12 @@ func (r *mutationResolver) SceneDestroy(ctx context.Context, input models.SceneD
 
 func (r *mutationResolver) ScenesDestroy(ctx context.Context, input models.ScenesDestroyInput) (bool, error) {
 	var scenes []*models.Scene
-	fileNamingAlgo := manager.GetInstance().Config.GetVideoFileNamingAlgorithm()
+	fileNamingAlgo := r.config.GetVideoFileNamingAlgorithm()
 
 	fileDeleter := &scene.FileDeleter{
 		Deleter:        file.NewDeleter(),
 		FileNamingAlgo: fileNamingAlgo,
-		Paths:          manager.GetInstance().Paths,
+		Paths:          r.manager.Paths,
 	}
 
 	deleteGenerated := utils.IsTrue(input.DeleteGenerated)
@@ -492,7 +491,7 @@ func (r *mutationResolver) ScenesDestroy(ctx context.Context, input models.Scene
 			scenes = append(scenes, s)
 
 			// kill any running encoders
-			manager.KillRunningStreams(s, fileNamingAlgo)
+			r.manager.KillRunningStreams(s)
 
 			if err := r.sceneService.Destroy(ctx, s, fileDeleter, deleteGenerated, deleteFile); err != nil {
 				return err
@@ -694,12 +693,12 @@ func (r *mutationResolver) SceneMarkerDestroy(ctx context.Context, id string) (b
 		return false, err
 	}
 
-	fileNamingAlgo := manager.GetInstance().Config.GetVideoFileNamingAlgorithm()
+	fileNamingAlgo := r.config.GetVideoFileNamingAlgorithm()
 
 	fileDeleter := &scene.FileDeleter{
 		Deleter:        file.NewDeleter(),
 		FileNamingAlgo: fileNamingAlgo,
-		Paths:          manager.GetInstance().Paths,
+		Paths:          r.manager.Paths,
 	}
 
 	if err := r.withTxn(ctx, func(ctx context.Context) error {
@@ -740,12 +739,12 @@ func (r *mutationResolver) SceneMarkerDestroy(ctx context.Context, id string) (b
 }
 
 func (r *mutationResolver) changeMarker(ctx context.Context, changeType int, changedMarker *models.SceneMarker, tagIDs []int) error {
-	fileNamingAlgo := manager.GetInstance().Config.GetVideoFileNamingAlgorithm()
+	fileNamingAlgo := r.config.GetVideoFileNamingAlgorithm()
 
 	fileDeleter := &scene.FileDeleter{
 		Deleter:        file.NewDeleter(),
 		FileNamingAlgo: fileNamingAlgo,
-		Paths:          manager.GetInstance().Paths,
+		Paths:          r.manager.Paths,
 	}
 
 	// Start the transaction and save the scene marker
@@ -897,9 +896,9 @@ func (r *mutationResolver) SceneResetO(ctx context.Context, id string) (ret int,
 
 func (r *mutationResolver) SceneGenerateScreenshot(ctx context.Context, id string, at *float64) (string, error) {
 	if at != nil {
-		manager.GetInstance().GenerateScreenshot(ctx, id, *at)
+		r.manager.GenerateScreenshot(ctx, id, *at)
 	} else {
-		manager.GetInstance().GenerateDefaultScreenshot(ctx, id)
+		r.manager.GenerateDefaultScreenshot(ctx, id)
 	}
 
 	return "todo", nil

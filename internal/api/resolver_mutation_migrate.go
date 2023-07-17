@@ -4,16 +4,15 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/internal/manager/task"
 	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
 func (r *mutationResolver) MigrateSceneScreenshots(ctx context.Context, input MigrateSceneScreenshotsInput) (string, error) {
-	mgr := manager.GetInstance()
+	mgr := r.manager
 	t := &task.MigrateSceneScreenshotsJob{
-		ScreenshotsPath: manager.GetInstance().Paths.Generated.Screenshots,
+		ScreenshotsPath: mgr.Paths.Generated.Screenshots,
 		Input: scene.MigrateSceneScreenshotsInput{
 			DeleteFiles:       utils.IsTrue(input.DeleteFiles),
 			OverwriteExisting: utils.IsTrue(input.OverwriteExisting),
@@ -27,7 +26,7 @@ func (r *mutationResolver) MigrateSceneScreenshots(ctx context.Context, input Mi
 }
 
 func (r *mutationResolver) MigrateBlobs(ctx context.Context, input MigrateBlobsInput) (string, error) {
-	mgr := manager.GetInstance()
+	mgr := r.manager
 	t := &task.MigrateBlobsJob{
 		TxnManager: mgr.Database,
 		BlobStore:  mgr.Database.Blobs,

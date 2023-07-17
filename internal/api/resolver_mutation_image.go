@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/models"
@@ -300,7 +299,7 @@ func (r *mutationResolver) ImageDestroy(ctx context.Context, input models.ImageD
 	var i *models.Image
 	fileDeleter := &image.FileDeleter{
 		Deleter: file.NewDeleter(),
-		Paths:   manager.GetInstance().Paths,
+		Paths:   r.manager.Paths,
 	}
 	if err := r.withTxn(ctx, func(ctx context.Context) error {
 		i, err = r.repository.Image.Find(ctx, imageID)
@@ -340,7 +339,7 @@ func (r *mutationResolver) ImagesDestroy(ctx context.Context, input models.Image
 	var images []*models.Image
 	fileDeleter := &image.FileDeleter{
 		Deleter: file.NewDeleter(),
-		Paths:   manager.GetInstance().Paths,
+		Paths:   r.manager.Paths,
 	}
 	if err := r.withTxn(ctx, func(ctx context.Context) error {
 		qb := r.repository.Image

@@ -2,13 +2,10 @@ package api
 
 import (
 	"context"
-
-	"github.com/stashapp/stash/internal/manager"
 )
 
 func (r *queryResolver) Logs(ctx context.Context) ([]*LogEntry, error) {
-	logger := manager.GetInstance().Logger
-	logCache := logger.GetLogCache()
+	logCache := r.manager.Logger.GetLogCache()
 	ret := make([]*LogEntry, len(logCache))
 
 	for i, entry := range logCache {

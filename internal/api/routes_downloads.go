@@ -8,7 +8,9 @@ import (
 	"github.com/stashapp/stash/internal/manager"
 )
 
-type downloadsRoutes struct{}
+type downloadsRoutes struct {
+	downloadStore *manager.DownloadStore
+}
 
 func (rs downloadsRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
@@ -28,7 +30,7 @@ func (rs downloadsRoutes) file(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	manager.GetInstance().DownloadStore.Serve(hash, w, r)
+	rs.downloadStore.Serve(hash, w, r)
 }
 
 func downloadCtx(next http.Handler) http.Handler {

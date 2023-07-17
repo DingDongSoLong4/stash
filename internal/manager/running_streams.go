@@ -15,17 +15,17 @@ import (
 	"github.com/stashapp/stash/pkg/utils"
 )
 
-func KillRunningStreams(scene *models.Scene, fileNamingAlgo models.HashAlgorithm) {
-	instance.ReadLockManager.Cancel(scene.Path)
+func (s *Manager) KillRunningStreams(scene *models.Scene) {
+	s.ReadLockManager.Cancel(scene.Path)
 
-	sceneHash := scene.GetHash(fileNamingAlgo)
+	sceneHash := scene.GetHash(s.Config.GetVideoFileNamingAlgorithm())
 
 	if sceneHash == "" {
 		return
 	}
 
-	transcodePath := GetInstance().Paths.Scene.GetTranscodePath(sceneHash)
-	instance.ReadLockManager.Cancel(transcodePath)
+	transcodePath := s.Paths.Scene.GetTranscodePath(sceneHash)
+	s.ReadLockManager.Cancel(transcodePath)
 }
 
 type SceneServer struct {

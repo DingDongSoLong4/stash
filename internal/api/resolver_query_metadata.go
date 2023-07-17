@@ -7,5 +7,5 @@ import (
 )
 
 func (r *queryResolver) SystemStatus(ctx context.Context) (*manager.SystemStatus, error) {
-	return manager.GetInstance().GetSystemStatus(), nil
+	return r.manager.GetSystemStatus(), nil
 }

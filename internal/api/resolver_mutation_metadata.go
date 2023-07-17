@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"sync"
-	"time"
 
 	"github.com/stashapp/stash/internal/identify"
 	"github.com/stashapp/stash/internal/manager"
-	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 )
 
 func (r *mutationResolver) MetadataScan(ctx context.Context, input manager.ScanMetadataInput) (string, error) {
-	jobID, err := manager.GetInstance().Scan(ctx, input)
+	jobID, err := r.manager.Scan(ctx, input)
 
 	if err != nil {
 		return "", err
@@ -24,7 +21,7 @@ func (r *mutationResolver) MetadataScan(ctx context.Context, input manager.ScanM
 }
 
 func (r *mutationResolver) MetadataImport(ctx context.Context) (string, error) {
-	jobID, err := manager.GetInstance().Import(ctx)
+	jobID, err := r.manager.Import(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -33,18 +30,16 @@ func (r *mutationResolver) MetadataImport(ctx context.Context) (string, error) {
 }
 
 func (r *mutationResolver) ImportObjects(ctx context.Context, input manager.ImportObjectsInput) (string, error) {
-	t, err := manager.CreateImportTask(config.GetInstance().GetVideoFileNamingAlgorithm(), input)
+	jobID, err := r.manager.ImportObjects(ctx, input)
 	if err != nil {
 		return "", err
 	}
-
-	jobID := manager.GetInstance().RunSingleTask(ctx, t)
 
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) MetadataExport(ctx context.Context) (string, error) {
-	jobID, err := manager.GetInstance().Export(ctx)
+	jobID, err := r.manager.Export(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -53,26 +48,13 @@ func (r *mutationResolver) MetadataExport(ctx context.Context) (string, error) {
 }
 
 func (r *mutationResolver) ExportObjects(ctx context.Context, input manager.ExportObjectsInput) (*string, error) {
-	t := manager.CreateExportTask(config.GetInstance().GetVideoFileNamingAlgorithm(), input)
+	baseURL, _ := ctx.Value(BaseURLCtxKey).(string)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	t.Start(ctx, &wg)
-
-	if t.DownloadHash != "" {
-		baseURL, _ := ctx.Value(BaseURLCtxKey).(string)
-
-		// generate timestamp
-		suffix := time.Now().Format("20060102-150405")
-		ret := baseURL + "/downloads/" + t.DownloadHash + "/export" + suffix + ".zip"
-		return &ret, nil
-	}
-
-	return nil, nil
+	return r.manager.ExportObjects(ctx, input, baseURL)
 }
 
 func (r *mutationResolver) MetadataGenerate(ctx context.Context, input manager.GenerateMetadataInput) (string, error) {
-	jobID, err := manager.GetInstance().Generate(ctx, input)
+	jobID, err := r.manager.Generate(ctx, input)
 
 	if err != nil {
 		return "", err
@@ -82,40 +64,37 @@ func (r *mutationResolver) MetadataGenerate(ctx context.Context, input manager.G
 }
 
 func (r *mutationResolver) MetadataAutoTag(ctx context.Context, input manager.AutoTagMetadataInput) (string, error) {
-	jobID := manager.GetInstance().AutoTag(ctx, input)
+	jobID := r.manager.AutoTag(ctx, input)
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) MetadataIdentify(ctx context.Context, input identify.Options) (string, error) {
-	t := manager.CreateIdentifyJob(input)
-	jobID := manager.GetInstance().JobManager.Add(ctx, "Identifying...", t)
-
+	jobID := r.manager.Identify(ctx, input)
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) MetadataClean(ctx context.Context, input manager.CleanMetadataInput) (string, error) {
-	jobID := manager.GetInstance().Clean(ctx, input)
+	jobID := r.manager.Clean(ctx, input)
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) MigrateHashNaming(ctx context.Context) (string, error) {
-	jobID := manager.GetInstance().MigrateHash(ctx)
+	jobID := r.manager.MigrateHash(ctx)
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) BackupDatabase(ctx context.Context, input BackupDatabaseInput) (*string, error) {
 	// if download is true, then backup to temporary file and return a link
 	download := input.Download != nil && *input.Download
-	mgr := manager.GetInstance()
 
-	backupPath, backupName, err := mgr.BackupDatabase(download)
+	backupPath, backupName, err := r.manager.BackupDatabase(download)
 	if err != nil {
 		logger.Errorf("Error backing up database: %v", err)
 		return nil, err
 	}
 
 	if download {
-		downloadHash, err := mgr.DownloadStore.RegisterFile(backupPath, "", false)
+		downloadHash, err := r.manager.DownloadStore.RegisterFile(backupPath, "", false)
 		if err != nil {
 			return nil, fmt.Errorf("error registering file for download: %w", err)
 		}
@@ -135,16 +114,15 @@ func (r *mutationResolver) BackupDatabase(ctx context.Context, input BackupDatab
 func (r *mutationResolver) AnonymiseDatabase(ctx context.Context, input AnonymiseDatabaseInput) (*string, error) {
 	// if download is true, then save to temporary file and return a link
 	download := input.Download != nil && *input.Download
-	mgr := manager.GetInstance()
 
-	outPath, outName, err := mgr.AnonymiseDatabase(download)
+	outPath, outName, err := r.manager.AnonymiseDatabase(download)
 	if err != nil {
 		logger.Errorf("Error anonymising database: %v", err)
 		return nil, err
 	}
 
 	if download {
-		downloadHash, err := mgr.DownloadStore.RegisterFile(outPath, "", false)
+		downloadHash, err := r.manager.DownloadStore.RegisterFile(outPath, "", false)
 		if err != nil {
 			return nil, fmt.Errorf("error registering file for download: %w", err)
 		}

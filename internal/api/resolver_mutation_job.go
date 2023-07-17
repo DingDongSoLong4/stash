@@ -3,8 +3,6 @@ package api
 import (
 	"context"
 	"strconv"
-
-	"github.com/stashapp/stash/internal/manager"
 )
 
 func (r *mutationResolver) StopJob(ctx context.Context, jobID string) (bool, error) {
@@ -12,12 +10,12 @@ func (r *mutationResolver) StopJob(ctx context.Context, jobID string) (bool, err
 	if err != nil {
 		return false, err
 	}
-	manager.GetInstance().JobManager.CancelJob(idInt)
+	r.manager.JobManager.CancelJob(idInt)
 
 	return true, nil
 }
 
 func (r *mutationResolver) StopAllJobs(ctx context.Context) (bool, error) {
-	manager.GetInstance().JobManager.CancelAll()
+	r.manager.JobManager.CancelAll()
 	return true, nil
 }

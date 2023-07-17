@@ -9,6 +9,7 @@ import (
 
 	"github.com/stashapp/stash/internal/build"
 	"github.com/stashapp/stash/internal/manager"
+	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
@@ -28,6 +29,18 @@ var (
 	ErrInput = errors.New("input error")
 )
 
+type resolverConfig interface {
+	GetAPIKey() string
+	GetVideoFileNamingAlgorithm() models.HashAlgorithm
+	GetMaxStreamingTranscodeSize() models.StreamingResolutionEnum
+	GetStashPaths() config.StashConfigs
+	GetStashBoxes() []*models.StashBox
+	GetVideoExtensions() []string
+	GetImageExtensions() []string
+	GetGalleryExtensions() []string
+	GetScraperExcludeTagPatterns() []string
+}
+
 type hookExecutor interface {
 	ExecutePostHooks(ctx context.Context, id int, hookType plugin.HookTriggerEnum, input interface{}, inputFields []string)
 }
@@ -38,11 +51,13 @@ type Resolver struct {
 	imageService   manager.ImageService
 	galleryService manager.GalleryService
 
+	manager      *manager.Manager
+	config       resolverConfig
 	hookExecutor hookExecutor
 }
 
 func (r *Resolver) scraperCache() *scraper.Cache {
-	return manager.GetInstance().ScraperCache
+	return r.manager.ScraperCache
 }
 
 func (r *Resolver) Gallery() GalleryResolver {

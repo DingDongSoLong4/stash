@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/gallery"
@@ -41,47 +40,6 @@ type ImportTask struct {
 	MissingRefBehaviour models.ImportMissingRefEnum
 
 	fileNamingAlgorithm models.HashAlgorithm
-}
-
-type ImportObjectsInput struct {
-	File                graphql.Upload              `json:"file"`
-	DuplicateBehaviour  ImportDuplicateEnum         `json:"duplicateBehaviour"`
-	MissingRefBehaviour models.ImportMissingRefEnum `json:"missingRefBehaviour"`
-}
-
-func CreateImportTask(a models.HashAlgorithm, input ImportObjectsInput) (*ImportTask, error) {
-	baseDir, err := instance.Paths.Generated.TempDir("import")
-	if err != nil {
-		logger.Errorf("error creating temporary directory for import: %s", err.Error())
-		return nil, err
-	}
-
-	tmpZip := ""
-	if input.File.File != nil {
-		tmpZip = filepath.Join(baseDir, "import.zip")
-		out, err := os.Create(tmpZip)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = io.Copy(out, input.File.File)
-		out.Close()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	mgr := GetInstance()
-	return &ImportTask{
-		repository:          mgr.Repository,
-		resetter:            mgr.Database,
-		BaseDir:             baseDir,
-		TmpZip:              tmpZip,
-		Reset:               false,
-		DuplicateBehaviour:  input.DuplicateBehaviour,
-		MissingRefBehaviour: input.MissingRefBehaviour,
-		fileNamingAlgorithm: a,
-	}, nil
 }
 
 func (t *ImportTask) GetDescription() string {

@@ -6,13 +6,12 @@ import (
 	"strconv"
 
 	"github.com/stashapp/stash/internal/manager"
-	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/scraper/stashbox"
 )
 
 func (r *mutationResolver) SubmitStashBoxFingerprints(ctx context.Context, input StashBoxFingerprintSubmissionInput) (bool, error) {
-	boxes := config.GetInstance().GetStashBoxes()
+	boxes := r.config.GetStashBoxes()
 
 	if input.StashBoxIndex < 0 || input.StashBoxIndex >= len(boxes) {
 		return false, fmt.Errorf("invalid stash_box_index %d", input.StashBoxIndex)
@@ -24,12 +23,12 @@ func (r *mutationResolver) SubmitStashBoxFingerprints(ctx context.Context, input
 }
 
 func (r *mutationResolver) StashBoxBatchPerformerTag(ctx context.Context, input manager.StashBoxBatchPerformerTagInput) (string, error) {
-	jobID := manager.GetInstance().StashBoxBatchPerformerTag(ctx, input)
+	jobID := r.manager.StashBoxBatchPerformerTag(ctx, input)
 	return strconv.Itoa(jobID), nil
 }
 
 func (r *mutationResolver) SubmitStashBoxSceneDraft(ctx context.Context, input StashBoxDraftSubmissionInput) (*string, error) {
-	boxes := config.GetInstance().GetStashBoxes()
+	boxes := r.config.GetStashBoxes()
 
 	if input.StashBoxIndex < 0 || input.StashBoxIndex >= len(boxes) {
 		return nil, fmt.Errorf("invalid stash_box_index %d", input.StashBoxIndex)
@@ -71,7 +70,7 @@ func (r *mutationResolver) SubmitStashBoxSceneDraft(ctx context.Context, input S
 }
 
 func (r *mutationResolver) SubmitStashBoxPerformerDraft(ctx context.Context, input StashBoxDraftSubmissionInput) (*string, error) {
-	boxes := config.GetInstance().GetStashBoxes()
+	boxes := r.config.GetStashBoxes()
 
 	if input.StashBoxIndex < 0 || input.StashBoxIndex >= len(boxes) {
 		return nil, fmt.Errorf("invalid stash_box_index %d", input.StashBoxIndex)

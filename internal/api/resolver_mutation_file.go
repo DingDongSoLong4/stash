@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/models"
@@ -110,7 +109,7 @@ func (r *mutationResolver) MoveFiles(ctx context.Context, input MoveFilesInput) 
 }
 
 func (r *mutationResolver) validateFolderPath(folderPath string) error {
-	paths := manager.GetInstance().Config.GetStashPaths()
+	paths := r.config.GetStashPaths()
 	if l := paths.GetStashFromDirPath(folderPath); l == nil {
 		return fmt.Errorf("folder path %s must be within a stash library path", folderPath)
 	}
@@ -119,16 +118,15 @@ func (r *mutationResolver) validateFolderPath(folderPath string) error {
 }
 
 func (r *mutationResolver) validateFileExtension(oldBasename, newBasename string) error {
-	c := manager.GetInstance().Config
-	if err := r.validateFileExtensionList(c.GetVideoExtensions(), oldBasename, newBasename); err != nil {
+	if err := r.validateFileExtensionList(r.config.GetVideoExtensions(), oldBasename, newBasename); err != nil {
 		return err
 	}
 
-	if err := r.validateFileExtensionList(c.GetImageExtensions(), oldBasename, newBasename); err != nil {
+	if err := r.validateFileExtensionList(r.config.GetImageExtensions(), oldBasename, newBasename); err != nil {
 		return err
 	}
 
-	if err := r.validateFileExtensionList(c.GetGalleryExtensions(), oldBasename, newBasename); err != nil {
+	if err := r.validateFileExtensionList(r.config.GetGalleryExtensions(), oldBasename, newBasename); err != nil {
 		return err
 	}
 

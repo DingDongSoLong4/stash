@@ -127,7 +127,7 @@ func (r *imageResolver) Paths(ctx context.Context, obj *models.Image) (*ImagePat
 	baseURL, _ := ctx.Value(BaseURLCtxKey).(string)
 	builder := urlbuilders.NewImageURLBuilder(baseURL, obj)
 	thumbnailPath := builder.GetThumbnailURL()
-	previewPath := builder.GetPreviewURL()
+	previewPath := builder.GetPreviewURL(r.manager.Paths)
 	imagePath := builder.GetImageURL()
 	return &ImagePathsType{
 		Image:     &imagePath,
