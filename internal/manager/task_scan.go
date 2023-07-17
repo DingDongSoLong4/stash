@@ -292,6 +292,18 @@ func (f *scanFilter) Accept(ctx context.Context, path string, info fs.FileInfo) 
 	return true
 }
 
+func videoFileFilter(ctx context.Context, f models.File) bool {
+	return useAsVideo(f.Base().Path)
+}
+
+func imageFileFilter(ctx context.Context, f models.File) bool {
+	return useAsImage(f.Base().Path)
+}
+
+func galleryFileFilter(ctx context.Context, f models.File) bool {
+	return isZip(f.Base().Basename)
+}
+
 func getScanHandlers(options ScanMetadataInput, taskQueue *job.TaskQueue, progress *job.Progress) []file.Handler {
 	mgr := GetInstance()
 	c := mgr.Config

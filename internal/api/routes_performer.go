@@ -18,13 +18,6 @@ type performerRoutes struct {
 	performer models.PerformerReader
 }
 
-func getPerformerRoutes(repo models.Repository) chi.Router {
-	return performerRoutes{
-		routes:    routes{txnManager: repo.Database},
-		performer: repo.Performer,
-	}.Routes()
-}
-
 func (rs performerRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 

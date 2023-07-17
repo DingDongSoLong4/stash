@@ -23,11 +23,11 @@ import (
 	gqlPlayground "github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httplog"
 	"github.com/gorilla/websocket"
 	"github.com/vearutop/statigz"
 
-	"github.com/go-chi/cors"
-	"github.com/go-chi/httplog"
 	"github.com/stashapp/stash/internal/api/loaders"
 	"github.com/stashapp/stash/internal/build"
 	"github.com/stashapp/stash/internal/manager"
@@ -46,23 +46,63 @@ const (
 	playgroundEndpoint = "/playground"
 )
 
-var uiBox = ui.UIBox
-var loginUIBox = ui.LoginUIBox
+type Server struct {
+	http.Server
+	displayAddress string
 
-func Start() error {
+	manager *manager.Manager
+}
+
+func Initialize() (*Server, error) {
 	initialiseImages()
 
+	mgr := manager.GetInstance()
+	c := mgr.Config
+
+	displayHost := c.GetHost()
+	if displayHost == "0.0.0.0" {
+		displayHost = "localhost"
+	}
+	displayAddress := displayHost + ":" + strconv.Itoa(c.GetPort())
+
+	address := c.GetHost() + ":" + strconv.Itoa(c.GetPort())
+	tlsConfig, err := makeTLSConfig(c)
+	if err != nil {
+		// assume we don't want to start with a broken TLS configuration
+		return nil, fmt.Errorf("error loading TLS config: %v", err)
+	}
+
+	if tlsConfig != nil {
+		displayAddress = "https://" + displayAddress + "/"
+	} else {
+		displayAddress = "http://" + displayAddress + "/"
+	}
+
 	r := chi.NewRouter()
+
+	server := &Server{
+		Server: http.Server{
+			Addr:      address,
+			Handler:   r,
+			TLSConfig: tlsConfig,
+			// disable http/2 support by default
+			// when http/2 is enabled, we are unable to hijack and close
+			// the connection/request. This is necessary to stop running
+			// streams when deleting a scene file.
+			TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+		},
+		displayAddress: displayAddress,
+		manager:        mgr,
+	}
 
 	r.Use(middleware.Heartbeat("/healthz"))
 	r.Use(cors.AllowAll().Handler)
 	r.Use(authenticateHandler())
-	visitedPluginHandler := manager.GetInstance().SessionStore.VisitedPluginHandler()
+	visitedPluginHandler := mgr.SessionStore.VisitedPluginHandler()
 	r.Use(visitedPluginHandler)
 
 	r.Use(middleware.Recoverer)
 
-	c := config.GetInstance()
 	if c.GetLogAccess() {
 		httpLogger := httplog.NewLogger("Stash", httplog.Options{
 			Concise: true,
@@ -82,7 +122,7 @@ func Start() error {
 		return errors.New(message)
 	}
 
-	repo := manager.GetInstance().Repository
+	repo := mgr.Repository
 
 	dataloaders := loaders.Middleware{
 		Repository: repo,
@@ -90,10 +130,10 @@ func Start() error {
 
 	r.Use(dataloaders.Middleware)
 
-	pluginCache := manager.GetInstance().PluginCache
-	sceneService := manager.GetInstance().SceneService
-	imageService := manager.GetInstance().ImageService
-	galleryService := manager.GetInstance().GalleryService
+	pluginCache := mgr.PluginCache
+	sceneService := mgr.SceneService
+	imageService := mgr.ImageService
+	galleryService := mgr.GalleryService
 	resolver := &Resolver{
 		repository:     repo,
 		sceneService:   sceneService,
@@ -133,7 +173,7 @@ func Start() error {
 	// chain the visited plugin handler
 	// also requires the dataloader middleware
 	gqlHandler := visitedPluginHandler(dataloaders.Middleware(http.HandlerFunc(gqlHandlerFunc)))
-	manager.GetInstance().PluginCache.RegisterGQLHandler(gqlHandler)
+	pluginCache.RegisterGQLHandler(gqlHandler)
 
 	r.HandleFunc(gqlEndpoint, gqlHandlerFunc)
 	r.HandleFunc(playgroundEndpoint, func(w http.ResponseWriter, r *http.Request) {
@@ -142,22 +182,22 @@ func Start() error {
 		gqlPlayground.Handler("GraphQL playground", endpoint)(w, r)
 	})
 
-	r.Mount("/performer", getPerformerRoutes(repo))
-	r.Mount("/scene", getSceneRoutes(repo))
-	r.Mount("/image", getImageRoutes(repo))
-	r.Mount("/studio", getStudioRoutes(repo))
-	r.Mount("/movie", getMovieRoutes(repo))
-	r.Mount("/tag", getTagRoutes(repo))
-	r.Mount("/downloads", getDownloadsRoutes())
+	r.Mount("/performer", server.getPerformerRoutes())
+	r.Mount("/scene", server.getSceneRoutes())
+	r.Mount("/image", server.getImageRoutes())
+	r.Mount("/studio", server.getStudioRoutes())
+	r.Mount("/movie", server.getMovieRoutes())
+	r.Mount("/tag", server.getTagRoutes())
+	r.Mount("/downloads", server.getDownloadsRoutes())
 
 	r.HandleFunc("/css", cssHandler(c, pluginCache))
 	r.HandleFunc("/javascript", javascriptHandler(c, pluginCache))
 	r.HandleFunc("/customlocales", customLocalesHandler(c))
 
-	staticLoginUI := statigz.FileServer(loginUIBox.(fs.ReadDirFS))
+	staticLoginUI := statigz.FileServer(ui.LoginUIBox.(fs.ReadDirFS))
 
-	r.Get(loginEndpoint, handleLogin(loginUIBox))
-	r.Post(loginEndpoint, handleLoginPost(loginUIBox))
+	r.Get(loginEndpoint, handleLogin(ui.LoginUIBox))
+	r.Post(loginEndpoint, handleLoginPost(ui.LoginUIBox))
 	r.Get(logoutEndpoint, handleLogout())
 	r.HandleFunc(loginEndpoint+"/*", func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, loginEndpoint)
@@ -172,7 +212,7 @@ func Start() error {
 	}
 
 	customUILocation := c.GetCustomUILocation()
-	staticUI := statigz.FileServer(uiBox.(fs.ReadDirFS))
+	staticUI := statigz.FileServer(ui.UIBox.(fs.ReadDirFS))
 
 	// Serve the web app
 	r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
@@ -189,7 +229,7 @@ func Start() error {
 
 		if ext == ".html" || ext == "" {
 			themeColor := c.GetThemeColor()
-			data, err := fs.ReadFile(uiBox, "index.html")
+			data, err := fs.ReadFile(ui.UIBox, "index.html")
 			if err != nil {
 				panic(err)
 			}
@@ -215,51 +255,77 @@ func Start() error {
 		}
 	})
 
-	displayHost := c.GetHost()
-	if displayHost == "0.0.0.0" {
-		displayHost = "localhost"
-	}
-	displayAddress := displayHost + ":" + strconv.Itoa(c.GetPort())
-
-	address := c.GetHost() + ":" + strconv.Itoa(c.GetPort())
-	tlsConfig, err := makeTLSConfig(c)
-	if err != nil {
-		// assume we don't want to start with a broken TLS configuration
-		panic(fmt.Errorf("error loading TLS config: %v", err))
-	}
-
-	server := &http.Server{
-		Addr:      address,
-		Handler:   r,
-		TLSConfig: tlsConfig,
-		// disable http/2 support by default
-		// when http/2 is enabled, we are unable to hijack and close
-		// the connection/request. This is necessary to stop running
-		// streams when deleting a scene file.
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
-	}
-
 	logger.Infof("stash version: %s\n", build.VersionString())
 	go printLatestVersion(context.TODO())
-	logger.Infof("stash is listening on " + address)
-	if tlsConfig != nil {
-		displayAddress = "https://" + displayAddress + "/"
+
+	return server, nil
+}
+
+func (s *Server) Start() error {
+	logger.Infof("stash is listening on " + s.Addr)
+	logger.Infof("stash is running at " + s.displayAddress)
+
+	if s.TLSConfig != nil {
+		return s.ListenAndServeTLS("", "")
 	} else {
-		displayAddress = "http://" + displayAddress + "/"
+		return s.ListenAndServe()
 	}
+}
 
-	logger.Infof("stash is running at " + displayAddress)
-	if tlsConfig != nil {
-		err = server.ListenAndServeTLS("", "")
-	} else {
-		err = server.ListenAndServe()
-	}
+func (s *Server) getPerformerRoutes() chi.Router {
+	repo := s.manager.Repository
+	return performerRoutes{
+		routes:    routes{txnManager: repo.Database},
+		performer: repo.Performer,
+	}.Routes()
+}
 
-	if !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+func (s *Server) getSceneRoutes() chi.Router {
+	repo := s.manager.Repository
+	return sceneRoutes{
+		routes:      routes{txnManager: repo.Database},
+		scene:       repo.Scene,
+		file:        repo.File,
+		sceneMarker: repo.SceneMarker,
+		tag:         repo.Tag,
+	}.Routes()
+}
 
-	return nil
+func (s *Server) getImageRoutes() chi.Router {
+	repo := s.manager.Repository
+	return imageRoutes{
+		routes: routes{txnManager: repo.Database},
+		image:  repo.Image,
+		file:   repo.File,
+	}.Routes()
+}
+
+func (s *Server) getStudioRoutes() chi.Router {
+	repo := s.manager.Repository
+	return studioRoutes{
+		routes: routes{txnManager: repo.Database},
+		studio: repo.Studio,
+	}.Routes()
+}
+
+func (s *Server) getMovieRoutes() chi.Router {
+	repo := s.manager.Repository
+	return movieRoutes{
+		routes: routes{txnManager: repo.Database},
+		movie:  repo.Movie,
+	}.Routes()
+}
+
+func (s *Server) getTagRoutes() chi.Router {
+	repo := s.manager.Repository
+	return tagRoutes{
+		routes: routes{txnManager: repo.Database},
+		tag:    repo.Tag,
+	}.Routes()
+}
+
+func (s *Server) getDownloadsRoutes() chi.Router {
+	return downloadsRoutes{}.Routes()
 }
 
 func copyFile(w io.Writer, path string) error {

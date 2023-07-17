@@ -7,7 +7,7 @@ import (
 
 // should be run with -race
 func TestConcurrentConfigAccess(t *testing.T) {
-	i := GetInstance()
+	i := InitializeEmpty()
 
 	const workers = 8
 	const loops = 200
@@ -16,7 +16,7 @@ func TestConcurrentConfigAccess(t *testing.T) {
 		wg.Add(1)
 		go func(wk int) {
 			for l := 0; l < loops; l++ {
-				if err := i.SetInitialMemoryConfig(); err != nil {
+				if err := i.SetInitialConfig(); err != nil {
 					t.Errorf("Failure setting initial configuration in worker %v iteration %v: %v", wk, l, err)
 				}
 

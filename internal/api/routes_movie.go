@@ -18,13 +18,6 @@ type movieRoutes struct {
 	movie models.MovieReader
 }
 
-func getMovieRoutes(repo models.Repository) chi.Router {
-	return movieRoutes{
-		routes: routes{txnManager: repo.Database},
-		movie:  repo.Movie,
-	}.Routes()
-}
-
 func (rs movieRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 

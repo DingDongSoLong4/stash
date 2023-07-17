@@ -292,6 +292,13 @@ type Instance struct {
 
 var instance *Instance
 
+func GetInstance() *Instance {
+	if instance == nil {
+		panic("config not initialized")
+	}
+	return instance
+}
+
 func (i *Instance) IsNewSystem() bool {
 	return i.isNewSystem
 }
@@ -1494,7 +1501,7 @@ func (i *Instance) Validate() error {
 	return nil
 }
 
-func (i *Instance) setDefaultValues(write bool) error {
+func (i *Instance) setDefaultValues() {
 	// read data before write lock scope
 	defaultDatabaseFilePath := i.GetDefaultDatabaseFilePath()
 	defaultScrapersPath := i.GetDefaultScrapersPath()
@@ -1543,54 +1550,30 @@ func (i *Instance) setDefaultValues(write bool) error {
 
 	// Set NoProxy default
 	i.main.SetDefault(NoProxy, noProxyDefault)
-
-	if write {
-		return i.main.WriteConfig()
-	}
-
-	return nil
 }
 
 // setExistingSystemDefaults sets config options that are new and unset in an existing install,
 // but should have a separate default than for brand-new systems, to maintain behavior.
-func (i *Instance) setExistingSystemDefaults() error {
+// The config file will not be written.
+func (i *Instance) setExistingSystemDefaults() {
 	i.Lock()
 	defer i.Unlock()
 	if !i.isNewSystem {
-		configDirtied := false
-
 		// Existing systems as of the introduction of auto-browser open should retain existing
 		// behavior and not start the browser automatically.
 		if !i.main.InConfig(NoBrowser) {
-			configDirtied = true
 			i.main.Set(NoBrowser, true)
 		}
 
 		// Existing systems as of the introduction of the taskbar should inform users.
 		if !i.main.InConfig(ShowOneTimeMovedNotification) {
-			configDirtied = true
 			i.main.Set(ShowOneTimeMovedNotification, true)
 		}
-
-		if configDirtied {
-			return i.main.WriteConfig()
-		}
 	}
-
-	return nil
 }
 
-// SetInitialConfig fills in missing required config fields
+// SetInitialConfig fills in missing required config fields. The config file will not be written.
 func (i *Instance) SetInitialConfig() error {
-	return i.setInitialConfig(true)
-}
-
-// SetInitialMemoryConfig fills in missing required config fields without writing the configuration
-func (i *Instance) SetInitialMemoryConfig() error {
-	return i.setInitialConfig(false)
-}
-
-func (i *Instance) setInitialConfig(write bool) error {
 	// generate some api keys
 	const apiKeyLength = 32
 
@@ -1610,7 +1593,9 @@ func (i *Instance) setInitialConfig(write bool) error {
 		i.Set(SessionStoreKey, sessionStoreKey)
 	}
 
-	return i.setDefaultValues(write)
+	i.setDefaultValues()
+
+	return nil
 }
 
 func (i *Instance) FinalizeSetup() {

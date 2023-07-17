@@ -25,14 +25,6 @@ type imageRoutes struct {
 	file  models.FileReader
 }
 
-func getImageRoutes(repo models.Repository) chi.Router {
-	return imageRoutes{
-		routes: routes{txnManager: repo.Database},
-		image:  repo.Image,
-		file:   repo.File,
-	}.Routes()
-}
-
 func (rs imageRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 

@@ -10,10 +10,6 @@ import (
 
 type downloadsRoutes struct{}
 
-func getDownloadsRoutes() chi.Router {
-	return downloadsRoutes{}.Routes()
-}
-
 func (rs downloadsRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 

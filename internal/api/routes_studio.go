@@ -18,13 +18,6 @@ type studioRoutes struct {
 	studio models.StudioReader
 }
 
-func getStudioRoutes(repo models.Repository) chi.Router {
-	return studioRoutes{
-		routes: routes{txnManager: repo.Database},
-		studio: repo.Studio,
-	}.Routes()
-}
-
 func (rs studioRoutes) Routes() chi.Router {
 	r := chi.NewRouter()
 
