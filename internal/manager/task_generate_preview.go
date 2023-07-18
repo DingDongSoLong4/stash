@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/stashapp/stash/pkg/fsutil"
+	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/scene/generate"
 )
 
 type GeneratePreviewTask struct {

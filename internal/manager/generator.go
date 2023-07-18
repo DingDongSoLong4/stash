@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"github.com/stashapp/stash/pkg/scene/generate"
+	"github.com/stashapp/stash/pkg/generate"
 )
 
 func (s *Manager) NewGenerator(overwrite bool) *generate.Generator {
