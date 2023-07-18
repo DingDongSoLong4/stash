@@ -21,7 +21,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/scene"
-	"github.com/stashapp/stash/pkg/scene/generate"
 )
 
 type ScanJob struct {
@@ -483,13 +482,17 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 	t := g.input
 	path := f.Path
 
+	generator := g.manager.NewGenerator(overwrite)
+
 	if t.ScanGenerateSprites {
 		progress.AddTotal(1)
 		spriteFn := func(ctx context.Context) {
 			taskSprite := GenerateSpriteTask{
 				Scene:               *s,
 				Overwrite:           overwrite,
-				fileNamingAlgorithm: g.fileNamingAlgorithm,
+				FileNamingAlgorithm: g.fileNamingAlgorithm,
+				Paths:               g.paths,
+				generator:           generator,
 			}
 			taskSprite.Start(ctx)
 			progress.Increment()
@@ -526,15 +529,6 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 		progress.AddTotal(1)
 		previewsFn := func(ctx context.Context) {
 			options := getGeneratePreviewOptions(models.GeneratePreviewOptionsInput{})
-
-			generator := &generate.Generator{
-				Encoder:      g.manager.FFMpeg,
-				FFMpegConfig: g.manager.Config,
-				LockManager:  g.manager.ReadLockManager,
-				MarkerPaths:  g.paths.SceneMarkers,
-				ScenePaths:   g.paths.Scene,
-				Overwrite:    overwrite,
-			}
 
 			taskPreview := GeneratePreviewTask{
 				Scene:               *s,

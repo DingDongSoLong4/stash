@@ -20,9 +20,6 @@ type GeneratePreviewTask struct {
 	fileNamingAlgorithm models.HashAlgorithm
 
 	generator *generate.Generator
-
-	videoPreviewExists *bool
-	imagePreviewExists *bool
 }
 
 func (t *GeneratePreviewTask) GetDescription() string {
@@ -97,12 +94,8 @@ func (t *GeneratePreviewTask) videoPreviewRequired() bool {
 		return false
 	}
 
-	if t.videoPreviewExists == nil {
-		videoExists, _ := fsutil.FileExists(instance.Paths.Scene.GetVideoPreviewPath(sceneChecksum))
-		t.videoPreviewExists = &videoExists
-	}
-
-	return !*t.videoPreviewExists
+	exists, _ := fsutil.FileExists(instance.Paths.Scene.GetVideoPreviewPath(sceneChecksum))
+	return !exists
 }
 
 func (t *GeneratePreviewTask) imagePreviewRequired() bool {
@@ -123,10 +116,6 @@ func (t *GeneratePreviewTask) imagePreviewRequired() bool {
 		return false
 	}
 
-	if t.imagePreviewExists == nil {
-		imageExists, _ := fsutil.FileExists(instance.Paths.Scene.GetWebpPreviewPath(sceneChecksum))
-		t.imagePreviewExists = &imageExists
-	}
-
-	return !*t.imagePreviewExists
+	exists, _ := fsutil.FileExists(instance.Paths.Scene.GetWebpPreviewPath(sceneChecksum))
+	return !exists
 }

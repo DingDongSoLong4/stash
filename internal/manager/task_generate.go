@@ -67,14 +67,7 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 			logger.Error(err.Error())
 		}
 
-		g := &generate.Generator{
-			Encoder:      instance.FFMpeg,
-			FFMpegConfig: instance.Config,
-			LockManager:  instance.ReadLockManager,
-			MarkerPaths:  instance.Paths.SceneMarkers,
-			ScenePaths:   instance.Paths.Scene,
-			Overwrite:    j.overwrite,
-		}
+		g := instance.NewGenerator(j.overwrite)
 
 		r := j.repository
 		if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
@@ -136,7 +129,7 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 			logMsg += fmt.Sprintf(" %d heatmaps & speeds", totals.interactiveHeatmapSpeeds)
 		}
 		if j.input.ClipPreviews {
-			logMsg += fmt.Sprintf(" %d Image Clip Previews", totals.clipPreviews)
+			logMsg += fmt.Sprintf(" %d image clip previews", totals.clipPreviews)
 		}
 		if logMsg == "Generating" {
 			logMsg = "Nothing selected to generate"
@@ -318,7 +311,9 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, g *generate.Generator,
 		task := &GenerateSpriteTask{
 			Scene:               *scene,
 			Overwrite:           j.overwrite,
-			fileNamingAlgorithm: j.fileNamingAlgo,
+			FileNamingAlgorithm: j.fileNamingAlgo,
+			Paths:               g.Paths,
+			generator:           g,
 		}
 
 		if task.required() {

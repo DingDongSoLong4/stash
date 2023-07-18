@@ -7,12 +7,18 @@ import (
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
+	"github.com/stashapp/stash/pkg/scene/generate"
 )
 
 type GenerateSpriteTask struct {
-	Scene               models.Scene
-	Overwrite           bool
-	fileNamingAlgorithm models.HashAlgorithm
+	Scene     models.Scene
+	Overwrite bool
+
+	FileNamingAlgorithm models.HashAlgorithm
+	Paths               *paths.Paths
+
+	generator *generate.Generator
 }
 
 func (t *GenerateSpriteTask) GetDescription() string {
@@ -27,30 +33,35 @@ func (t *GenerateSpriteTask) Start(ctx context.Context) {
 	ffprobe := instance.FFProbe
 	videoFile, err := ffprobe.NewVideoFile(t.Scene.Path)
 	if err != nil {
-		logger.Errorf("error reading video file: %s", err.Error())
+		logger.Errorf("error reading video file: %v", err)
 		return
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
-	imagePath := instance.Paths.Scene.GetSpriteImageFilePath(sceneHash)
-	vttPath := instance.Paths.Scene.GetSpriteVttFilePath(sceneHash)
-	generator, err := NewSpriteGenerator(*videoFile, sceneHash, imagePath, vttPath, 9, 9)
+	videoHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 
-	if err != nil {
-		logger.Errorf("error creating sprite generator: %s", err.Error())
-		return
+	if t.spriteImageRequired() {
+		if err := t.generator.SpriteImage(context.TODO(), videoFile, videoHash); err != nil {
+			logger.Errorf("error generating sprite image: %v", err)
+			logErrorOutput(err)
+			return
+		}
 	}
-	generator.Overwrite = t.Overwrite
 
-	if err := generator.Generate(); err != nil {
-		logger.Errorf("error generating sprite: %s", err.Error())
-		logErrorOutput(err)
-		return
+	if t.spriteVTTRequired() {
+		if err := t.generator.SpriteVTT(context.TODO(), videoFile, videoHash); err != nil {
+			logger.Errorf("error generating sprite vtt: %v", err)
+			logErrorOutput(err)
+			return
+		}
 	}
 }
 
 // required returns true if the sprite needs to be generated
-func (t GenerateSpriteTask) required() bool {
+func (t *GenerateSpriteTask) required() bool {
+	return t.spriteImageRequired() || t.spriteVTTRequired()
+}
+
+func (t *GenerateSpriteTask) spriteImageRequired() bool {
 	if t.Scene.Path == "" {
 		return false
 	}
@@ -59,16 +70,29 @@ func (t GenerateSpriteTask) required() bool {
 		return true
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
-	return !t.doesSpriteExist(sceneHash)
-}
-
-func (t *GenerateSpriteTask) doesSpriteExist(sceneChecksum string) bool {
-	if sceneChecksum == "" {
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
+	if sceneHash == "" {
 		return false
 	}
 
-	imageExists, _ := fsutil.FileExists(instance.Paths.Scene.GetSpriteImageFilePath(sceneChecksum))
-	vttExists, _ := fsutil.FileExists(instance.Paths.Scene.GetSpriteVttFilePath(sceneChecksum))
-	return imageExists && vttExists
+	exists, _ := fsutil.FileExists(t.Paths.Scene.GetSpriteImageFilePath(sceneHash))
+	return !exists
+}
+
+func (t *GenerateSpriteTask) spriteVTTRequired() bool {
+	if t.Scene.Path == "" {
+		return false
+	}
+
+	if t.Overwrite {
+		return true
+	}
+
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
+	if sceneHash == "" {
+		return false
+	}
+
+	exists, _ := fsutil.FileExists(t.Paths.Scene.GetSpriteVttFilePath(sceneHash))
+	return !exists
 }

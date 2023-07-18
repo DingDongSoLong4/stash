@@ -48,6 +48,7 @@ type FFMpegConfig interface {
 type Generator struct {
 	Encoder      *ffmpeg.FFMpeg
 	FFMpegConfig FFMpegConfig
+	FFProbe      *ffmpeg.FFProbe
 	LockManager  *fsutil.ReadLockManager
 	MarkerPaths  MarkerPaths
 	ScenePaths   ScenePaths

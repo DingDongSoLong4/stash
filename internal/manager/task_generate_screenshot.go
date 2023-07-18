@@ -55,13 +55,7 @@ func (t *GenerateCoverTask) Start(ctx context.Context) {
 
 	logger.Debugf("Creating screenshot for %s", scenePath)
 
-	g := generate.Generator{
-		Encoder:      instance.FFMpeg,
-		FFMpegConfig: instance.Config,
-		LockManager:  instance.ReadLockManager,
-		ScenePaths:   instance.Paths.Scene,
-		Overwrite:    true,
-	}
+	g := instance.NewGenerator(true)
 
 	coverImageData, err := g.Screenshot(context.TODO(), videoFile.Path, videoFile.Width, videoFile.Duration, generate.ScreenshotOptions{
 		At: &at,
