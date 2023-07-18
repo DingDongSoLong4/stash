@@ -1,12 +1,8 @@
 package transcoder
 
 import (
-	"errors"
-
 	"github.com/stashapp/stash/pkg/ffmpeg"
 )
-
-var ErrUnsupportedFormat = errors.New("unsupported image format")
 
 type ImageThumbnailOptions struct {
 	InputFormat   ffmpeg.ImageFormat

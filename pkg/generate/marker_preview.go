@@ -24,17 +24,19 @@ func (g Generator) MarkerPreviewVideo(ctx context.Context, input string, hash st
 	lockCtx := g.LockManager.ReadLock(ctx, input)
 	defer lockCtx.Cancel()
 
-	output := g.MarkerPaths.GetVideoPreviewPath(hash, seconds)
+	output := g.Paths.SceneMarkers.GetVideoPreviewPath(hash, seconds)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
 		}
 	}
 
-	if err := g.generateFile(lockCtx, g.MarkerPaths, mp4Pattern, output, g.markerPreviewVideo(input, sceneMarkerOptions{
+	fn := g.markerPreviewVideo(input, sceneMarkerOptions{
 		Seconds: seconds,
 		Audio:   includeAudio,
-	})); err != nil {
+	})
+	err := g.generateFile(lockCtx, mp4Pattern, output, fn)
+	if err != nil {
 		return err
 	}
 
@@ -94,16 +96,18 @@ func (g Generator) SceneMarkerWebp(ctx context.Context, input string, hash strin
 	lockCtx := g.LockManager.ReadLock(ctx, input)
 	defer lockCtx.Cancel()
 
-	output := g.MarkerPaths.GetWebpPreviewPath(hash, seconds)
+	output := g.Paths.SceneMarkers.GetWebpPreviewPath(hash, seconds)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
 		}
 	}
 
-	if err := g.generateFile(lockCtx, g.MarkerPaths, webpPattern, output, g.sceneMarkerWebp(input, sceneMarkerOptions{
+	fn := g.sceneMarkerWebp(input, sceneMarkerOptions{
 		Seconds: seconds,
-	})); err != nil {
+	})
+	err := g.generateFile(lockCtx, webpPattern, output, fn)
+	if err != nil {
 		return err
 	}
 
@@ -147,17 +151,19 @@ func (g Generator) SceneMarkerScreenshot(ctx context.Context, input string, hash
 	lockCtx := g.LockManager.ReadLock(ctx, input)
 	defer lockCtx.Cancel()
 
-	output := g.MarkerPaths.GetScreenshotPath(hash, seconds)
+	output := g.Paths.SceneMarkers.GetScreenshotPath(hash, seconds)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
 		}
 	}
 
-	if err := g.generateFile(lockCtx, g.MarkerPaths, jpgPattern, output, g.sceneMarkerScreenshot(input, SceneMarkerScreenshotOptions{
+	fn := g.sceneMarkerScreenshot(input, SceneMarkerScreenshotOptions{
 		Seconds: seconds,
 		Width:   width,
-	})); err != nil {
+	})
+	err := g.generateFile(lockCtx, jpgPattern, output, fn)
+	if err != nil {
 		return err
 	}
 

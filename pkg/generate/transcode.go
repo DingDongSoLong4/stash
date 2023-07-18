@@ -48,14 +48,14 @@ func (g Generator) TranscodeCopyVideo(ctx context.Context, input string, hash st
 }
 
 func (g Generator) makeTranscode(lockCtx *fsutil.LockContext, hash string, generateFn generateFn) error {
-	output := g.ScenePaths.GetTranscodePath(hash)
+	output := g.Paths.Scene.GetTranscodePath(hash)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
 		}
 	}
 
-	if err := g.generateFile(lockCtx, g.ScenePaths, mp4Pattern, output, generateFn); err != nil {
+	if err := g.generateFile(lockCtx, mp4Pattern, output, generateFn); err != nil {
 		return err
 	}
 
@@ -87,8 +87,8 @@ func (g Generator) transcode(input string, options TranscodeOptions) generateFn 
 			VideoArgs:  videoArgs,
 			AudioCodec: ffmpeg.AudioCodecAAC,
 
-			ExtraInputArgs:  g.FFMpegConfig.GetTranscodeInputArgs(),
-			ExtraOutputArgs: g.FFMpegConfig.GetTranscodeOutputArgs(),
+			ExtraInputArgs:  g.Config.GetTranscodeInputArgs(),
+			ExtraOutputArgs: g.Config.GetTranscodeOutputArgs(),
 		})
 
 		return g.Encoder.Generate(lockCtx, args)
@@ -121,8 +121,8 @@ func (g Generator) transcodeVideo(input string, options TranscodeOptions) genera
 			VideoArgs:  videoArgs,
 			AudioArgs:  audioArgs,
 
-			ExtraInputArgs:  g.FFMpegConfig.GetTranscodeInputArgs(),
-			ExtraOutputArgs: g.FFMpegConfig.GetTranscodeOutputArgs(),
+			ExtraInputArgs:  g.Config.GetTranscodeInputArgs(),
+			ExtraOutputArgs: g.Config.GetTranscodeOutputArgs(),
 		})
 
 		return g.Encoder.Generate(lockCtx, args)

@@ -7,21 +7,21 @@ import (
 )
 
 type scenePaths struct {
-	*generatedPaths
+	gp *generatedPaths
 }
 
 func newScenePaths(gp *generatedPaths) *scenePaths {
 	return &scenePaths{
-		generatedPaths: gp,
+		gp: gp,
 	}
 }
 
 func (sp *scenePaths) GetLegacyScreenshotPath(checksum string) string {
-	return filepath.Join(sp.Screenshots, checksum+".jpg")
+	return filepath.Join(sp.gp.Screenshots, checksum+".jpg")
 }
 
 func (sp *scenePaths) GetTranscodePath(checksum string) string {
-	return filepath.Join(sp.Transcodes, checksum+".mp4")
+	return filepath.Join(sp.gp.Transcodes, checksum+".mp4")
 }
 
 func (sp *scenePaths) GetStreamPath(scenePath string, checksum string) string {
@@ -34,21 +34,21 @@ func (sp *scenePaths) GetStreamPath(scenePath string, checksum string) string {
 }
 
 func (sp *scenePaths) GetVideoPreviewPath(checksum string) string {
-	return filepath.Join(sp.Screenshots, checksum+".mp4")
+	return filepath.Join(sp.gp.Screenshots, checksum+".mp4")
 }
 
 func (sp *scenePaths) GetWebpPreviewPath(checksum string) string {
-	return filepath.Join(sp.Screenshots, checksum+".webp")
+	return filepath.Join(sp.gp.Screenshots, checksum+".webp")
 }
 
 func (sp *scenePaths) GetSpriteImageFilePath(checksum string) string {
-	return filepath.Join(sp.Vtt, checksum+"_sprite.jpg")
+	return filepath.Join(sp.gp.Vtt, checksum+"_sprite.jpg")
 }
 
 func (sp *scenePaths) GetSpriteVttFilePath(checksum string) string {
-	return filepath.Join(sp.Vtt, checksum+"_thumbs.vtt")
+	return filepath.Join(sp.gp.Vtt, checksum+"_thumbs.vtt")
 }
 
 func (sp *scenePaths) GetInteractiveHeatmapPath(checksum string) string {
-	return filepath.Join(sp.InteractiveHeatmap, checksum+".png")
+	return filepath.Join(sp.gp.InteractiveHeatmap, checksum+".png")
 }

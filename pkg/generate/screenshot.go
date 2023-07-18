@@ -9,9 +9,6 @@ import (
 )
 
 const (
-	// thumbnailWidth   = 320
-	// thumbnailQuality = 5
-
 	screenshotQuality = 2
 
 	screenshotDurationProportion = 0.2
@@ -32,11 +29,12 @@ func (g Generator) Screenshot(ctx context.Context, input string, videoWidth int,
 		at = *options.At
 	}
 
-	ret, err := g.generateBytes(lockCtx, g.ScenePaths, jpgPattern, g.screenshot(input, screenshotOptions{
+	fn := g.screenshot(input, screenshotOptions{
 		Time:    at,
 		Quality: screenshotQuality,
 		// default Width is video width
-	}))
+	})
+	ret, err := g.generateBytes(lockCtx, jpgPattern, fn)
 	if err != nil {
 		return nil, err
 	}

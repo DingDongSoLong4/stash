@@ -1,64 +1,44 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/fsutil"
+	"github.com/stashapp/stash/pkg/models/paths"
 )
 
 const (
 	mp4Pattern  = "*.mp4"
 	webpPattern = "*.webp"
+	webmPattern = "*.webm"
 	jpgPattern  = "*.jpg"
 	txtPattern  = "*.txt"
 	vttPattern  = "*.vtt"
 )
 
-type Paths interface {
-	TempFile(pattern string) (*os.File, error)
-}
+var ErrUnsupportedFormat = errors.New("unsupported format")
 
-type MarkerPaths interface {
-	Paths
-
-	GetVideoPreviewPath(checksum string, seconds int) string
-	GetWebpPreviewPath(checksum string, seconds int) string
-	GetScreenshotPath(checksum string, seconds int) string
-}
-
-type ScenePaths interface {
-	Paths
-
-	GetVideoPreviewPath(checksum string) string
-	GetWebpPreviewPath(checksum string) string
-
-	GetSpriteImageFilePath(checksum string) string
-	GetSpriteVttFilePath(checksum string) string
-
-	GetTranscodePath(checksum string) string
-}
-
-type FFMpegConfig interface {
+type Config interface {
 	GetTranscodeInputArgs() []string
 	GetTranscodeOutputArgs() []string
 }
 
 type Generator struct {
-	Encoder      *ffmpeg.FFMpeg
-	FFMpegConfig FFMpegConfig
-	FFProbe      *ffmpeg.FFProbe
-	LockManager  *fsutil.ReadLockManager
-	MarkerPaths  MarkerPaths
-	ScenePaths   ScenePaths
-	Overwrite    bool
+	Encoder     *ffmpeg.FFMpeg
+	Config      Config
+	FFProbe     *ffmpeg.FFProbe
+	LockManager *fsutil.ReadLockManager
+	Paths       *paths.Paths
+	Overwrite   bool
 }
 
 type generateFn func(lockCtx *fsutil.LockContext, tmpFn string) error
 
-func (g Generator) tempFile(p Paths, pattern string) (*os.File, error) {
-	tmpFile, err := p.TempFile(pattern) // tmp output in case the process ends abruptly
+func (g Generator) tempFile(pattern string) (*os.File, error) {
+	tmpFile, err := g.Paths.Generated.TempFile(pattern) // tmp output in case the process ends abruptly
 	if err != nil {
 		return nil, fmt.Errorf("creating temporary file: %w", err)
 	}
@@ -66,10 +46,10 @@ func (g Generator) tempFile(p Paths, pattern string) (*os.File, error) {
 	return tmpFile, err
 }
 
-// generateFile performs a generate operation by generating a temporary file using p and pattern, then
+// generateFile performs a generate operation by generating a temporary file using pattern, then
 // moving it to output on success.
-func (g Generator) generateFile(lockCtx *fsutil.LockContext, p Paths, pattern string, output string, generateFn generateFn) error {
-	tmpFile, err := g.tempFile(p, pattern) // tmp output in case the process ends abruptly
+func (g Generator) generateFile(lockCtx *fsutil.LockContext, pattern string, output string, generateFn generateFn) error {
+	tmpFile, err := g.tempFile(pattern) // tmp output in case the process ends abruptly
 	if err != nil {
 		return err
 	}
@@ -100,9 +80,9 @@ func (g Generator) generateFile(lockCtx *fsutil.LockContext, p Paths, pattern st
 	return nil
 }
 
-// generateBytes performs a generate operation by generating a temporary file using p and pattern, returns the contents, then deletes it.
-func (g Generator) generateBytes(lockCtx *fsutil.LockContext, p Paths, pattern string, generateFn generateFn) ([]byte, error) {
-	tmpFile, err := g.tempFile(p, pattern) // tmp output in case the process ends abruptly
+// generateBytes performs a generate operation by generating a temporary file using pattern, returns the contents, then deletes it.
+func (g Generator) generateBytes(lockCtx *fsutil.LockContext, pattern string, generateFn generateFn) ([]byte, error) {
+	tmpFile, err := g.tempFile(pattern) // tmp output in case the process ends abruptly
 	if err != nil {
 		return nil, err
 	}

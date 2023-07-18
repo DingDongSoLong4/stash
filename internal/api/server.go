@@ -302,8 +302,7 @@ func (s *Server) getImageRoutes() chi.Router {
 		routes:  routes{txnManager: repo.Database},
 		image:   repo.Image,
 		file:    repo.File,
-		ffmpeg:  s.manager.FFMpeg,
-		ffprobe: s.manager.FFProbe,
+		manager: s.manager,
 		config:  s.manager.Config,
 		paths:   s.manager.Paths,
 	}.Routes()

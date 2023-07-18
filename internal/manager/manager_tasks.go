@@ -144,8 +144,12 @@ func (s *Manager) Generate(ctx context.Context, input models.GenerateMetadataInp
 	}
 
 	j := &GenerateJob{
-		repository: s.Repository,
-		input:      input,
+		repository:     s.Repository,
+		input:          input,
+		parallelTasks:  s.Config.GetParallelTasksWithAutoDetection(),
+		fileNamingAlgo: s.Config.GetVideoFileNamingAlgorithm(),
+		paths:          s.Paths,
+		generator:      s.NewGenerator(false),
 	}
 
 	return s.JobManager.Add(ctx, "Generating...", j), nil

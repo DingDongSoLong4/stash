@@ -10,11 +10,11 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/internal/static"
-	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/fsutil"
-	"github.com/stashapp/stash/pkg/image"
+	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/models/paths"
@@ -22,9 +22,6 @@ import (
 )
 
 type imageRoutesConfig interface {
-	GetTranscodeInputArgs() []string
-	GetTranscodeOutputArgs() []string
-	GetPreviewPreset() models.PreviewPreset
 	IsWriteImageThumbnails() bool
 }
 
@@ -33,8 +30,7 @@ type imageRoutes struct {
 	image models.ImageReader
 	file  models.FileReader
 
-	ffmpeg  *ffmpeg.FFMpeg
-	ffprobe *ffmpeg.FFProbe
+	manager *manager.Manager
 	config  imageRoutesConfig
 	paths   *paths.Paths
 }
@@ -59,55 +55,54 @@ func (rs imageRoutes) Thumbnail(w http.ResponseWriter, r *http.Request) {
 	img := r.Context().Value(imageKey).(*models.Image)
 	filepath := rs.paths.Generated.GetThumbnailPath(img.Checksum, models.DefaultGthumbWidth)
 
-	// if the thumbnail doesn't exist, encode on the fly
+	// if the thumbnail exists, serve it
 	exists, _ := fsutil.FileExists(filepath)
 	if exists {
 		utils.ServeStaticFile(w, r, filepath)
-	} else {
-		const useDefault = true
-
-		f := img.Files.Primary()
-		if f == nil {
-			rs.serveImage(w, r, img, useDefault)
-			return
-		}
-
-		clipPreviewOptions := image.ClipPreviewOptions{
-			InputArgs:  rs.config.GetTranscodeInputArgs(),
-			OutputArgs: rs.config.GetTranscodeOutputArgs(),
-			Preset:     rs.config.GetPreviewPreset().String(),
-		}
-
-		encoder := image.NewThumbnailEncoder(rs.ffmpeg, rs.ffprobe, clipPreviewOptions)
-		data, err := encoder.GetThumbnail(f, models.DefaultGthumbWidth)
-		if err != nil {
-			// don't log for unsupported image format
-			// don't log for file not found - can optionally be logged in serveImage
-			if !errors.Is(err, image.ErrNotSupportedForThumbnail) && !errors.Is(err, fs.ErrNotExist) {
-				logger.Errorf("error generating thumbnail for %s: %v", f.Base().Path, err)
-
-				var exitErr *exec.ExitError
-				if errors.As(err, &exitErr) {
-					logger.Errorf("stderr: %s", string(exitErr.Stderr))
-				}
-			}
-
-			// backwards compatibility - fallback to original image instead
-			rs.serveImage(w, r, img, useDefault)
-			return
-		}
-
-		// write the generated thumbnail to disk if enabled
-		if rs.config.IsWriteImageThumbnails() {
-			logger.Debugf("writing thumbnail to disk: %s", img.Path)
-			if err := fsutil.WriteFile(filepath, data); err == nil {
-				utils.ServeStaticFile(w, r, filepath)
-				return
-			}
-			logger.Errorf("error writing thumbnail for image %s: %v", img.Path, err)
-		}
-		utils.ServeStaticContent(w, r, data)
+		return
 	}
+
+	// else encode a thumbnail on the fly
+
+	f := img.Files.Primary()
+	if f == nil {
+		const useDefault = true
+		rs.serveImage(w, r, img, useDefault)
+		return
+	}
+
+	generator := rs.manager.NewGenerator(false)
+
+	data, err := generator.Thumbnail(r.Context(), f, models.DefaultGthumbWidth)
+	if err != nil {
+		// don't log for unsupported image format
+		// don't log for file not found - can optionally be logged in serveImage
+		if !errors.Is(err, generate.ErrUnsupportedFormat) && !errors.Is(err, fs.ErrNotExist) {
+			logger.Errorf("error generating thumbnail for %s: %v", f.Base().Path, err)
+
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				logger.Errorf("stderr: %s", string(exitErr.Stderr))
+			}
+		}
+
+		// backwards compatibility - fallback to original image instead
+		const useDefault = true
+		rs.serveImage(w, r, img, useDefault)
+		return
+	}
+
+	// write the generated thumbnail to disk if enabled
+	if rs.config.IsWriteImageThumbnails() {
+		logger.Debugf("writing thumbnail to disk: %s", img.Path)
+		if err := fsutil.WriteFile(filepath, data); err == nil {
+			utils.ServeStaticFile(w, r, filepath)
+			return
+		}
+		logger.Errorf("error writing thumbnail for image %s: %v", img.Path, err)
+	}
+
+	utils.ServeStaticContent(w, r, data)
 }
 
 func (rs imageRoutes) Preview(w http.ResponseWriter, r *http.Request) {

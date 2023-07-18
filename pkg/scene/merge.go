@@ -111,8 +111,8 @@ func (s *Service) mergeSceneMarkers(ctx context.Context, dest *models.Scene, src
 				dest: s.Paths.SceneMarkers.GetScreenshotPath(destHash, int(m.Seconds)),
 			},
 			{
-				src:  s.Paths.SceneMarkers.GetThumbnailPath(srcHash, int(m.Seconds)),
-				dest: s.Paths.SceneMarkers.GetThumbnailPath(destHash, int(m.Seconds)),
+				src:  s.Paths.SceneMarkers.GetScreenshotPath(srcHash, int(m.Seconds)),
+				dest: s.Paths.SceneMarkers.GetScreenshotPath(destHash, int(m.Seconds)),
 			},
 			{
 				src:  s.Paths.SceneMarkers.GetWebpPreviewPath(srcHash, int(m.Seconds)),

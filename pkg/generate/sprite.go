@@ -52,7 +52,7 @@ func (g Generator) SpriteVTT(ctx context.Context, videoFile *ffmpeg.VideoFile, h
 }
 
 func (g Generator) generateSpriteImage(lockCtx *fsutil.LockContext, videoFile *ffmpeg.VideoFile, hash string) error {
-	output := g.ScenePaths.GetSpriteImageFilePath(hash)
+	output := g.Paths.Scene.GetSpriteImageFilePath(hash)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
@@ -88,7 +88,7 @@ func (g Generator) generateSpriteImage(lockCtx *fsutil.LockContext, videoFile *f
 }
 
 func (g Generator) generateSpriteVTT(lockCtx *fsutil.LockContext, videoFile *ffmpeg.VideoFile, hash string) error {
-	output := g.ScenePaths.GetSpriteVttFilePath(hash)
+	output := g.Paths.Scene.GetSpriteVttFilePath(hash)
 	if !g.Overwrite {
 		if exists, _ := fsutil.FileExists(output); exists {
 			return nil
@@ -100,9 +100,9 @@ func (g Generator) generateSpriteVTT(lockCtx *fsutil.LockContext, videoFile *ffm
 		return err
 	}
 
-	spriteImagePath := g.ScenePaths.GetSpriteImageFilePath(hash)
+	spriteImagePath := g.Paths.Scene.GetSpriteImageFilePath(hash)
 	fn := g.spriteVTT(videoFile, spriteImagePath, useSlowSeek)
-	err = g.generateFile(lockCtx, g.ScenePaths, vttPattern, output, fn)
+	err = g.generateFile(lockCtx, vttPattern, output, fn)
 	if err != nil {
 		return err
 	}

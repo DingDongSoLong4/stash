@@ -6,14 +6,18 @@ import (
 
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/generate"
-	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 )
 
 type GenerateClipPreviewTask struct {
 	Image     models.Image
 	Overwrite bool
+
+	PreviewPreset models.PreviewPreset
+	Paths         *paths.Paths
+	generator     *generate.Generator
 }
 
 func (t *GenerateClipPreviewTask) GetDescription() string {
@@ -25,22 +29,19 @@ func (t *GenerateClipPreviewTask) Start(ctx context.Context) {
 		return
 	}
 
-	prevPath := GetInstance().Paths.Generated.GetClipPreviewPath(t.Image.Checksum, models.DefaultGthumbWidth)
-	filePath := t.Image.Files.Primary().Base().Path
-
-	clipPreviewOptions := image.ClipPreviewOptions{
-		InputArgs:  GetInstance().Config.GetTranscodeInputArgs(),
-		OutputArgs: GetInstance().Config.GetTranscodeOutputArgs(),
-		Preset:     GetInstance().Config.GetPreviewPreset().String(),
-	}
-
-	encoder := image.NewThumbnailEncoder(GetInstance().FFMpeg, GetInstance().FFProbe, clipPreviewOptions)
-	err := encoder.GetPreview(filePath, prevPath, models.DefaultGthumbWidth)
+	ffprobe := instance.FFProbe
+	videoFile, err := ffprobe.NewVideoFile(t.Image.Path)
 	if err != nil {
-		logger.Errorf("getting preview for image %s: %w", filePath, err)
+		logger.Errorf("error reading video file: %v", err)
 		return
 	}
 
+	checksum := t.Image.Checksum
+	err = t.generator.ClipPreview(context.TODO(), videoFile, checksum, models.DefaultGthumbWidth, t.PreviewPreset)
+	if err != nil {
+		logger.Errorf("error generating image preview: %v", err)
+		return
+	}
 }
 
 func (t *GenerateClipPreviewTask) required() bool {
@@ -53,7 +54,12 @@ func (t *GenerateClipPreviewTask) required() bool {
 		return true
 	}
 
-	prevPath := GetInstance().Paths.Generated.GetClipPreviewPath(t.Image.Checksum, models.DefaultGthumbWidth)
+	checksum := t.Image.Checksum
+	if checksum == "" {
+		return false
+	}
+
+	prevPath := t.Paths.Generated.GetClipPreviewPath(checksum, models.DefaultGthumbWidth)
 	if exists, _ := fsutil.FileExists(prevPath); exists {
 		return false
 	}
