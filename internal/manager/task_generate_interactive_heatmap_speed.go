@@ -6,19 +6,24 @@ import (
 
 	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/fsutil"
+	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 )
 
 type GenerateInteractiveHeatmapSpeedTask struct {
+	Scene     models.Scene
+	DrawRange bool
+	Overwrite bool
+
 	repository          models.Repository
-	Scene               models.Scene
-	Overwrite           bool
 	fileNamingAlgorithm models.HashAlgorithm
+	Paths               *paths.Paths
 }
 
 func (t *GenerateInteractiveHeatmapSpeedTask) GetDescription() string {
-	return fmt.Sprintf("Generating heatmap and speed for %s", t.Scene.Path)
+	return fmt.Sprintf("Generating heatmap and interactive speed for %s", t.Scene.Path)
 }
 
 func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
@@ -26,28 +31,26 @@ func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
 		return
 	}
 
+	videoFile := t.Scene.Files.Primary()
+	if videoFile == nil {
+		return
+	}
+
 	videoChecksum := t.Scene.GetHash(t.fileNamingAlgorithm)
 	funscriptPath := video.GetFunscriptPath(t.Scene.Path)
-	heatmapPath := instance.Paths.Scene.GetInteractiveHeatmapPath(videoChecksum)
-	drawRange := instance.Config.GetDrawFunscriptHeatmapRange()
+	heatmapPath := t.Paths.Scene.GetInteractiveHeatmapPath(videoChecksum)
+	duration := videoFile.Duration
 
-	generator := NewInteractiveHeatmapSpeedGenerator(drawRange)
-
-	err := generator.Generate(funscriptPath, heatmapPath, t.Scene.Files.Primary().Duration)
-
+	median, err := generate.GenerateInteractiveHeatmapSpeed(funscriptPath, heatmapPath, duration, t.DrawRange)
 	if err != nil {
 		logger.Errorf("error generating heatmap: %s", err.Error())
 		return
 	}
 
-	median := generator.InteractiveSpeed
-
 	r := t.repository
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
-		primaryFile := t.Scene.Files.Primary()
-		primaryFile.InteractiveSpeed = &median
-		qb := r.File
-		return qb.Update(ctx, primaryFile)
+		videoFile.InteractiveSpeed = &median
+		return r.File.Update(ctx, videoFile)
 	}); err != nil && ctx.Err() == nil {
 		logger.Error(err.Error())
 	}

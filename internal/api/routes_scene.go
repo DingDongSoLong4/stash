@@ -349,12 +349,13 @@ func (rs sceneRoutes) InteractiveCSV(w http.ResponseWriter, r *http.Request) {
 	filepath := video.GetFunscriptPath(s.Path)
 
 	// TheHandy directly only accepts interactive CSVs
-	csvBytes, err := manager.ConvertFunscriptToCSV(filepath)
-
+	funscript, err := video.ParseFunscriptFile(filepath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	csvBytes := funscript.ConvertToCSV()
 	utils.ServeStaticContent(w, r, csvBytes)
 }
 

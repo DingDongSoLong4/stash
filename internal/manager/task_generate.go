@@ -406,10 +406,12 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 
 	if j.input.InteractiveHeatmapsSpeeds {
 		task := &GenerateInteractiveHeatmapSpeedTask{
-			repository:          r,
 			Scene:               *scene,
+			DrawRange:           config.GetInstance().GetDrawFunscriptHeatmapRange(),
 			Overwrite:           j.overwrite,
+			repository:          r,
 			fileNamingAlgorithm: j.fileNamingAlgo,
+			Paths:               j.paths,
 		}
 
 		if task.required() {
