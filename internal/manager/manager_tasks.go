@@ -106,6 +106,8 @@ func (s *Manager) Export(ctx context.Context) (int, error) {
 			Full:                true,
 			Repository:          s.Repository,
 			FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+			Paths:               s.Paths,
+			DownloadStore:       s.DownloadStore,
 		}
 		task.Start(ctx)
 	})
@@ -124,6 +126,8 @@ func (s *Manager) ExportObjects(ctx context.Context, input models.ExportObjectsI
 		IncludeDependencies: includeDeps,
 		Repository:          s.Repository,
 		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+		Paths:               s.Paths,
+		DownloadStore:       s.DownloadStore,
 	}
 
 	t.Start(ctx)
@@ -147,9 +151,13 @@ func (s *Manager) Generate(ctx context.Context, input models.GenerateMetadataInp
 		Input:               input,
 		ParallelTasks:       s.Config.GetParallelTasksWithAutoDetection(),
 		Repository:          s.Repository,
+		SceneService:        s.SceneService,
 		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+		PreviewAudio:        s.Config.GetPreviewAudio(),
 		PreviewPreset:       s.Config.GetPreviewPreset(),
 		Paths:               s.Paths,
+		FFMpeg:              s.FFMpeg,
+		FFProbe:             s.FFProbe,
 		Generator:           s.NewGenerator(false),
 	}
 
@@ -278,6 +286,7 @@ func (s *Manager) MigrateHash(ctx context.Context) int {
 
 			task := MigrateHashTask{
 				Scene:               scene,
+				Paths:               s.Paths,
 				FileNamingAlgorithm: fileNamingAlgo,
 			}
 			go func() {
@@ -330,6 +339,7 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 								Refresh:        input.Refresh,
 								Box:            box,
 								ExcludedFields: input.ExcludeFields,
+								Repository:     s.Repository,
 							})
 						} else {
 							return err
@@ -348,6 +358,7 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 						Refresh:        input.Refresh,
 						Box:            box,
 						ExcludedFields: input.ExcludeFields,
+						Repository:     s.Repository,
 					})
 				}
 			}
@@ -379,6 +390,7 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 						Refresh:        input.Refresh,
 						Box:            box,
 						ExcludedFields: input.ExcludeFields,
+						Repository:     s.Repository,
 					})
 				}
 				return nil

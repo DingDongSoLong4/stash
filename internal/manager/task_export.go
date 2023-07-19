@@ -37,6 +37,8 @@ type ExportTask struct {
 
 	Repository          models.Repository
 	FileNamingAlgorithm models.HashAlgorithm
+	Paths               *paths.Paths
+	DownloadStore       *DownloadStore
 
 	baseDir string
 	json    jsonUtils
@@ -93,7 +95,7 @@ func (t *ExportTask) Start(ctx context.Context) {
 		t.baseDir = config.GetInstance().GetMetadataPath()
 	} else {
 		var err error
-		t.baseDir, err = instance.Paths.Generated.TempDir("export")
+		t.baseDir, err = t.Paths.Generated.TempDir("export")
 		if err != nil {
 			logger.Errorf("error creating temporary directory for export: %s", err.Error())
 			return
@@ -159,10 +161,10 @@ func (t *ExportTask) Start(ctx context.Context) {
 
 func (t *ExportTask) generateDownload() error {
 	// zip the files and register a download link
-	if err := fsutil.EnsureDir(instance.Paths.Generated.Downloads); err != nil {
+	if err := fsutil.EnsureDir(t.Paths.Generated.Downloads); err != nil {
 		return err
 	}
-	z, err := os.CreateTemp(instance.Paths.Generated.Downloads, "export*.zip")
+	z, err := os.CreateTemp(t.Paths.Generated.Downloads, "export*.zip")
 	if err != nil {
 		return err
 	}
@@ -173,7 +175,7 @@ func (t *ExportTask) generateDownload() error {
 		return err
 	}
 
-	t.DownloadHash, err = instance.DownloadStore.RegisterFile(z.Name(), "", false)
+	t.DownloadHash, err = t.DownloadStore.RegisterFile(z.Name(), "", false)
 	if err != nil {
 		return fmt.Errorf("error registering file for download: %w", err)
 	}

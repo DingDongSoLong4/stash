@@ -151,7 +151,6 @@ func Initialize() (*Manager, error) {
 		logger.Warnf("config file %snot found. Assuming new system...", cfgFile)
 	}
 
-	instance = mgr
 	return mgr, nil
 }
 

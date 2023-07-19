@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 )
 
 type GeneratePreviewTask struct {
@@ -16,7 +18,9 @@ type GeneratePreviewTask struct {
 	ImagePreview bool
 	Overwrite    bool
 
+	Paths               *paths.Paths
 	FileNamingAlgorithm models.HashAlgorithm
+	FFProbe             *ffmpeg.FFProbe
 	Generator           *generate.Generator
 }
 
@@ -28,8 +32,7 @@ func (t *GeneratePreviewTask) Start(ctx context.Context) {
 	videoChecksum := t.Scene.GetHash(t.FileNamingAlgorithm)
 
 	if t.videoPreviewRequired() {
-		ffprobe := instance.FFProbe
-		videoFile, err := ffprobe.NewVideoFile(t.Scene.Path)
+		videoFile, err := t.FFProbe.NewVideoFile(t.Scene.Path)
 		if err != nil {
 			logger.Errorf("error reading video file: %v", err)
 			return
@@ -92,7 +95,7 @@ func (t *GeneratePreviewTask) videoPreviewRequired() bool {
 		return false
 	}
 
-	exists, _ := fsutil.FileExists(instance.Paths.Scene.GetVideoPreviewPath(sceneChecksum))
+	exists, _ := fsutil.FileExists(t.Paths.Scene.GetVideoPreviewPath(sceneChecksum))
 	return !exists
 }
 
@@ -114,6 +117,6 @@ func (t *GeneratePreviewTask) imagePreviewRequired() bool {
 		return false
 	}
 
-	exists, _ := fsutil.FileExists(instance.Paths.Scene.GetWebpPreviewPath(sceneChecksum))
+	exists, _ := fsutil.FileExists(t.Paths.Scene.GetWebpPreviewPath(sceneChecksum))
 	return !exists
 }

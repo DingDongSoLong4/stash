@@ -9,6 +9,7 @@ import (
 	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 )
 
 type GenerateMarkersTask struct {
@@ -20,6 +21,8 @@ type GenerateMarkersTask struct {
 
 	Repository          models.Repository
 	FileNamingAlgorithm models.HashAlgorithm
+	PreviewAudio        bool
+	Paths               *paths.Paths
 	Generator           *generate.Generator
 }
 
@@ -89,7 +92,7 @@ func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 
 	// Make the folder for the scenes markers
-	markersFolder := filepath.Join(instance.Paths.Generated.Markers, sceneHash)
+	markersFolder := filepath.Join(t.Paths.Generated.Markers, sceneHash)
 	if err := fsutil.EnsureDir(markersFolder); err != nil {
 		logger.Warnf("could not create the markers folder (%v): %v", markersFolder, err)
 	}
@@ -108,7 +111,7 @@ func (t *GenerateMarkersTask) generateMarker(videoFile *models.VideoFile, scene 
 
 	g := t.Generator
 
-	if err := g.MarkerPreviewVideo(context.TODO(), videoFile.Path, sceneHash, seconds, instance.Config.GetPreviewAudio()); err != nil {
+	if err := g.MarkerPreviewVideo(context.TODO(), videoFile.Path, sceneHash, seconds, t.PreviewAudio); err != nil {
 		logger.Errorf("[generator] failed to generate marker video: %v", err)
 		logErrorOutput(err)
 	}
@@ -169,7 +172,7 @@ func (t *GenerateMarkersTask) videoExists(sceneChecksum string, seconds int) boo
 		return false
 	}
 
-	videoPath := instance.Paths.SceneMarkers.GetVideoPreviewPath(sceneChecksum, seconds)
+	videoPath := t.Paths.SceneMarkers.GetVideoPreviewPath(sceneChecksum, seconds)
 	videoExists, _ := fsutil.FileExists(videoPath)
 
 	return videoExists
@@ -180,7 +183,7 @@ func (t *GenerateMarkersTask) imageExists(sceneChecksum string, seconds int) boo
 		return false
 	}
 
-	imagePath := instance.Paths.SceneMarkers.GetWebpPreviewPath(sceneChecksum, seconds)
+	imagePath := t.Paths.SceneMarkers.GetWebpPreviewPath(sceneChecksum, seconds)
 	imageExists, _ := fsutil.FileExists(imagePath)
 
 	return imageExists
@@ -191,7 +194,7 @@ func (t *GenerateMarkersTask) screenshotExists(sceneChecksum string, seconds int
 		return false
 	}
 
-	screenshotPath := instance.Paths.SceneMarkers.GetScreenshotPath(sceneChecksum, seconds)
+	screenshotPath := t.Paths.SceneMarkers.GetScreenshotPath(sceneChecksum, seconds)
 	screenshotExists, _ := fsutil.FileExists(screenshotPath)
 
 	return screenshotExists

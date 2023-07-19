@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/hash/videophash"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
@@ -15,6 +16,7 @@ type GeneratePhashTask struct {
 
 	Repository          models.Repository
 	FileNamingAlgorithm models.HashAlgorithm
+	FFMpeg              *ffmpeg.FFMpeg
 }
 
 func (t *GeneratePhashTask) GetDescription() string {
@@ -26,7 +28,7 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 		return
 	}
 
-	hash, err := videophash.Generate(instance.FFMpeg, t.File)
+	hash, err := videophash.Generate(t.FFMpeg, t.File)
 	if err != nil {
 		logger.Errorf("error generating phash: %s", err.Error())
 		logErrorOutput(err)

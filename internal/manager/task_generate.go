@@ -7,6 +7,7 @@ import (
 
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/stashapp/stash/internal/manager/config"
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/job"
@@ -25,9 +26,13 @@ type GenerateJob struct {
 
 	ParallelTasks       int
 	Repository          models.Repository
+	SceneService        SceneService
 	FileNamingAlgorithm models.HashAlgorithm
+	PreviewAudio        bool
 	PreviewPreset       models.PreviewPreset
 	Paths               *paths.Paths
+	FFMpeg              *ffmpeg.FFMpeg
+	FFProbe             *ffmpeg.FFProbe
 	Generator           *generate.Generator
 }
 
@@ -310,6 +315,7 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 			Overwrite:           j.Overwrite,
 			Paths:               j.Paths,
 			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			FFProbe:             j.FFProbe,
 			Generator:           j.Generator,
 		}
 
@@ -332,7 +338,9 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 			Options:             options,
 			ImagePreview:        j.Input.ImagePreviews,
 			Overwrite:           j.Overwrite,
+			Paths:               j.Paths,
 			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			FFProbe:             j.FFProbe,
 			Generator:           j.Generator,
 		}
 
@@ -357,6 +365,8 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 			Overwrite:           j.Overwrite,
 			Repository:          r,
 			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			PreviewAudio:        j.PreviewAudio,
+			Paths:               j.Paths,
 			Generator:           j.Generator,
 		}
 
@@ -376,7 +386,8 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 			Overwrite:           j.Overwrite,
 			Force:               forceTranscode,
 			FileNamingAlgorithm: j.FileNamingAlgorithm,
-			SceneService:        GetInstance().SceneService,
+			SceneService:        j.SceneService,
+			FFProbe:             j.FFProbe,
 			Generator:           j.Generator,
 		}
 		if task.required() {
@@ -394,6 +405,7 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 				Overwrite:           j.Overwrite,
 				Repository:          r,
 				FileNamingAlgorithm: j.FileNamingAlgorithm,
+				FFMpeg:              j.FFMpeg,
 			}
 
 			if task.required() {
@@ -428,6 +440,8 @@ func (j *GenerateJob) queueMarkerJob(marker *models.SceneMarker, queue chan<- Ta
 		Overwrite:           j.Overwrite,
 		Repository:          j.Repository,
 		FileNamingAlgorithm: j.FileNamingAlgorithm,
+		PreviewAudio:        j.PreviewAudio,
+		Paths:               j.Paths,
 		Generator:           j.Generator,
 	}
 	totals.markers++
@@ -441,6 +455,7 @@ func (j *GenerateJob) queueImageJob(image *models.Image, queue chan<- Task, tota
 		Overwrite:     j.Overwrite,
 		Paths:         j.Paths,
 		PreviewPreset: j.PreviewPreset,
+		FFProbe:       j.FFProbe,
 		Generator:     j.Generator,
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
@@ -17,6 +18,7 @@ type GenerateClipPreviewTask struct {
 
 	Paths         *paths.Paths
 	PreviewPreset models.PreviewPreset
+	FFProbe       *ffmpeg.FFProbe
 	Generator     *generate.Generator
 }
 
@@ -29,8 +31,7 @@ func (t *GenerateClipPreviewTask) Start(ctx context.Context) {
 		return
 	}
 
-	ffprobe := instance.FFProbe
-	videoFile, err := ffprobe.NewVideoFile(t.Image.Path)
+	videoFile, err := t.FFProbe.NewVideoFile(t.Image.Path)
 	if err != nil {
 		logger.Errorf("error reading video file: %v", err)
 		return

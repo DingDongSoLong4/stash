@@ -2,6 +2,7 @@ package manager
 
 import (
 	"github.com/stashapp/stash/pkg/models"
+	"github.com/stashapp/stash/pkg/models/paths"
 	"github.com/stashapp/stash/pkg/scene"
 )
 
@@ -10,6 +11,7 @@ import (
 type MigrateHashTask struct {
 	Scene *models.Scene
 
+	Paths               *paths.Paths
 	FileNamingAlgorithm models.HashAlgorithm
 }
 
@@ -30,5 +32,5 @@ func (t *MigrateHashTask) Start() {
 		newHash = oshash
 	}
 
-	scene.MigrateHash(instance.Paths, oldHash, newHash)
+	scene.MigrateHash(t.Paths, oldHash, newHash)
 }

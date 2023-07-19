@@ -22,6 +22,7 @@ type GenerateTranscodeTask struct {
 	FileNamingAlgorithm models.HashAlgorithm
 	SceneService        SceneService
 
+	FFProbe   *ffmpeg.FFProbe
 	Generator *generate.Generator
 }
 
@@ -37,11 +38,10 @@ func (t *GenerateTranscodeTask) Start(ctx context.Context) {
 
 	f := t.Scene.Files.Primary()
 
-	ffprobe := instance.FFProbe
 	var container ffmpeg.Container
 
 	var err error
-	container, err = video.GetVideoFileContainer(ffprobe, f)
+	container, err = video.GetVideoFileContainer(t.FFProbe, f)
 	if err != nil {
 		logger.Errorf("[transcode] error getting scene container: %s", err.Error())
 		return
@@ -64,7 +64,7 @@ func (t *GenerateTranscodeTask) Start(ctx context.Context) {
 
 	// TODO - move transcode generation logic elsewhere
 
-	videoFile, err := ffprobe.NewVideoFile(f.Path)
+	videoFile, err := t.FFProbe.NewVideoFile(f.Path)
 	if err != nil {
 		logger.Errorf("[transcode] error reading video file: %s", err.Error())
 		return

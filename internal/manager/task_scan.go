@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/file"
 	file_image "github.com/stashapp/stash/pkg/file/image"
 	"github.com/stashapp/stash/pkg/file/video"
@@ -95,6 +96,7 @@ func (j *ScanJob) Execute(ctx context.Context, progress *job.Progress) {
 						TranscodeInputArgs:  cfg.GetTranscodeInputArgs(),
 						TranscodeOutputArgs: cfg.GetTranscodeOutputArgs(),
 						PreviewPreset:       cfg.GetPreviewPreset(),
+						FFProbe:             mgr.FFProbe,
 						Generator:           generator,
 						TaskQueue:           taskQueue,
 						Progress:            progress,
@@ -124,6 +126,8 @@ func (j *ScanJob) Execute(ctx context.Context, progress *job.Progress) {
 						Paths:               paths,
 						SequentialScanning:  sequentialScanning,
 						FileNamingAlgorithm: videoFileNamingAlgorithm,
+						FFMpeg:              mgr.FFMpeg,
+						FFProbe:             mgr.FFProbe,
 						Generator:           generator,
 						TaskQueue:           taskQueue,
 						Progress:            progress,
@@ -374,6 +378,7 @@ type imageGenerator struct {
 	TranscodeInputArgs  []string
 	TranscodeOutputArgs []string
 	PreviewPreset       models.PreviewPreset
+	FFProbe             *ffmpeg.FFProbe
 	Generator           *generate.Generator
 
 	TaskQueue *job.TaskQueue
@@ -409,6 +414,7 @@ func (g *imageGenerator) Generate(ctx context.Context, i *models.Image, f models
 				Overwrite:     overwrite,
 				Paths:         g.Paths,
 				PreviewPreset: g.PreviewPreset,
+				FFProbe:       g.FFProbe,
 				Generator:     g.Generator,
 			}
 
@@ -461,6 +467,8 @@ type sceneGenerators struct {
 	Paths               *paths.Paths
 	SequentialScanning  bool
 	FileNamingAlgorithm models.HashAlgorithm
+	FFMpeg              *ffmpeg.FFMpeg
+	FFProbe             *ffmpeg.FFProbe
 	Generator           *generate.Generator
 
 	TaskQueue *job.TaskQueue
@@ -482,6 +490,7 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 				Overwrite:           overwrite,
 				Paths:               g.Paths,
 				FileNamingAlgorithm: g.FileNamingAlgorithm,
+				FFProbe:             g.FFProbe,
 				Generator:           g.Generator,
 			}
 			taskSprite.Start(ctx)
@@ -503,6 +512,7 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 				Overwrite:           overwrite,
 				Repository:          g.Repository,
 				FileNamingAlgorithm: g.FileNamingAlgorithm,
+				FFMpeg:              g.FFMpeg,
 			}
 			taskPhash.Start(ctx)
 			progress.Increment()
@@ -525,7 +535,9 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 				Options:             options,
 				ImagePreview:        t.ScanGenerateImagePreviews,
 				Overwrite:           overwrite,
+				Paths:               g.Paths,
 				FileNamingAlgorithm: g.FileNamingAlgorithm,
+				FFProbe:             g.FFProbe,
 				Generator:           g.Generator,
 			}
 			taskPreview.Start(ctx)

@@ -9,7 +9,6 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scraper/stashbox"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
-	"github.com/stashapp/stash/pkg/txn"
 	"github.com/stashapp/stash/pkg/utils"
 )
 
@@ -19,6 +18,8 @@ type StashBoxPerformerTagTask struct {
 	Refresh        bool
 	Box            *models.StashBox
 	ExcludedFields []string
+
+	Repository models.Repository
 }
 
 func (t *StashBoxPerformerTagTask) Start(ctx context.Context) {
@@ -40,7 +41,7 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 	var performer *models.ScrapedPerformer
 	var err error
 
-	stashboxRepository := stashbox.NewRepository(instance.Repository)
+	stashboxRepository := stashbox.NewRepository(t.Repository)
 	client := stashbox.NewClient(*t.Box, stashboxRepository)
 
 	if t.Refresh {
@@ -77,8 +78,8 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 		if t.Performer != nil {
 			partial := t.getPartial(performer, excluded)
 
-			txnErr := txn.WithTxn(ctx, instance.Repository, func(ctx context.Context) error {
-				r := instance.Repository
+			r := t.Repository
+			txnErr := r.WithTxn(ctx, func(ctx context.Context) error {
 				_, err := r.Performer.UpdatePartial(ctx, t.Performer.ID, partial)
 
 				if len(performer.Images) > 0 && !excluded["image"] {
@@ -143,8 +144,8 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 				newPerformer.Gender = &v
 			}
 
-			err := txn.WithTxn(ctx, instance.Repository, func(ctx context.Context) error {
-				r := instance.Repository
+			r := t.Repository
+			err := r.WithTxn(ctx, func(ctx context.Context) error {
 				err := r.Performer.Create(ctx, &newPerformer)
 				if err != nil {
 					return err

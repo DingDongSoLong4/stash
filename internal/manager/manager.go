@@ -62,15 +62,6 @@ type Manager struct {
 	scanSubs *subscriptionManager
 }
 
-var instance *Manager
-
-func GetInstance() *Manager {
-	if instance == nil {
-		panic("manager not initialized")
-	}
-	return instance
-}
-
 func (s *Manager) SetBlobStoreOptions() {
 	storageType := s.Config.GetBlobsStorage()
 	blobsPath := s.Config.GetBlobsPath()

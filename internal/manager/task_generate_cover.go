@@ -15,6 +15,7 @@ type GenerateCoverTask struct {
 	Overwrite    bool
 
 	Repository models.Repository
+	Generator  *generate.Generator
 }
 
 func (t *GenerateCoverTask) GetDescription() string {
@@ -56,11 +57,11 @@ func (t *GenerateCoverTask) Start(ctx context.Context) {
 
 	logger.Debugf("Creating screenshot for %s", scenePath)
 
-	g := instance.NewGenerator(true)
-
-	coverImageData, err := g.Screenshot(context.TODO(), videoFile.Path, videoFile.Width, videoFile.Duration, generate.ScreenshotOptions{
+	options := generate.ScreenshotOptions{
 		At: &at,
-	})
+	}
+
+	coverImageData, err := t.Generator.Screenshot(ctx, videoFile.Path, videoFile.Width, videoFile.Duration, options)
 	if err != nil {
 		logger.Errorf("Error generating screenshot: %v", err)
 		logErrorOutput(err)

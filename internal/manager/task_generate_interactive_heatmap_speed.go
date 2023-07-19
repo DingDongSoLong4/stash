@@ -75,6 +75,6 @@ func (t *GenerateInteractiveHeatmapSpeedTask) doesHeatmapExist(sceneChecksum str
 		return false
 	}
 
-	imageExists, _ := fsutil.FileExists(instance.Paths.Scene.GetInteractiveHeatmapPath(sceneChecksum))
+	imageExists, _ := fsutil.FileExists(t.Paths.Scene.GetInteractiveHeatmapPath(sceneChecksum))
 	return imageExists
 }
