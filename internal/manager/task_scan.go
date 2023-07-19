@@ -25,8 +25,9 @@ import (
 )
 
 type ScanJob struct {
+	Input models.ScanMetadataInput
+
 	Manager *Manager
-	Input   models.ScanMetadataInput
 }
 
 func (j *ScanJob) Execute(ctx context.Context, progress *job.Progress) {
@@ -88,15 +89,15 @@ func (j *ScanJob) Execute(ctx context.Context, progress *job.Progress) {
 					GalleryFinder:  repo.Gallery,
 					PluginCache:    pluginCache,
 					ScanGenerator: &imageGenerator{
-						taskQueue:           taskQueue,
-						progress:            progress,
-						input:               j.Input,
-						paths:               paths,
-						sequentialScanning:  sequentialScanning,
-						transcodeInputArgs:  cfg.GetTranscodeInputArgs(),
-						transcodeOutputArgs: cfg.GetTranscodeOutputArgs(),
-						previewPreset:       cfg.GetPreviewPreset(),
-						generator:           generator,
+						Input:               j.Input,
+						Paths:               paths,
+						SequentialScanning:  sequentialScanning,
+						TranscodeInputArgs:  cfg.GetTranscodeInputArgs(),
+						TranscodeOutputArgs: cfg.GetTranscodeOutputArgs(),
+						PreviewPreset:       cfg.GetPreviewPreset(),
+						Generator:           generator,
+						TaskQueue:           taskQueue,
+						Progress:            progress,
 					},
 					CreateGalleriesFromFolders: createGalleriesFromFolders,
 					Paths:                      paths,
@@ -118,14 +119,14 @@ func (j *ScanJob) Execute(ctx context.Context, progress *job.Progress) {
 					CaptionUpdater: repo.File,
 					PluginCache:    pluginCache,
 					ScanGenerator: &sceneGenerators{
-						taskQueue:           taskQueue,
-						progress:            progress,
-						repository:          repo,
-						input:               j.Input,
-						paths:               paths,
-						fileNamingAlgorithm: videoFileNamingAlgorithm,
-						sequentialScanning:  sequentialScanning,
-						generator:           generator,
+						Input:               j.Input,
+						Repository:          repo,
+						Paths:               paths,
+						SequentialScanning:  sequentialScanning,
+						FileNamingAlgorithm: videoFileNamingAlgorithm,
+						Generator:           generator,
+						TaskQueue:           taskQueue,
+						Progress:            progress,
 					},
 					FileNamingAlgorithm: videoFileNamingAlgorithm,
 					Paths:               paths,
@@ -366,23 +367,24 @@ func (f *scanFilter) Accept(ctx context.Context, path string, info fs.FileInfo) 
 }
 
 type imageGenerator struct {
-	taskQueue *job.TaskQueue
-	progress  *job.Progress
+	Input models.ScanMetadataInput
 
-	generator           *generate.Generator
-	input               models.ScanMetadataInput
-	paths               *paths.Paths
-	sequentialScanning  bool
-	transcodeInputArgs  []string
-	transcodeOutputArgs []string
-	previewPreset       models.PreviewPreset
+	Paths               *paths.Paths
+	SequentialScanning  bool
+	TranscodeInputArgs  []string
+	TranscodeOutputArgs []string
+	PreviewPreset       models.PreviewPreset
+	Generator           *generate.Generator
+
+	TaskQueue *job.TaskQueue
+	Progress  *job.Progress
 }
 
 func (g *imageGenerator) Generate(ctx context.Context, i *models.Image, f models.File) error {
 	const overwrite = false
 
-	progress := g.progress
-	t := g.input
+	progress := g.Progress
+	t := g.Input
 	path := f.Base().Path
 
 	if t.ScanGenerateThumbnails {
@@ -405,19 +407,19 @@ func (g *imageGenerator) Generate(ctx context.Context, i *models.Image, f models
 			taskPreview := GenerateClipPreviewTask{
 				Image:         ii,
 				Overwrite:     overwrite,
-				PreviewPreset: g.previewPreset,
-				Paths:         g.paths,
-				generator:     g.generator,
+				Paths:         g.Paths,
+				PreviewPreset: g.PreviewPreset,
+				Generator:     g.Generator,
 			}
 
 			taskPreview.Start(ctx)
 			progress.Increment()
 		}
 
-		if g.sequentialScanning {
+		if g.SequentialScanning {
 			previewsFn(ctx)
 		} else {
-			g.taskQueue.Add(fmt.Sprintf("Generating preview for %s", path), previewsFn)
+			g.TaskQueue.Add(fmt.Sprintf("Generating preview for %s", path), previewsFn)
 		}
 	}
 
@@ -425,7 +427,7 @@ func (g *imageGenerator) Generate(ctx context.Context, i *models.Image, f models
 }
 
 func (g *imageGenerator) generateThumbnail(ctx context.Context, i *models.Image, f models.File) error {
-	thumbPath := g.paths.Generated.GetThumbnailPath(i.Checksum, models.DefaultGthumbWidth)
+	thumbPath := g.Paths.Generated.GetThumbnailPath(i.Checksum, models.DefaultGthumbWidth)
 	exists, _ := fsutil.FileExists(thumbPath)
 	if exists {
 		return nil
@@ -435,7 +437,7 @@ func (g *imageGenerator) generateThumbnail(ctx context.Context, i *models.Image,
 
 	logger.Debugf("Generating thumbnail for %s", path)
 
-	data, err := g.generator.Thumbnail(ctx, f, models.DefaultGthumbWidth)
+	data, err := g.Generator.Thumbnail(ctx, f, models.DefaultGthumbWidth)
 	if err != nil {
 		// don't log for animated images
 		if !errors.Is(err, generate.ErrUnsupportedFormat) {
@@ -453,22 +455,23 @@ func (g *imageGenerator) generateThumbnail(ctx context.Context, i *models.Image,
 }
 
 type sceneGenerators struct {
-	taskQueue *job.TaskQueue
-	progress  *job.Progress
+	Input models.ScanMetadataInput
 
-	generator           *generate.Generator
-	repository          models.Repository
-	input               models.ScanMetadataInput
-	paths               *paths.Paths
-	fileNamingAlgorithm models.HashAlgorithm
-	sequentialScanning  bool
+	Repository          models.Repository
+	Paths               *paths.Paths
+	SequentialScanning  bool
+	FileNamingAlgorithm models.HashAlgorithm
+	Generator           *generate.Generator
+
+	TaskQueue *job.TaskQueue
+	Progress  *job.Progress
 }
 
 func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *models.VideoFile) error {
 	const overwrite = false
 
-	progress := g.progress
-	t := g.input
+	progress := g.Progress
+	t := g.Input
 	path := f.Path
 
 	if t.ScanGenerateSprites {
@@ -477,18 +480,18 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 			taskSprite := GenerateSpriteTask{
 				Scene:               *s,
 				Overwrite:           overwrite,
-				FileNamingAlgorithm: g.fileNamingAlgorithm,
-				Paths:               g.paths,
-				generator:           g.generator,
+				Paths:               g.Paths,
+				FileNamingAlgorithm: g.FileNamingAlgorithm,
+				Generator:           g.Generator,
 			}
 			taskSprite.Start(ctx)
 			progress.Increment()
 		}
 
-		if g.sequentialScanning {
+		if g.SequentialScanning {
 			spriteFn(ctx)
 		} else {
-			g.taskQueue.Add(fmt.Sprintf("Generating sprites for %s", path), spriteFn)
+			g.TaskQueue.Add(fmt.Sprintf("Generating sprites for %s", path), spriteFn)
 		}
 	}
 
@@ -496,19 +499,19 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 		progress.AddTotal(1)
 		phashFn := func(ctx context.Context) {
 			taskPhash := GeneratePhashTask{
-				repository:          g.repository,
 				File:                f,
-				fileNamingAlgorithm: g.fileNamingAlgorithm,
 				Overwrite:           overwrite,
+				Repository:          g.Repository,
+				FileNamingAlgorithm: g.FileNamingAlgorithm,
 			}
 			taskPhash.Start(ctx)
 			progress.Increment()
 		}
 
-		if g.sequentialScanning {
+		if g.SequentialScanning {
 			phashFn(ctx)
 		} else {
-			g.taskQueue.Add(fmt.Sprintf("Generating phash for %s", path), phashFn)
+			g.TaskQueue.Add(fmt.Sprintf("Generating phash for %s", path), phashFn)
 		}
 	}
 
@@ -519,30 +522,30 @@ func (g *sceneGenerators) Generate(ctx context.Context, s *models.Scene, f *mode
 
 			taskPreview := GeneratePreviewTask{
 				Scene:               *s,
-				ImagePreview:        t.ScanGenerateImagePreviews,
 				Options:             options,
+				ImagePreview:        t.ScanGenerateImagePreviews,
 				Overwrite:           overwrite,
-				fileNamingAlgorithm: g.fileNamingAlgorithm,
-				generator:           g.generator,
+				FileNamingAlgorithm: g.FileNamingAlgorithm,
+				Generator:           g.Generator,
 			}
 			taskPreview.Start(ctx)
 			progress.Increment()
 		}
 
-		if g.sequentialScanning {
+		if g.SequentialScanning {
 			previewsFn(ctx)
 		} else {
-			g.taskQueue.Add(fmt.Sprintf("Generating preview for %s", path), previewsFn)
+			g.TaskQueue.Add(fmt.Sprintf("Generating preview for %s", path), previewsFn)
 		}
 	}
 
 	if t.ScanGenerateCovers {
 		progress.AddTotal(1)
-		g.taskQueue.Add(fmt.Sprintf("Generating cover for %s", path), func(ctx context.Context) {
+		g.TaskQueue.Add(fmt.Sprintf("Generating cover for %s", path), func(ctx context.Context) {
 			taskCover := GenerateCoverTask{
-				repository: g.repository,
 				Scene:      *s,
 				Overwrite:  overwrite,
+				Repository: g.Repository,
 			}
 			taskCover.Start(ctx)
 			progress.Increment()

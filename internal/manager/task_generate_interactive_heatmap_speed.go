@@ -17,8 +17,8 @@ type GenerateInteractiveHeatmapSpeedTask struct {
 	DrawRange bool
 	Overwrite bool
 
-	repository          models.Repository
-	fileNamingAlgorithm models.HashAlgorithm
+	Repository          models.Repository
+	FileNamingAlgorithm models.HashAlgorithm
 	Paths               *paths.Paths
 }
 
@@ -36,7 +36,7 @@ func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
 		return
 	}
 
-	videoChecksum := t.Scene.GetHash(t.fileNamingAlgorithm)
+	videoChecksum := t.Scene.GetHash(t.FileNamingAlgorithm)
 	funscriptPath := video.GetFunscriptPath(t.Scene.Path)
 	heatmapPath := t.Paths.Scene.GetInteractiveHeatmapPath(videoChecksum)
 	duration := videoFile.Duration
@@ -47,7 +47,7 @@ func (t *GenerateInteractiveHeatmapSpeedTask) Start(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
 		videoFile.InteractiveSpeed = &median
 		return r.File.Update(ctx, videoFile)
@@ -66,7 +66,7 @@ func (t *GenerateInteractiveHeatmapSpeedTask) required() bool {
 		return true
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 	return !t.doesHeatmapExist(sceneHash) || primaryFile.InteractiveSpeed == nil
 }
 

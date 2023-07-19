@@ -12,16 +12,15 @@ import (
 )
 
 type GenerateMarkersTask struct {
-	repository          models.Repository
-	Scene               *models.Scene
-	Marker              *models.SceneMarker
-	Overwrite           bool
-	fileNamingAlgorithm models.HashAlgorithm
-
+	Scene        *models.Scene
+	Marker       *models.SceneMarker
 	ImagePreview bool
 	Screenshot   bool
+	Overwrite    bool
 
-	generator *generate.Generator
+	Repository          models.Repository
+	FileNamingAlgorithm models.HashAlgorithm
+	Generator           *generate.Generator
 }
 
 func (t *GenerateMarkersTask) GetDescription() string {
@@ -41,7 +40,7 @@ func (t *GenerateMarkersTask) Start(ctx context.Context) {
 
 	if t.Marker != nil {
 		var scene *models.Scene
-		r := t.repository
+		r := t.Repository
 		if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
 			var err error
 			scene, err = r.Scene.Find(ctx, t.Marker.SceneID)
@@ -71,7 +70,7 @@ func (t *GenerateMarkersTask) Start(ctx context.Context) {
 
 func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 	var sceneMarkers []*models.SceneMarker
-	r := t.repository
+	r := t.Repository
 	if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
 		var err error
 		sceneMarkers, err = r.SceneMarker.FindBySceneID(ctx, t.Scene.ID)
@@ -87,7 +86,7 @@ func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 		return
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 
 	// Make the folder for the scenes markers
 	markersFolder := filepath.Join(instance.Paths.Generated.Markers, sceneHash)
@@ -104,10 +103,10 @@ func (t *GenerateMarkersTask) generateSceneMarkers(ctx context.Context) {
 }
 
 func (t *GenerateMarkersTask) generateMarker(videoFile *models.VideoFile, scene *models.Scene, sceneMarker *models.SceneMarker) {
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 	seconds := int(sceneMarker.Seconds)
 
-	g := t.generator
+	g := t.Generator
 
 	if err := g.MarkerPreviewVideo(context.TODO(), videoFile.Path, sceneHash, seconds, instance.Config.GetPreviewAudio()); err != nil {
 		logger.Errorf("[generator] failed to generate marker video: %v", err)
@@ -131,7 +130,7 @@ func (t *GenerateMarkersTask) generateMarker(videoFile *models.VideoFile, scene 
 
 func (t *GenerateMarkersTask) markersNeeded(ctx context.Context) int {
 	markers := 0
-	sceneMarkers, err := t.repository.SceneMarker.FindBySceneID(ctx, t.Scene.ID)
+	sceneMarkers, err := t.Repository.SceneMarker.FindBySceneID(ctx, t.Scene.ID)
 	if err != nil {
 		logger.Errorf("error finding scene markers: %s", err.Error())
 		return 0
@@ -141,7 +140,7 @@ func (t *GenerateMarkersTask) markersNeeded(ctx context.Context) int {
 		return 0
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 	for _, sceneMarker := range sceneMarkers {
 		seconds := int(sceneMarker.Seconds)
 

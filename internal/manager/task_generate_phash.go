@@ -10,10 +10,11 @@ import (
 )
 
 type GeneratePhashTask struct {
-	repository          models.Repository
-	File                *models.VideoFile
-	Overwrite           bool
-	fileNamingAlgorithm models.HashAlgorithm
+	File      *models.VideoFile
+	Overwrite bool
+
+	Repository          models.Repository
+	FileNamingAlgorithm models.HashAlgorithm
 }
 
 func (t *GeneratePhashTask) GetDescription() string {
@@ -32,7 +33,7 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
 		qb := r.File
 		hashValue := int64(*hash)

@@ -20,15 +20,15 @@ import (
 const generateQueueSize = 200000
 
 type GenerateJob struct {
-	repository models.Repository
-	input      models.GenerateMetadataInput
+	Input     models.GenerateMetadataInput
+	Overwrite bool
 
-	overwrite      bool
-	parallelTasks  int
-	fileNamingAlgo models.HashAlgorithm
-	previewPreset  models.PreviewPreset
-	paths          *paths.Paths
-	generator      *generate.Generator
+	ParallelTasks       int
+	Repository          models.Repository
+	FileNamingAlgorithm models.HashAlgorithm
+	PreviewPreset       models.PreviewPreset
+	Paths               *paths.Paths
+	Generator           *generate.Generator
 }
 
 type totalsGenerate struct {
@@ -50,29 +50,29 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 	var err error
 	var markers []*models.SceneMarker
 
-	logger.Infof("Generate started with %d parallel tasks", j.parallelTasks)
+	logger.Infof("Generate started with %d parallel tasks", j.ParallelTasks)
 
 	queue := make(chan Task, generateQueueSize)
 	go func() {
 		defer close(queue)
 
 		var totals totalsGenerate
-		sceneIDs, err := stringslice.StringSliceToIntSlice(j.input.SceneIDs)
+		sceneIDs, err := stringslice.StringSliceToIntSlice(j.Input.SceneIDs)
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		markerIDs, err := stringslice.StringSliceToIntSlice(j.input.MarkerIDs)
+		markerIDs, err := stringslice.StringSliceToIntSlice(j.Input.MarkerIDs)
 		if err != nil {
 			logger.Error(err.Error())
 		}
 
-		r := j.repository
+		r := j.Repository
 		if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
 			qb := r.Scene
-			if len(j.input.SceneIDs) == 0 && len(j.input.MarkerIDs) == 0 {
+			if len(j.Input.SceneIDs) == 0 && len(j.Input.MarkerIDs) == 0 {
 				totals = j.queueTasks(ctx, queue)
 			} else {
-				if len(j.input.SceneIDs) > 0 {
+				if len(j.Input.SceneIDs) > 0 {
 					scenes, err = qb.FindMany(ctx, sceneIDs)
 					for _, s := range scenes {
 						if err := s.LoadFiles(ctx, qb); err != nil {
@@ -83,7 +83,7 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 					}
 				}
 
-				if len(j.input.MarkerIDs) > 0 {
+				if len(j.Input.MarkerIDs) > 0 {
 					markers, err = r.SceneMarker.FindMany(ctx, markerIDs)
 					if err != nil {
 						return err
@@ -101,31 +101,31 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 		}
 
 		logMsg := "Generating"
-		if j.input.Covers {
+		if j.Input.Covers {
 			logMsg += fmt.Sprintf(" %d covers", totals.covers)
 		}
-		if j.input.Sprites {
+		if j.Input.Sprites {
 			logMsg += fmt.Sprintf(" %d sprites", totals.sprites)
 		}
-		if j.input.Previews {
+		if j.Input.Previews {
 			logMsg += fmt.Sprintf(" %d previews", totals.previews)
 		}
-		if j.input.ImagePreviews {
+		if j.Input.ImagePreviews {
 			logMsg += fmt.Sprintf(" %d image previews", totals.imagePreviews)
 		}
-		if j.input.Markers {
+		if j.Input.Markers {
 			logMsg += fmt.Sprintf(" %d markers", totals.markers)
 		}
-		if j.input.Transcodes {
+		if j.Input.Transcodes {
 			logMsg += fmt.Sprintf(" %d transcodes", totals.transcodes)
 		}
-		if j.input.Phashes {
+		if j.Input.Phashes {
 			logMsg += fmt.Sprintf(" %d phashes", totals.phashes)
 		}
-		if j.input.InteractiveHeatmapsSpeeds {
+		if j.Input.InteractiveHeatmapsSpeeds {
 			logMsg += fmt.Sprintf(" %d heatmaps & speeds", totals.interactiveHeatmapSpeeds)
 		}
-		if j.input.ClipPreviews {
+		if j.Input.ClipPreviews {
 			logMsg += fmt.Sprintf(" %d image clip previews", totals.clipPreviews)
 		}
 		if logMsg == "Generating" {
@@ -136,16 +136,16 @@ func (j *GenerateJob) Execute(ctx context.Context, progress *job.Progress) {
 		progress.SetTotal(int(totals.tasks))
 	}()
 
-	wg := sizedwaitgroup.New(j.parallelTasks)
+	wg := sizedwaitgroup.New(j.ParallelTasks)
 
 	// Start measuring how long the generate has taken. (consider moving this up)
 	start := time.Now()
-	if err = j.paths.Generated.EnsureTmpDir(); err != nil {
+	if err = j.Paths.Generated.EnsureTmpDir(); err != nil {
 		logger.Warnf("could not create temporary directory: %v", err)
 	}
 
 	defer func() {
-		if err := j.paths.Generated.EmptyTmpDir(); err != nil {
+		if err := j.Paths.Generated.EmptyTmpDir(); err != nil {
 			logger.Warnf("failure emptying temporary directory: %v", err)
 		}
 	}()
@@ -184,7 +184,7 @@ func (j *GenerateJob) queueTasks(ctx context.Context, queue chan<- Task) totalsG
 
 	findFilter := models.BatchFindFilter(batchSize)
 
-	r := j.repository
+	r := j.Repository
 
 	for more := true; more; {
 		if job.IsCancelled(ctx) {
@@ -218,7 +218,7 @@ func (j *GenerateJob) queueTasks(ctx context.Context, queue chan<- Task) totalsG
 	}
 
 	*findFilter.Page = 1
-	for more := j.input.ClipPreviews; more; {
+	for more := j.Input.ClipPreviews; more; {
 		if job.IsCancelled(ctx) {
 			return totals
 		}
@@ -288,13 +288,13 @@ func getGeneratePreviewOptions(optionsInput models.GeneratePreviewOptionsInput) 
 }
 
 func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, queue chan<- Task, totals *totalsGenerate) {
-	r := j.repository
+	r := j.Repository
 
-	if j.input.Covers {
+	if j.Input.Covers {
 		task := &GenerateCoverTask{
-			repository: r,
 			Scene:      *scene,
-			Overwrite:  j.overwrite,
+			Overwrite:  j.Overwrite,
+			Repository: r,
 		}
 
 		if task.required(ctx) {
@@ -304,13 +304,13 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	if j.input.Sprites {
+	if j.Input.Sprites {
 		task := &GenerateSpriteTask{
 			Scene:               *scene,
-			Overwrite:           j.overwrite,
-			FileNamingAlgorithm: j.fileNamingAlgo,
-			Paths:               j.paths,
-			generator:           j.generator,
+			Overwrite:           j.Overwrite,
+			Paths:               j.Paths,
+			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			Generator:           j.Generator,
 		}
 
 		if task.required() {
@@ -320,20 +320,20 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	generatePreviewOptions := j.input.PreviewOptions
+	generatePreviewOptions := j.Input.PreviewOptions
 	if generatePreviewOptions == nil {
 		generatePreviewOptions = &models.GeneratePreviewOptionsInput{}
 	}
 	options := getGeneratePreviewOptions(*generatePreviewOptions)
 
-	if j.input.Previews {
+	if j.Input.Previews {
 		task := &GeneratePreviewTask{
 			Scene:               *scene,
-			ImagePreview:        j.input.ImagePreviews,
 			Options:             options,
-			Overwrite:           j.overwrite,
-			fileNamingAlgorithm: j.fileNamingAlgo,
-			generator:           j.generator,
+			ImagePreview:        j.Input.ImagePreviews,
+			Overwrite:           j.Overwrite,
+			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			Generator:           j.Generator,
 		}
 
 		if task.required() {
@@ -349,16 +349,15 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	if j.input.Markers {
+	if j.Input.Markers {
 		task := &GenerateMarkersTask{
-			repository:          r,
 			Scene:               scene,
-			Overwrite:           j.overwrite,
-			fileNamingAlgorithm: j.fileNamingAlgo,
-			ImagePreview:        j.input.MarkerImagePreviews,
-			Screenshot:          j.input.MarkerScreenshots,
-
-			generator: j.generator,
+			ImagePreview:        j.Input.MarkerImagePreviews,
+			Screenshot:          j.Input.MarkerScreenshots,
+			Overwrite:           j.Overwrite,
+			Repository:          r,
+			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			Generator:           j.Generator,
 		}
 
 		markers := task.markersNeeded(ctx)
@@ -370,15 +369,15 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	if j.input.Transcodes {
-		forceTranscode := j.input.ForceTranscodes
+	if j.Input.Transcodes {
+		forceTranscode := j.Input.ForceTranscodes
 		task := &GenerateTranscodeTask{
 			Scene:               *scene,
-			Overwrite:           j.overwrite,
+			Overwrite:           j.Overwrite,
 			Force:               forceTranscode,
-			fileNamingAlgorithm: j.fileNamingAlgo,
-			sceneService:        GetInstance().SceneService,
-			g:                   j.generator,
+			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			SceneService:        GetInstance().SceneService,
+			Generator:           j.Generator,
 		}
 		if task.required() {
 			totals.transcodes++
@@ -387,14 +386,14 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	if j.input.Phashes {
+	if j.Input.Phashes {
 		// generate for all files in scene
 		for _, f := range scene.Files.List() {
 			task := &GeneratePhashTask{
-				repository:          r,
 				File:                f,
-				fileNamingAlgorithm: j.fileNamingAlgo,
-				Overwrite:           j.overwrite,
+				Overwrite:           j.Overwrite,
+				Repository:          r,
+				FileNamingAlgorithm: j.FileNamingAlgorithm,
 			}
 
 			if task.required() {
@@ -405,14 +404,14 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 		}
 	}
 
-	if j.input.InteractiveHeatmapsSpeeds {
+	if j.Input.InteractiveHeatmapsSpeeds {
 		task := &GenerateInteractiveHeatmapSpeedTask{
 			Scene:               *scene,
 			DrawRange:           config.GetInstance().GetDrawFunscriptHeatmapRange(),
-			Overwrite:           j.overwrite,
-			repository:          r,
-			fileNamingAlgorithm: j.fileNamingAlgo,
-			Paths:               j.paths,
+			Overwrite:           j.Overwrite,
+			Repository:          r,
+			FileNamingAlgorithm: j.FileNamingAlgorithm,
+			Paths:               j.Paths,
 		}
 
 		if task.required() {
@@ -425,11 +424,11 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 
 func (j *GenerateJob) queueMarkerJob(marker *models.SceneMarker, queue chan<- Task, totals *totalsGenerate) {
 	task := &GenerateMarkersTask{
-		repository:          j.repository,
 		Marker:              marker,
-		Overwrite:           j.overwrite,
-		fileNamingAlgorithm: j.fileNamingAlgo,
-		generator:           j.generator,
+		Overwrite:           j.Overwrite,
+		Repository:          j.Repository,
+		FileNamingAlgorithm: j.FileNamingAlgorithm,
+		Generator:           j.Generator,
 	}
 	totals.markers++
 	totals.tasks++
@@ -439,10 +438,10 @@ func (j *GenerateJob) queueMarkerJob(marker *models.SceneMarker, queue chan<- Ta
 func (j *GenerateJob) queueImageJob(image *models.Image, queue chan<- Task, totals *totalsGenerate) {
 	task := &GenerateClipPreviewTask{
 		Image:         *image,
-		Overwrite:     j.overwrite,
-		PreviewPreset: j.previewPreset,
-		Paths:         j.paths,
-		generator:     j.generator,
+		Overwrite:     j.Overwrite,
+		Paths:         j.Paths,
+		PreviewPreset: j.PreviewPreset,
+		Generator:     j.Generator,
 	}
 
 	if task.required() {

@@ -15,10 +15,9 @@ type GenerateSpriteTask struct {
 	Scene     models.Scene
 	Overwrite bool
 
-	FileNamingAlgorithm models.HashAlgorithm
 	Paths               *paths.Paths
-
-	generator *generate.Generator
+	FileNamingAlgorithm models.HashAlgorithm
+	Generator           *generate.Generator
 }
 
 func (t *GenerateSpriteTask) GetDescription() string {
@@ -40,7 +39,7 @@ func (t *GenerateSpriteTask) Start(ctx context.Context) {
 	videoHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 
 	if t.spriteImageRequired() {
-		if err := t.generator.SpriteImage(context.TODO(), videoFile, videoHash); err != nil {
+		if err := t.Generator.SpriteImage(context.TODO(), videoFile, videoHash); err != nil {
 			logger.Errorf("error generating sprite image: %v", err)
 			logErrorOutput(err)
 			return
@@ -48,7 +47,7 @@ func (t *GenerateSpriteTask) Start(ctx context.Context) {
 	}
 
 	if t.spriteVTTRequired() {
-		if err := t.generator.SpriteVTT(context.TODO(), videoFile, videoHash); err != nil {
+		if err := t.Generator.SpriteVTT(context.TODO(), videoFile, videoHash); err != nil {
 			logger.Errorf("error generating sprite vtt: %v", err)
 			logErrorOutput(err)
 			return

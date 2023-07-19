@@ -14,11 +14,11 @@ import (
 )
 
 type StashBoxPerformerTagTask struct {
-	box             *models.StashBox
-	name            *string
-	performer       *models.Performer
-	refresh         bool
-	excluded_fields []string
+	Name           *string
+	Performer      *models.Performer
+	Refresh        bool
+	Box            *models.StashBox
+	ExcludedFields []string
 }
 
 func (t *StashBoxPerformerTagTask) Start(ctx context.Context) {
@@ -27,10 +27,10 @@ func (t *StashBoxPerformerTagTask) Start(ctx context.Context) {
 
 func (t *StashBoxPerformerTagTask) Description() string {
 	var name string
-	if t.name != nil {
-		name = *t.name
-	} else if t.performer != nil {
-		name = t.performer.Name
+	if t.Name != nil {
+		name = *t.Name
+	} else if t.Performer != nil {
+		name = t.Performer.Name
 	}
 
 	return fmt.Sprintf("Tagging performer %s from stash-box", name)
@@ -41,12 +41,12 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 	var err error
 
 	stashboxRepository := stashbox.NewRepository(instance.Repository)
-	client := stashbox.NewClient(*t.box, stashboxRepository)
+	client := stashbox.NewClient(*t.Box, stashboxRepository)
 
-	if t.refresh {
+	if t.Refresh {
 		var performerID string
-		for _, id := range t.performer.StashIDs.List() {
-			if id.Endpoint == t.box.Endpoint {
+		for _, id := range t.Performer.StashIDs.List() {
+			if id.Endpoint == t.Box.Endpoint {
 				performerID = id.StashID
 			}
 		}
@@ -55,10 +55,10 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 		}
 	} else {
 		var name string
-		if t.name != nil {
-			name = *t.name
+		if t.Name != nil {
+			name = *t.Name
 		} else {
-			name = t.performer.Name
+			name = t.Performer.Name
 		}
 		performer, err = client.FindStashBoxPerformerByName(ctx, name)
 	}
@@ -69,22 +69,22 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 	}
 
 	excluded := map[string]bool{}
-	for _, field := range t.excluded_fields {
+	for _, field := range t.ExcludedFields {
 		excluded[field] = true
 	}
 
 	if performer != nil {
-		if t.performer != nil {
+		if t.Performer != nil {
 			partial := t.getPartial(performer, excluded)
 
 			txnErr := txn.WithTxn(ctx, instance.Repository, func(ctx context.Context) error {
 				r := instance.Repository
-				_, err := r.Performer.UpdatePartial(ctx, t.performer.ID, partial)
+				_, err := r.Performer.UpdatePartial(ctx, t.Performer.ID, partial)
 
 				if len(performer.Images) > 0 && !excluded["image"] {
 					image, err := utils.ReadImageFromURL(ctx, performer.Images[0])
 					if err == nil {
-						err = r.Performer.UpdateImage(ctx, t.performer.ID, image)
+						err = r.Performer.UpdateImage(ctx, t.Performer.ID, image)
 						if err != nil {
 							return err
 						}
@@ -105,7 +105,7 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 			if txnErr != nil {
 				logger.Warnf("failure to execute partial update of performer: %v", txnErr)
 			}
-		} else if t.name != nil && performer.Name != nil {
+		} else if t.Name != nil && performer.Name != nil {
 			newPerformer := models.NewPerformer()
 
 			newPerformer.Name = *performer.Name
@@ -129,7 +129,7 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 			newPerformer.URL = getString(performer.URL)
 			newPerformer.StashIDs = models.NewRelatedStashIDs([]models.StashID{
 				{
-					Endpoint: t.box.Endpoint,
+					Endpoint: t.Box.Endpoint,
 					StashID:  *performer.RemoteSiteID,
 				},
 			})
@@ -160,17 +160,17 @@ func (t *StashBoxPerformerTagTask) stashBoxPerformerTag(ctx context.Context) {
 				return err
 			})
 			if err != nil {
-				logger.Errorf("Failed to save performer %s: %s", *t.name, err.Error())
+				logger.Errorf("Failed to save performer %s: %s", *t.Name, err.Error())
 			} else {
-				logger.Infof("Saved performer %s", *t.name)
+				logger.Infof("Saved performer %s", *t.Name)
 			}
 		}
 	} else {
 		var name string
-		if t.name != nil {
-			name = *t.name
-		} else if t.performer != nil {
-			name = t.performer.Name
+		if t.Name != nil {
+			name = *t.Name
+		} else if t.Performer != nil {
+			name = t.Performer.Name
 		}
 		logger.Infof("No match found for %s", name)
 	}
@@ -250,16 +250,16 @@ func (t *StashBoxPerformerTagTask) getPartial(performer *models.ScrapedPerformer
 	if performer.URL != nil && !excluded["url"] {
 		partial.URL = models.NewOptionalString(*performer.URL)
 	}
-	if !t.refresh {
+	if !t.Refresh {
 		// #3547 - need to overwrite the stash id for the endpoint, but preserve
 		// existing stash ids for other endpoints
 		partial.StashIDs = &models.UpdateStashIDs{
-			StashIDs: t.performer.StashIDs.List(),
+			StashIDs: t.Performer.StashIDs.List(),
 			Mode:     models.RelationshipUpdateModeSet,
 		}
 
 		partial.StashIDs.Set(models.StashID{
-			Endpoint: t.box.Endpoint,
+			Endpoint: t.Box.Endpoint,
 			StashID:  *performer.RemoteSiteID,
 		})
 	}

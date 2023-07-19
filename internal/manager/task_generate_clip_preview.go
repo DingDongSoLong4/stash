@@ -15,9 +15,9 @@ type GenerateClipPreviewTask struct {
 	Image     models.Image
 	Overwrite bool
 
-	PreviewPreset models.PreviewPreset
 	Paths         *paths.Paths
-	generator     *generate.Generator
+	PreviewPreset models.PreviewPreset
+	Generator     *generate.Generator
 }
 
 func (t *GenerateClipPreviewTask) GetDescription() string {
@@ -37,7 +37,7 @@ func (t *GenerateClipPreviewTask) Start(ctx context.Context) {
 	}
 
 	checksum := t.Image.Checksum
-	err = t.generator.ClipPreview(context.TODO(), videoFile, checksum, models.DefaultGthumbWidth, t.PreviewPreset)
+	err = t.Generator.ClipPreview(context.TODO(), videoFile, checksum, models.DefaultGthumbWidth, t.PreviewPreset)
 	if err != nil {
 		logger.Errorf("error generating image preview: %v", err)
 		return

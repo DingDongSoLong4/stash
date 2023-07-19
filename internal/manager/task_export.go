@@ -31,15 +31,16 @@ import (
 )
 
 type ExportTask struct {
-	repository models.Repository
-	full       bool
+	Input               models.ExportObjectsInput
+	Full                bool
+	IncludeDependencies bool
+
+	Repository          models.Repository
+	FileNamingAlgorithm models.HashAlgorithm
 
 	baseDir string
 	json    jsonUtils
 
-	fileNamingAlgorithm models.HashAlgorithm
-
-	input      models.ExportObjectsInput
 	scenes     *exportSpec
 	images     *exportSpec
 	performers *exportSpec
@@ -47,8 +48,6 @@ type ExportTask struct {
 	tags       *exportSpec
 	studios    *exportSpec
 	galleries  *exportSpec
-
-	includeDependencies bool
 
 	DownloadHash string
 }
@@ -82,15 +81,15 @@ func (t *ExportTask) Start(ctx context.Context) {
 
 	startTime := time.Now()
 
-	t.scenes = newExportSpec(t.input.Scenes)
-	t.images = newExportSpec(t.input.Images)
-	t.performers = newExportSpec(t.input.Performers)
-	t.movies = newExportSpec(t.input.Movies)
-	t.tags = newExportSpec(t.input.Tags)
-	t.studios = newExportSpec(t.input.Studios)
-	t.galleries = newExportSpec(t.input.Galleries)
+	t.scenes = newExportSpec(t.Input.Scenes)
+	t.images = newExportSpec(t.Input.Images)
+	t.performers = newExportSpec(t.Input.Performers)
+	t.movies = newExportSpec(t.Input.Movies)
+	t.tags = newExportSpec(t.Input.Tags)
+	t.studios = newExportSpec(t.Input.Studios)
+	t.galleries = newExportSpec(t.Input.Galleries)
 
-	if t.full {
+	if t.Full {
 		t.baseDir = config.GetInstance().GetMetadataPath()
 	} else {
 		var err error
@@ -120,11 +119,11 @@ func (t *ExportTask) Start(ctx context.Context) {
 	paths.EmptyJSONDirs(t.baseDir)
 	paths.EnsureJSONDirs(t.baseDir)
 
-	txnErr := t.repository.WithTxn(ctx, func(ctx context.Context) error {
+	txnErr := t.Repository.WithTxn(ctx, func(ctx context.Context) error {
 		// include movie scenes and gallery images
-		if !t.full {
+		if !t.Full {
 			// only include movie scenes if includeDependencies is also set
-			if !t.scenes.all && t.includeDependencies {
+			if !t.scenes.all && t.IncludeDependencies {
 				t.populateMovieScenes(ctx)
 			}
 
@@ -148,7 +147,7 @@ func (t *ExportTask) Start(ctx context.Context) {
 		logger.Warnf("error while running export transaction: %v", txnErr)
 	}
 
-	if !t.full {
+	if !t.Full {
 		err := t.generateDownload()
 		if err != nil {
 			logger.Errorf("error generating download link: %s", err.Error())
@@ -248,13 +247,13 @@ func (t *ExportTask) zipFile(fn, outDir string, z *zip.Writer) error {
 }
 
 func (t *ExportTask) populateMovieScenes(ctx context.Context) {
-	r := t.repository
+	r := t.Repository
 	reader := r.Movie
 	sceneReader := r.Scene
 
 	var movies []*models.Movie
 	var err error
-	all := t.full || (t.movies != nil && t.movies.all)
+	all := t.Full || (t.movies != nil && t.movies.all)
 	if all {
 		movies, err = reader.All(ctx)
 	} else if t.movies != nil && len(t.movies.IDs) > 0 {
@@ -279,13 +278,13 @@ func (t *ExportTask) populateMovieScenes(ctx context.Context) {
 }
 
 func (t *ExportTask) populateGalleryImages(ctx context.Context) {
-	r := t.repository
+	r := t.Repository
 	reader := r.Gallery
 	imageReader := r.Image
 
 	var galleries []*models.Gallery
 	var err error
-	all := t.full || (t.galleries != nil && t.galleries.all)
+	all := t.Full || (t.galleries != nil && t.galleries.all)
 	if all {
 		galleries, err = reader.All(ctx)
 	} else if t.galleries != nil && len(t.galleries.IDs) > 0 {
@@ -317,11 +316,11 @@ func (t *ExportTask) populateGalleryImages(ctx context.Context) {
 func (t *ExportTask) ExportScenes(ctx context.Context, workers int) {
 	var scenesWg sync.WaitGroup
 
-	sceneReader := t.repository.Scene
+	sceneReader := t.Repository.Scene
 
 	var scenes []*models.Scene
 	var err error
-	all := t.full || (t.scenes != nil && t.scenes.all)
+	all := t.Full || (t.scenes != nil && t.scenes.all)
 	if all {
 		scenes, err = sceneReader.All(ctx)
 	} else if t.scenes != nil && len(t.scenes.IDs) > 0 {
@@ -450,7 +449,7 @@ func folderToJSON(f models.Folder) jsonschema.DirEntry {
 func (t *ExportTask) exportScene(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Scene) {
 	defer wg.Done()
 
-	r := t.repository
+	r := t.Repository
 	sceneReader := r.Scene
 	studioReader := r.Studio
 	movieReader := r.Movie
@@ -460,7 +459,7 @@ func (t *ExportTask) exportScene(ctx context.Context, wg *sync.WaitGroup, jobCha
 	sceneMarkerReader := r.SceneMarker
 
 	for s := range jobChan {
-		sceneHash := s.GetHash(t.fileNamingAlgorithm)
+		sceneHash := s.GetHash(t.FileNamingAlgorithm)
 
 		if err := s.LoadRelationships(ctx, sceneReader); err != nil {
 			logger.Errorf("[scenes] <%s> error loading scene relationships: %v", sceneHash, err)
@@ -528,7 +527,7 @@ func (t *ExportTask) exportScene(ctx context.Context, wg *sync.WaitGroup, jobCha
 			continue
 		}
 
-		if t.includeDependencies {
+		if t.IncludeDependencies {
 			if s.StudioID != nil {
 				t.studios.IDs = intslice.IntAppendUnique(t.studios.IDs, *s.StudioID)
 			}
@@ -566,12 +565,12 @@ func (t *ExportTask) exportScene(ctx context.Context, wg *sync.WaitGroup, jobCha
 func (t *ExportTask) ExportImages(ctx context.Context, workers int) {
 	var imagesWg sync.WaitGroup
 
-	r := t.repository
+	r := t.Repository
 	imageReader := r.Image
 
 	var images []*models.Image
 	var err error
-	all := t.full || (t.images != nil && t.images.all)
+	all := t.Full || (t.images != nil && t.images.all)
 	if all {
 		images, err = imageReader.All(ctx)
 	} else if t.images != nil && len(t.images.IDs) > 0 {
@@ -610,7 +609,7 @@ func (t *ExportTask) ExportImages(ctx context.Context, workers int) {
 func (t *ExportTask) exportImage(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Image) {
 	defer wg.Done()
 
-	r := t.repository
+	r := t.Repository
 	studioReader := r.Studio
 	galleryReader := r.Gallery
 	performerReader := r.Performer
@@ -669,7 +668,7 @@ func (t *ExportTask) exportImage(ctx context.Context, wg *sync.WaitGroup, jobCha
 
 		newImageJSON.Tags = tag.GetNames(tags)
 
-		if t.includeDependencies {
+		if t.IncludeDependencies {
 			if s.StudioID != nil {
 				t.studios.IDs = intslice.IntAppendUnique(t.studios.IDs, *s.StudioID)
 			}
@@ -690,11 +689,11 @@ func (t *ExportTask) exportImage(ctx context.Context, wg *sync.WaitGroup, jobCha
 func (t *ExportTask) ExportGalleries(ctx context.Context, workers int) {
 	var galleriesWg sync.WaitGroup
 
-	reader := t.repository.Gallery
+	reader := t.Repository.Gallery
 
 	var galleries []*models.Gallery
 	var err error
-	all := t.full || (t.galleries != nil && t.galleries.all)
+	all := t.Full || (t.galleries != nil && t.galleries.all)
 	if all {
 		galleries, err = reader.All(ctx)
 	} else if t.galleries != nil && len(t.galleries.IDs) > 0 {
@@ -734,7 +733,7 @@ func (t *ExportTask) ExportGalleries(ctx context.Context, workers int) {
 func (t *ExportTask) exportGallery(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Gallery) {
 	defer wg.Done()
 
-	r := t.repository
+	r := t.Repository
 	studioReader := r.Studio
 	performerReader := r.Performer
 	tagReader := r.Tag
@@ -803,7 +802,7 @@ func (t *ExportTask) exportGallery(ctx context.Context, wg *sync.WaitGroup, jobC
 
 		newGalleryJSON.Tags = tag.GetNames(tags)
 
-		if t.includeDependencies {
+		if t.IncludeDependencies {
 			if g.StudioID != nil {
 				t.studios.IDs = intslice.IntAppendUnique(t.studios.IDs, *g.StudioID)
 			}
@@ -834,10 +833,10 @@ func (t *ExportTask) exportGallery(ctx context.Context, wg *sync.WaitGroup, jobC
 func (t *ExportTask) ExportPerformers(ctx context.Context, workers int) {
 	var performersWg sync.WaitGroup
 
-	reader := t.repository.Performer
+	reader := t.Repository.Performer
 	var performers []*models.Performer
 	var err error
-	all := t.full || (t.performers != nil && t.performers.all)
+	all := t.Full || (t.performers != nil && t.performers.all)
 	if all {
 		performers, err = reader.All(ctx)
 	} else if t.performers != nil && len(t.performers.IDs) > 0 {
@@ -873,7 +872,7 @@ func (t *ExportTask) ExportPerformers(ctx context.Context, workers int) {
 func (t *ExportTask) exportPerformer(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Performer) {
 	defer wg.Done()
 
-	r := t.repository
+	r := t.Repository
 	performerReader := r.Performer
 
 	for p := range jobChan {
@@ -892,7 +891,7 @@ func (t *ExportTask) exportPerformer(ctx context.Context, wg *sync.WaitGroup, jo
 
 		newPerformerJSON.Tags = tag.GetNames(tags)
 
-		if t.includeDependencies {
+		if t.IncludeDependencies {
 			t.tags.IDs = intslice.IntAppendUniques(t.tags.IDs, tag.GetIDs(tags))
 		}
 
@@ -907,10 +906,10 @@ func (t *ExportTask) exportPerformer(ctx context.Context, wg *sync.WaitGroup, jo
 func (t *ExportTask) ExportStudios(ctx context.Context, workers int) {
 	var studiosWg sync.WaitGroup
 
-	reader := t.repository.Studio
+	reader := t.Repository.Studio
 	var studios []*models.Studio
 	var err error
-	all := t.full || (t.studios != nil && t.studios.all)
+	all := t.Full || (t.studios != nil && t.studios.all)
 	if all {
 		studios, err = reader.All(ctx)
 	} else if t.studios != nil && len(t.studios.IDs) > 0 {
@@ -947,7 +946,7 @@ func (t *ExportTask) ExportStudios(ctx context.Context, workers int) {
 func (t *ExportTask) exportStudio(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Studio) {
 	defer wg.Done()
 
-	studioReader := t.repository.Studio
+	studioReader := t.Repository.Studio
 
 	for s := range jobChan {
 		newStudioJSON, err := studio.ToJSON(ctx, studioReader, s)
@@ -968,10 +967,10 @@ func (t *ExportTask) exportStudio(ctx context.Context, wg *sync.WaitGroup, jobCh
 func (t *ExportTask) ExportTags(ctx context.Context, workers int) {
 	var tagsWg sync.WaitGroup
 
-	reader := t.repository.Tag
+	reader := t.Repository.Tag
 	var tags []*models.Tag
 	var err error
-	all := t.full || (t.tags != nil && t.tags.all)
+	all := t.Full || (t.tags != nil && t.tags.all)
 	if all {
 		tags, err = reader.All(ctx)
 	} else if t.tags != nil && len(t.tags.IDs) > 0 {
@@ -1008,7 +1007,7 @@ func (t *ExportTask) ExportTags(ctx context.Context, workers int) {
 func (t *ExportTask) exportTag(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Tag) {
 	defer wg.Done()
 
-	tagReader := t.repository.Tag
+	tagReader := t.Repository.Tag
 
 	for thisTag := range jobChan {
 		newTagJSON, err := tag.ToJSON(ctx, tagReader, thisTag)
@@ -1029,10 +1028,10 @@ func (t *ExportTask) exportTag(ctx context.Context, wg *sync.WaitGroup, jobChan 
 func (t *ExportTask) ExportMovies(ctx context.Context, workers int) {
 	var moviesWg sync.WaitGroup
 
-	reader := t.repository.Movie
+	reader := t.Repository.Movie
 	var movies []*models.Movie
 	var err error
-	all := t.full || (t.movies != nil && t.movies.all)
+	all := t.Full || (t.movies != nil && t.movies.all)
 	if all {
 		movies, err = reader.All(ctx)
 	} else if t.movies != nil && len(t.movies.IDs) > 0 {
@@ -1069,7 +1068,7 @@ func (t *ExportTask) ExportMovies(ctx context.Context, workers int) {
 func (t *ExportTask) exportMovie(ctx context.Context, wg *sync.WaitGroup, jobChan <-chan *models.Movie) {
 	defer wg.Done()
 
-	r := t.repository
+	r := t.Repository
 	movieReader := r.Movie
 	studioReader := r.Studio
 
@@ -1081,7 +1080,7 @@ func (t *ExportTask) exportMovie(ctx context.Context, wg *sync.WaitGroup, jobCha
 			continue
 		}
 
-		if t.includeDependencies {
+		if t.IncludeDependencies {
 			if m.StudioID != nil {
 				t.studios.IDs = intslice.IntAppendUnique(t.studios.IDs, *m.StudioID)
 			}

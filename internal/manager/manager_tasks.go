@@ -33,8 +33,8 @@ func (s *Manager) RunSingleTask(ctx context.Context, t Task) int {
 
 func (s *Manager) Scan(ctx context.Context, input models.ScanMetadataInput) (int, error) {
 	scanJob := ScanJob{
-		Manager: s,
 		Input:   input,
+		Manager: s,
 	}
 
 	return s.JobManager.Add(ctx, "Scanning...", &scanJob), nil
@@ -47,13 +47,13 @@ func (s *Manager) Import(ctx context.Context) (int, error) {
 	}
 
 	t := ImportTask{
-		repository:          s.Repository,
-		resetter:            s.Database,
 		BaseDir:             metadataPath,
 		Reset:               true,
 		DuplicateBehaviour:  models.ImportDuplicateEnumFail,
 		MissingRefBehaviour: models.ImportMissingRefEnumFail,
-		fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+		Repository:          s.Repository,
+		Resetter:            s.Database,
+		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
 	}
 
 	return s.RunSingleTask(ctx, &t), nil
@@ -82,14 +82,14 @@ func (s *Manager) ImportObjects(ctx context.Context, input models.ImportObjectsI
 	}
 
 	t := ImportTask{
-		repository:          s.Repository,
-		resetter:            s.Database,
 		BaseDir:             baseDir,
 		TmpZip:              tmpZip,
 		Reset:               false,
 		DuplicateBehaviour:  input.DuplicateBehaviour,
 		MissingRefBehaviour: input.MissingRefBehaviour,
-		fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+		Repository:          s.Repository,
+		Resetter:            s.Database,
+		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
 	}
 
 	return s.RunSingleTask(ctx, &t), nil
@@ -103,9 +103,9 @@ func (s *Manager) Export(ctx context.Context) (int, error) {
 
 	j := job.MakeJobExec(func(ctx context.Context, progress *job.Progress) {
 		task := ExportTask{
-			repository:          s.Repository,
-			full:                true,
-			fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+			Full:                true,
+			Repository:          s.Repository,
+			FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
 		}
 		task.Start(ctx)
 	})
@@ -120,10 +120,10 @@ func (s *Manager) ExportObjects(ctx context.Context, input models.ExportObjectsI
 	}
 
 	t := ExportTask{
-		repository:          s.Repository,
-		fileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
-		input:               input,
-		includeDependencies: includeDeps,
+		Input:               input,
+		IncludeDependencies: includeDeps,
+		Repository:          s.Repository,
+		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
 	}
 
 	t.Start(ctx)
@@ -144,12 +144,13 @@ func (s *Manager) Generate(ctx context.Context, input models.GenerateMetadataInp
 	}
 
 	j := &GenerateJob{
-		repository:     s.Repository,
-		input:          input,
-		parallelTasks:  s.Config.GetParallelTasksWithAutoDetection(),
-		fileNamingAlgo: s.Config.GetVideoFileNamingAlgorithm(),
-		paths:          s.Paths,
-		generator:      s.NewGenerator(false),
+		Input:               input,
+		ParallelTasks:       s.Config.GetParallelTasksWithAutoDetection(),
+		Repository:          s.Repository,
+		FileNamingAlgorithm: s.Config.GetVideoFileNamingAlgorithm(),
+		PreviewPreset:       s.Config.GetPreviewPreset(),
+		Paths:               s.Paths,
+		Generator:           s.NewGenerator(false),
 	}
 
 	return s.JobManager.Add(ctx, "Generating...", j), nil
@@ -193,10 +194,10 @@ func (s *Manager) generateScreenshot(ctx context.Context, sceneId string, at *fl
 		}
 
 		task := GenerateCoverTask{
-			repository:   s.Repository,
 			Scene:        *scene,
 			ScreenshotAt: at,
 			Overwrite:    true,
+			Repository:   s.Repository,
 		}
 
 		task.Start(ctx)
@@ -208,9 +209,9 @@ func (s *Manager) generateScreenshot(ctx context.Context, sceneId string, at *fl
 }
 
 func (s *Manager) AutoTag(ctx context.Context, input models.AutoTagMetadataInput) int {
-	j := autoTagJob{
-		repository: s.Repository,
-		input:      input,
+	j := AutoTagJob{
+		Input:      input,
+		Repository: s.Repository,
 	}
 
 	return s.JobManager.Add(ctx, "Auto-tagging...", &j)
@@ -218,12 +219,11 @@ func (s *Manager) AutoTag(ctx context.Context, input models.AutoTagMetadataInput
 
 func (s *Manager) Identify(ctx context.Context, input identify.Options) int {
 	j := IdentifyJob{
-		repository:       s.Repository,
-		postHookExecutor: s.PluginCache,
-		scraperCache:     s.ScraperCache,
-
-		input:      input,
-		stashBoxes: s.Config.GetStashBoxes(),
+		Input:            input,
+		StashBoxes:       s.Config.GetStashBoxes(),
+		Repository:       s.Repository,
+		ScraperCache:     s.ScraperCache,
+		PostHookExecutor: s.PluginCache,
 	}
 
 	return s.JobManager.Add(ctx, "Identifying...", &j)
@@ -276,7 +276,10 @@ func (s *Manager) MigrateHash(ctx context.Context) int {
 
 			wg.Add(1)
 
-			task := MigrateHashTask{Scene: scene, fileNamingAlgorithm: fileNamingAlgo}
+			task := MigrateHashTask{
+				Scene:               scene,
+				FileNamingAlgorithm: fileNamingAlgo,
+			}
 			go func() {
 				task.Start()
 				wg.Done()
@@ -323,10 +326,10 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 
 						if err == nil {
 							tasks = append(tasks, StashBoxPerformerTagTask{
-								performer:       performer,
-								refresh:         input.Refresh,
-								box:             box,
-								excluded_fields: input.ExcludeFields,
+								Performer:      performer,
+								Refresh:        input.Refresh,
+								Box:            box,
+								ExcludedFields: input.ExcludeFields,
 							})
 						} else {
 							return err
@@ -341,10 +344,10 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 			for i := range input.PerformerNames {
 				if len(input.PerformerNames[i]) > 0 {
 					tasks = append(tasks, StashBoxPerformerTagTask{
-						name:            &input.PerformerNames[i],
-						refresh:         input.Refresh,
-						box:             box,
-						excluded_fields: input.ExcludeFields,
+						Name:           &input.PerformerNames[i],
+						Refresh:        input.Refresh,
+						Box:            box,
+						ExcludedFields: input.ExcludeFields,
 					})
 				}
 			}
@@ -372,10 +375,10 @@ func (s *Manager) StashBoxBatchPerformerTag(ctx context.Context, input models.St
 					}
 
 					tasks = append(tasks, StashBoxPerformerTagTask{
-						performer:       performer,
-						refresh:         input.Refresh,
-						box:             box,
-						excluded_fields: input.ExcludeFields,
+						Performer:      performer,
+						Refresh:        input.Refresh,
+						Box:            box,
+						ExcludedFields: input.ExcludeFields,
 					})
 				}
 				return nil

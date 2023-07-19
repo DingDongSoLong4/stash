@@ -10,10 +10,11 @@ import (
 )
 
 type GenerateCoverTask struct {
-	repository   models.Repository
 	Scene        models.Scene
 	ScreenshotAt *float64
 	Overwrite    bool
+
+	Repository models.Repository
 }
 
 func (t *GenerateCoverTask) GetDescription() string {
@@ -23,7 +24,7 @@ func (t *GenerateCoverTask) GetDescription() string {
 func (t *GenerateCoverTask) Start(ctx context.Context) {
 	scenePath := t.Scene.Path
 
-	r := t.repository
+	r := t.Repository
 
 	var required bool
 	if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
@@ -99,7 +100,7 @@ func (t *GenerateCoverTask) required(ctx context.Context) bool {
 	}
 
 	// if the scene has a cover, then we don't need to generate it
-	hasCover, err := t.repository.Scene.HasCover(ctx, t.Scene.ID)
+	hasCover, err := t.Repository.Scene.HasCover(ctx, t.Scene.ID)
 	if err != nil {
 		logger.Errorf("Error getting cover: %v", err)
 		return false

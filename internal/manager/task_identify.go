@@ -19,21 +19,21 @@ import (
 var ErrInput = errors.New("invalid request input")
 
 type IdentifyJob struct {
-	repository       models.Repository
-	scraperCache     *scraper.Cache
-	postHookExecutor identify.SceneUpdatePostHookExecutor
+	Input identify.Options
 
-	input identify.Options
+	StashBoxes       []*models.StashBox
+	Repository       models.Repository
+	ScraperCache     *scraper.Cache
+	PostHookExecutor identify.SceneUpdatePostHookExecutor
 
-	stashBoxes []*models.StashBox
-	progress   *job.Progress
+	progress *job.Progress
 }
 
 func (j *IdentifyJob) Execute(ctx context.Context, progress *job.Progress) {
 	j.progress = progress
 
 	// if no sources provided - just return
-	if len(j.input.Sources) == 0 {
+	if len(j.Input.Sources) == 0 {
 		return
 	}
 
@@ -46,12 +46,12 @@ func (j *IdentifyJob) Execute(ctx context.Context, progress *job.Progress) {
 	// if scene ids provided, use those
 	// otherwise, batch query for all scenes - ordering by path
 	// don't use a transaction to query scenes
-	if err := j.repository.WithDB(ctx, func(ctx context.Context) error {
-		if len(j.input.SceneIDs) == 0 {
+	if err := j.Repository.WithDB(ctx, func(ctx context.Context) error {
+		if len(j.Input.SceneIDs) == 0 {
 			return j.identifyAllScenes(ctx, sources)
 		}
 
-		sceneIDs, err := stringslice.StringSliceToIntSlice(j.input.SceneIDs)
+		sceneIDs, err := stringslice.StringSliceToIntSlice(j.Input.SceneIDs)
 		if err != nil {
 			return fmt.Errorf("invalid scene IDs: %w", err)
 		}
@@ -64,7 +64,7 @@ func (j *IdentifyJob) Execute(ctx context.Context, progress *job.Progress) {
 
 			// find the scene
 			var err error
-			scene, err := j.repository.Scene.Find(ctx, id)
+			scene, err := j.Repository.Scene.Find(ctx, id)
 			if err != nil {
 				return fmt.Errorf("finding scene id %d: %w", id, err)
 			}
@@ -85,7 +85,7 @@ func (j *IdentifyJob) Execute(ctx context.Context, progress *job.Progress) {
 func (j *IdentifyJob) identifyAllScenes(ctx context.Context, sources []identify.ScraperSource) error {
 	// exclude organised
 	organised := false
-	sceneFilter := scene.FilterFromPaths(j.input.Paths)
+	sceneFilter := scene.FilterFromPaths(j.Input.Paths)
 	sceneFilter.Organized = &organised
 
 	sort := "path"
@@ -96,7 +96,7 @@ func (j *IdentifyJob) identifyAllScenes(ctx context.Context, sources []identify.
 	// get the count
 	pp := 0
 	findFilter.PerPage = &pp
-	countResult, err := j.repository.Scene.Query(ctx, models.SceneQueryOptions{
+	countResult, err := j.Repository.Scene.Query(ctx, models.SceneQueryOptions{
 		QueryOptions: models.QueryOptions{
 			FindFilter: findFilter,
 			Count:      true,
@@ -109,7 +109,7 @@ func (j *IdentifyJob) identifyAllScenes(ctx context.Context, sources []identify.
 
 	j.progress.SetTotal(countResult.Count)
 
-	return scene.BatchProcess(ctx, j.repository.Scene, sceneFilter, findFilter, func(scene *models.Scene) error {
+	return scene.BatchProcess(ctx, j.Repository.Scene, sceneFilter, findFilter, func(scene *models.Scene) error {
 		if job.IsCancelled(ctx) {
 			return nil
 		}
@@ -127,10 +127,10 @@ func (j *IdentifyJob) identifyScene(ctx context.Context, s *models.Scene, source
 	var taskError error
 	j.progress.ExecuteTask("Identifying "+s.Path, func() {
 		task := identify.SceneIdentifier{
-			Repository:                  identify.NewRepository(j.repository),
-			DefaultOptions:              j.input.Options,
+			Repository:                  identify.NewRepository(j.Repository),
+			DefaultOptions:              j.Input.Options,
 			Sources:                     sources,
-			SceneUpdatePostHookExecutor: j.postHookExecutor,
+			SceneUpdatePostHookExecutor: j.PostHookExecutor,
 		}
 
 		taskError = task.Identify(ctx, s)
@@ -145,7 +145,7 @@ func (j *IdentifyJob) identifyScene(ctx context.Context, s *models.Scene, source
 
 func (j *IdentifyJob) getSources() ([]identify.ScraperSource, error) {
 	var ret []identify.ScraperSource
-	for _, source := range j.input.Sources {
+	for _, source := range j.Input.Sources {
 		// get scraper source
 		stashBox, err := j.getStashBox(source.Source)
 		if err != nil {
@@ -154,7 +154,7 @@ func (j *IdentifyJob) getSources() ([]identify.ScraperSource, error) {
 
 		var src identify.ScraperSource
 		if stashBox != nil {
-			stashboxRepository := stashbox.NewRepository(j.repository)
+			stashboxRepository := stashbox.NewRepository(j.Repository)
 			src = identify.ScraperSource{
 				Name: "stash-box: " + stashBox.Endpoint,
 				Scraper: stashboxSource{
@@ -165,14 +165,14 @@ func (j *IdentifyJob) getSources() ([]identify.ScraperSource, error) {
 			}
 		} else {
 			scraperID := *source.Source.ScraperID
-			s := j.scraperCache.GetScraper(scraperID)
+			s := j.ScraperCache.GetScraper(scraperID)
 			if s == nil {
 				return nil, fmt.Errorf("%w: scraper with id %q", models.ErrNotFound, scraperID)
 			}
 			src = identify.ScraperSource{
 				Name: s.Name,
 				Scraper: scraperSource{
-					cache:     j.scraperCache,
+					cache:     j.ScraperCache,
 					scraperID: scraperID,
 				},
 			}
@@ -195,7 +195,7 @@ func (j *IdentifyJob) getStashBox(src *scraper.Source) (*models.StashBox, error)
 		return nil, fmt.Errorf("%w: stash_box_index or stash_box_endpoint or scraper_id must be set", ErrInput)
 	}
 
-	return resolveStashBox(j.stashBoxes, *src)
+	return resolveStashBox(j.StashBoxes, *src)
 }
 
 func resolveStashBox(sb []*models.StashBox, source scraper.Source) (*models.StashBox, error) {

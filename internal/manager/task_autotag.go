@@ -18,17 +18,18 @@ import (
 	"github.com/stashapp/stash/pkg/scene"
 )
 
-type autoTagJob struct {
-	repository models.Repository
-	input      models.AutoTagMetadataInput
+type AutoTagJob struct {
+	Input models.AutoTagMetadataInput
+
+	Repository models.Repository
 
 	cache match.Cache
 }
 
-func (j *autoTagJob) Execute(ctx context.Context, progress *job.Progress) {
+func (j *AutoTagJob) Execute(ctx context.Context, progress *job.Progress) {
 	begin := time.Now()
 
-	input := j.input
+	input := j.Input
 	if j.isFileBasedAutoTag(input) {
 		// doing file-based auto-tag
 		j.autoTagFiles(ctx, progress, input.Paths, len(input.Performers) > 0, len(input.Studios) > 0, len(input.Tags) > 0)
@@ -40,7 +41,7 @@ func (j *autoTagJob) Execute(ctx context.Context, progress *job.Progress) {
 	logger.Infof("Finished auto-tag after %s", time.Since(begin).String())
 }
 
-func (j *autoTagJob) isFileBasedAutoTag(input models.AutoTagMetadataInput) bool {
+func (j *AutoTagJob) isFileBasedAutoTag(input models.AutoTagMetadataInput) bool {
 	const wildcard = "*"
 	performerIds := input.Performers
 	studioIds := input.Studios
@@ -49,22 +50,22 @@ func (j *autoTagJob) isFileBasedAutoTag(input models.AutoTagMetadataInput) bool 
 	return (len(performerIds) == 0 || performerIds[0] == wildcard) && (len(studioIds) == 0 || studioIds[0] == wildcard) && (len(tagIds) == 0 || tagIds[0] == wildcard)
 }
 
-func (j *autoTagJob) autoTagFiles(ctx context.Context, progress *job.Progress, paths []string, performers, studios, tags bool) {
+func (j *AutoTagJob) autoTagFiles(ctx context.Context, progress *job.Progress, paths []string, performers, studios, tags bool) {
 	t := autoTagFilesTask{
 		paths:      paths,
 		performers: performers,
 		studios:    studios,
 		tags:       tags,
 		progress:   progress,
-		repository: j.repository,
+		repository: j.Repository,
 		cache:      &j.cache,
 	}
 
 	t.process(ctx)
 }
 
-func (j *autoTagJob) autoTagSpecific(ctx context.Context, progress *job.Progress) {
-	input := j.input
+func (j *AutoTagJob) autoTagSpecific(ctx context.Context, progress *job.Progress) {
+	input := j.Input
 	performerIds := input.Performers
 	studioIds := input.Studios
 	tagIds := input.Tags
@@ -73,7 +74,7 @@ func (j *autoTagJob) autoTagSpecific(ctx context.Context, progress *job.Progress
 	studioCount := len(studioIds)
 	tagCount := len(tagIds)
 
-	r := j.repository
+	r := j.Repository
 	if err := r.WithReadTxn(ctx, func(ctx context.Context) error {
 		performerQuery := r.Performer
 		studioQuery := r.Studio
@@ -118,12 +119,12 @@ func (j *autoTagJob) autoTagSpecific(ctx context.Context, progress *job.Progress
 	j.autoTagTags(ctx, progress, input.Paths, tagIds)
 }
 
-func (j *autoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progress, paths []string, performerIds []string) {
+func (j *AutoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progress, paths []string, performerIds []string) {
 	if job.IsCancelled(ctx) {
 		return
 	}
 
-	r := j.repository
+	r := j.Repository
 	tagger := autotag.Tagger{
 		Repository: autotag.NewRepository(r),
 		Cache:      &j.cache,
@@ -210,12 +211,12 @@ func (j *autoTagJob) autoTagPerformers(ctx context.Context, progress *job.Progre
 	}
 }
 
-func (j *autoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress, paths []string, studioIds []string) {
+func (j *AutoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress, paths []string, studioIds []string) {
 	if job.IsCancelled(ctx) {
 		return
 	}
 
-	r := j.repository
+	r := j.Repository
 	tagger := autotag.Tagger{
 		Repository: autotag.NewRepository(r),
 		Cache:      &j.cache,
@@ -303,12 +304,12 @@ func (j *autoTagJob) autoTagStudios(ctx context.Context, progress *job.Progress,
 	}
 }
 
-func (j *autoTagJob) autoTagTags(ctx context.Context, progress *job.Progress, paths []string, tagIds []string) {
+func (j *AutoTagJob) autoTagTags(ctx context.Context, progress *job.Progress, paths []string, tagIds []string) {
 	if job.IsCancelled(ctx) {
 		return
 	}
 
-	r := j.repository
+	r := j.Repository
 	tagger := autotag.Tagger{
 		Repository: autotag.NewRepository(r),
 		Cache:      &j.cache,

@@ -19,10 +19,10 @@ type GenerateTranscodeTask struct {
 	// is true, generate even if video is browser-supported
 	Force bool
 
-	fileNamingAlgorithm models.HashAlgorithm
-	sceneService        SceneService
+	FileNamingAlgorithm models.HashAlgorithm
+	SceneService        SceneService
 
-	g *generate.Generator
+	Generator *generate.Generator
 }
 
 func (t *GenerateTranscodeTask) GetDescription() string {
@@ -30,7 +30,7 @@ func (t *GenerateTranscodeTask) GetDescription() string {
 }
 
 func (t *GenerateTranscodeTask) Start(ctx context.Context) {
-	hasTranscode := t.sceneService.HasTranscode(&t.Scene)
+	hasTranscode := t.SceneService.HasTranscode(&t.Scene)
 	if !t.Overwrite && hasTranscode {
 		return
 	}
@@ -70,7 +70,7 @@ func (t *GenerateTranscodeTask) Start(ctx context.Context) {
 		return
 	}
 
-	sceneHash := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneHash := t.Scene.GetHash(t.FileNamingAlgorithm)
 	transcodeSize := config.GetInstance().GetMaxTranscodeSize()
 
 	w, h := videoFile.TranscodeScale(transcodeSize.GetMaxResolution())
@@ -82,16 +82,16 @@ func (t *GenerateTranscodeTask) Start(ctx context.Context) {
 
 	if videoCodec == ffmpeg.H264 { // for non supported h264 files stream copy the video part
 		if audioCodec == ffmpeg.MissingUnsupported {
-			err = t.g.TranscodeCopyVideo(context.TODO(), videoFile.Path, sceneHash, options)
+			err = t.Generator.TranscodeCopyVideo(context.TODO(), videoFile.Path, sceneHash, options)
 		} else {
-			err = t.g.TranscodeAudio(context.TODO(), videoFile.Path, sceneHash, options)
+			err = t.Generator.TranscodeAudio(context.TODO(), videoFile.Path, sceneHash, options)
 		}
 	} else {
 		if audioCodec == ffmpeg.MissingUnsupported {
 			// ffmpeg fails if it tries to transcode an unsupported audio codec
-			err = t.g.TranscodeVideo(context.TODO(), videoFile.Path, sceneHash, options)
+			err = t.Generator.TranscodeVideo(context.TODO(), videoFile.Path, sceneHash, options)
 		} else {
-			err = t.g.Transcode(context.TODO(), videoFile.Path, sceneHash, options)
+			err = t.Generator.Transcode(context.TODO(), videoFile.Path, sceneHash, options)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (t *GenerateTranscodeTask) required() bool {
 		return false
 	}
 
-	hasTranscode := t.sceneService.HasTranscode(&t.Scene)
+	hasTranscode := t.SceneService.HasTranscode(&t.Scene)
 	if !t.Overwrite && hasTranscode {
 		return false
 	}

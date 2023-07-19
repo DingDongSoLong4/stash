@@ -29,17 +29,17 @@ type Resetter interface {
 }
 
 type ImportTask struct {
-	repository models.Repository
-	resetter   Resetter
-	json       jsonUtils
-
 	BaseDir             string
 	TmpZip              string
 	Reset               bool
 	DuplicateBehaviour  models.ImportDuplicateEnum
 	MissingRefBehaviour models.ImportMissingRefEnum
 
-	fileNamingAlgorithm models.HashAlgorithm
+	Repository          models.Repository
+	Resetter            Resetter
+	FileNamingAlgorithm models.HashAlgorithm
+
+	json jsonUtils
 }
 
 func (t *ImportTask) GetDescription() string {
@@ -74,7 +74,7 @@ func (t *ImportTask) Start(ctx context.Context) {
 	}
 
 	if t.Reset {
-		err := t.resetter.Reset()
+		err := t.Resetter.Reset()
 
 		if err != nil {
 			logger.Errorf("Error resetting database: %s", err.Error())
@@ -159,7 +159,7 @@ func (t *ImportTask) ImportPerformers(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -202,7 +202,7 @@ func (t *ImportTask) ImportStudios(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -251,7 +251,7 @@ func (t *ImportTask) ImportStudios(ctx context.Context) {
 
 func (t *ImportTask) importStudio(ctx context.Context, studioJSON *jsonschema.Studio, pendingParent map[string][]*jsonschema.Studio) error {
 	importer := &studio.Importer{
-		ReaderWriter:        t.repository.Studio,
+		ReaderWriter:        t.Repository.Studio,
 		Input:               *studioJSON,
 		MissingRefBehaviour: t.MissingRefBehaviour,
 	}
@@ -293,7 +293,7 @@ func (t *ImportTask) ImportMovies(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -336,7 +336,7 @@ func (t *ImportTask) ImportFiles(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	pendingParent := make(map[string][]jsonschema.DirEntry)
 
@@ -386,7 +386,7 @@ func (t *ImportTask) ImportFiles(ctx context.Context) {
 }
 
 func (t *ImportTask) importFile(ctx context.Context, fileJSON jsonschema.DirEntry, pendingParent map[string][]jsonschema.DirEntry) error {
-	r := t.repository
+	r := t.Repository
 
 	fileImporter := &file.Importer{
 		ReaderWriter: r.File,
@@ -427,7 +427,7 @@ func (t *ImportTask) ImportGalleries(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -488,7 +488,7 @@ func (t *ImportTask) ImportTags(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -530,7 +530,7 @@ func (t *ImportTask) ImportTags(ctx context.Context) {
 
 func (t *ImportTask) importTag(ctx context.Context, tagJSON *jsonschema.Tag, pendingParent map[string][]*jsonschema.Tag, fail bool) error {
 	importer := &tag.Importer{
-		ReaderWriter:        t.repository.Tag,
+		ReaderWriter:        t.Repository.Tag,
 		Input:               *tagJSON,
 		MissingRefBehaviour: t.MissingRefBehaviour,
 	}
@@ -574,7 +574,7 @@ func (t *ImportTask) ImportScenes(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1
@@ -591,7 +591,7 @@ func (t *ImportTask) ImportScenes(ctx context.Context) {
 			sceneImporter := &scene.Importer{
 				Repository:          r,
 				Input:               *sceneJSON,
-				FileNamingAlgorithm: t.fileNamingAlgorithm,
+				FileNamingAlgorithm: t.FileNamingAlgorithm,
 				MissingRefBehaviour: t.MissingRefBehaviour,
 			}
 
@@ -636,7 +636,7 @@ func (t *ImportTask) ImportImages(ctx context.Context) {
 		return
 	}
 
-	r := t.repository
+	r := t.Repository
 
 	for i, fi := range files {
 		index := i + 1

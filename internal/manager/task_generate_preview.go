@@ -12,14 +12,12 @@ import (
 
 type GeneratePreviewTask struct {
 	Scene        models.Scene
+	Options      generate.PreviewOptions
 	ImagePreview bool
+	Overwrite    bool
 
-	Options generate.PreviewOptions
-
-	Overwrite           bool
-	fileNamingAlgorithm models.HashAlgorithm
-
-	generator *generate.Generator
+	FileNamingAlgorithm models.HashAlgorithm
+	Generator           *generate.Generator
 }
 
 func (t *GeneratePreviewTask) GetDescription() string {
@@ -27,7 +25,7 @@ func (t *GeneratePreviewTask) GetDescription() string {
 }
 
 func (t *GeneratePreviewTask) Start(ctx context.Context) {
-	videoChecksum := t.Scene.GetHash(t.fileNamingAlgorithm)
+	videoChecksum := t.Scene.GetHash(t.FileNamingAlgorithm)
 
 	if t.videoPreviewRequired() {
 		ffprobe := instance.FFProbe
@@ -61,9 +59,9 @@ func (t *GeneratePreviewTask) generateVideo(videoChecksum string, videoDuration 
 		useVsync2 = true
 	}
 
-	if err := t.generator.PreviewVideo(context.TODO(), videoFilename, videoDuration, videoChecksum, t.Options, false, useVsync2); err != nil {
+	if err := t.Generator.PreviewVideo(context.TODO(), videoFilename, videoDuration, videoChecksum, t.Options, false, useVsync2); err != nil {
 		logger.Warnf("[generator] failed generating scene preview, trying fallback")
-		if err := t.generator.PreviewVideo(context.TODO(), videoFilename, videoDuration, videoChecksum, t.Options, true, useVsync2); err != nil {
+		if err := t.Generator.PreviewVideo(context.TODO(), videoFilename, videoDuration, videoChecksum, t.Options, true, useVsync2); err != nil {
 			return err
 		}
 	}
@@ -73,7 +71,7 @@ func (t *GeneratePreviewTask) generateVideo(videoChecksum string, videoDuration 
 
 func (t *GeneratePreviewTask) generateWebp(videoChecksum string) error {
 	videoFilename := t.Scene.Path
-	return t.generator.PreviewWebp(context.TODO(), videoFilename, videoChecksum)
+	return t.Generator.PreviewWebp(context.TODO(), videoFilename, videoChecksum)
 }
 
 func (t *GeneratePreviewTask) required() bool {
@@ -89,7 +87,7 @@ func (t *GeneratePreviewTask) videoPreviewRequired() bool {
 		return true
 	}
 
-	sceneChecksum := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneChecksum := t.Scene.GetHash(t.FileNamingAlgorithm)
 	if sceneChecksum == "" {
 		return false
 	}
@@ -111,7 +109,7 @@ func (t *GeneratePreviewTask) imagePreviewRequired() bool {
 		return true
 	}
 
-	sceneChecksum := t.Scene.GetHash(t.fileNamingAlgorithm)
+	sceneChecksum := t.Scene.GetHash(t.FileNamingAlgorithm)
 	if sceneChecksum == "" {
 		return false
 	}
