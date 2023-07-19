@@ -573,7 +573,7 @@ func (me *Server) initMux(mux *http.ServeMux) {
 			return
 		}
 
-		me.sceneServer.StreamSceneDirect(scene, w, r)
+		me.sceneServer.StreamDirect(scene, w, r)
 	})
 	mux.HandleFunc(rootDescPath, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", `text/xml; charset="utf-8"`)

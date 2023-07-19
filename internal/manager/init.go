@@ -87,6 +87,10 @@ func Initialize() (*Manager, error) {
 	sceneServer := &SceneServer{
 		TxnManager:       repo,
 		SceneCoverGetter: repo.Scene,
+		Config:           cfg,
+		Paths:            mgrPaths,
+		SceneService:     sceneService,
+		ReadLockManager:  readLockMgr,
 	}
 
 	dlnaRepository := dlna.NewRepository(repo)
@@ -119,6 +123,8 @@ func Initialize() (*Manager, error) {
 		SceneService:   sceneService,
 		ImageService:   imageService,
 		GalleryService: galleryService,
+
+		SceneServer: sceneServer,
 
 		scanSubs: &subscriptionManager{},
 	}

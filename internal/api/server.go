@@ -294,6 +294,7 @@ func (s *Server) getSceneRoutes() chi.Router {
 		paths:         s.manager.Paths,
 		ffprobe:       s.manager.FFProbe,
 		streamManager: s.manager.StreamManager,
+		sceneServer:   s.manager.SceneServer,
 	}.Routes()
 }
 

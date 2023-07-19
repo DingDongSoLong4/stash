@@ -57,6 +57,8 @@ type Manager struct {
 	ImageService   ImageService
 	GalleryService GalleryService
 
+	SceneServer *SceneServer
+
 	scanSubs *subscriptionManager
 }
 

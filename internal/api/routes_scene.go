@@ -35,6 +35,7 @@ type sceneRoutes struct {
 	paths         *paths.Paths
 	ffprobe       *ffmpeg.FFProbe
 	streamManager *ffmpeg.StreamManager
+	sceneServer   *manager.SceneServer
 }
 
 func (rs sceneRoutes) Routes() chi.Router {
@@ -79,11 +80,7 @@ func (rs sceneRoutes) Routes() chi.Router {
 
 func (rs sceneRoutes) StreamDirect(w http.ResponseWriter, r *http.Request) {
 	scene := r.Context().Value(sceneKey).(*models.Scene)
-	ss := manager.SceneServer{
-		TxnManager:       rs.txnManager,
-		SceneCoverGetter: rs.scene,
-	}
-	ss.StreamSceneDirect(scene, w, r)
+	rs.sceneServer.StreamDirect(scene, w, r)
 }
 
 func (rs sceneRoutes) StreamMp4(w http.ResponseWriter, r *http.Request) {
@@ -214,12 +211,7 @@ func (rs sceneRoutes) streamSegment(w http.ResponseWriter, r *http.Request, stre
 
 func (rs sceneRoutes) Screenshot(w http.ResponseWriter, r *http.Request) {
 	scene := r.Context().Value(sceneKey).(*models.Scene)
-
-	ss := manager.SceneServer{
-		TxnManager:       rs.txnManager,
-		SceneCoverGetter: rs.scene,
-	}
-	ss.ServeScreenshot(scene, w, r)
+	rs.sceneServer.ServeScreenshot(scene, w, r)
 }
 
 func (rs sceneRoutes) Preview(w http.ResponseWriter, r *http.Request) {
