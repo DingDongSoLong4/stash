@@ -377,6 +377,7 @@ func (j *GenerateJob) queueSceneJobs(ctx context.Context, scene *models.Scene, q
 			Overwrite:           j.overwrite,
 			Force:               forceTranscode,
 			fileNamingAlgorithm: j.fileNamingAlgo,
+			sceneService:        GetInstance().SceneService,
 			g:                   j.generator,
 		}
 		if task.required() {

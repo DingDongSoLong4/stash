@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	url        = "url"
+	sceneUrl   = "url"
 	title      = "title"
 	date       = "2001-01-01"
 	dateObj, _ = models.ParseDate(date)
@@ -91,7 +91,7 @@ func createFullScene(id int) models.Scene {
 		OCounter:  ocounter,
 		Rating:    &rating,
 		Organized: organized,
-		URLs:      models.NewRelatedStrings([]string{url}),
+		URLs:      models.NewRelatedStrings([]string{sceneUrl}),
 		Files: models.NewRelatedVideoFiles([]*models.VideoFile{
 			{
 				BaseFile: &models.BaseFile{
@@ -133,7 +133,7 @@ func createFullJSONScene(image string) *jsonschema.Scene {
 		OCounter:  ocounter,
 		Rating:    rating,
 		Organized: organized,
-		URLs:      []string{url},
+		URLs:      []string{sceneUrl},
 		CreatedAt: json.JSONTime{
 			Time: createTime,
 		},

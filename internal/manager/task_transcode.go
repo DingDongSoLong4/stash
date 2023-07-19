@@ -6,18 +6,21 @@ import (
 
 	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/ffmpeg"
+	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/generate"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 )
 
 type GenerateTranscodeTask struct {
-	Scene               models.Scene
-	Overwrite           bool
-	fileNamingAlgorithm models.HashAlgorithm
+	Scene     models.Scene
+	Overwrite bool
 
 	// is true, generate even if video is browser-supported
 	Force bool
+
+	fileNamingAlgorithm models.HashAlgorithm
+	sceneService        SceneService
 
 	g *generate.Generator
 }
@@ -26,8 +29,8 @@ func (t *GenerateTranscodeTask) GetDescription() string {
 	return fmt.Sprintf("Generating transcode for %s", t.Scene.Path)
 }
 
-func (t *GenerateTranscodeTask) Start(ctc context.Context) {
-	hasTranscode := HasTranscode(&t.Scene, t.fileNamingAlgorithm)
+func (t *GenerateTranscodeTask) Start(ctx context.Context) {
+	hasTranscode := t.sceneService.HasTranscode(&t.Scene)
 	if !t.Overwrite && hasTranscode {
 		return
 	}
@@ -38,7 +41,7 @@ func (t *GenerateTranscodeTask) Start(ctc context.Context) {
 	var container ffmpeg.Container
 
 	var err error
-	container, err = GetVideoFileContainer(f)
+	container, err = video.GetVideoFileContainer(ffprobe, f)
 	if err != nil {
 		logger.Errorf("[transcode] error getting scene container: %s", err.Error())
 		return
@@ -107,7 +110,7 @@ func (t *GenerateTranscodeTask) required() bool {
 		return false
 	}
 
-	hasTranscode := HasTranscode(&t.Scene, t.fileNamingAlgorithm)
+	hasTranscode := t.sceneService.HasTranscode(&t.Scene)
 	if !t.Overwrite && hasTranscode {
 		return false
 	}

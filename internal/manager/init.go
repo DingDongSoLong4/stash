@@ -65,9 +65,10 @@ func Initialize() (*Manager, error) {
 		File:             db.File,
 		Repository:       db.Scene,
 		MarkerRepository: db.SceneMarker,
-		PluginCache:      pluginCache,
-		Paths:            mgrPaths,
 		Config:           cfg,
+		FFProbe:          ffProbe,
+		Paths:            mgrPaths,
+		PluginCache:      pluginCache,
 	}
 
 	imageService := &image.Service{

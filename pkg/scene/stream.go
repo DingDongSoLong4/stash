@@ -1,11 +1,11 @@
-package manager
+package scene
 
 import (
 	"fmt"
 	"net/url"
 
-	"github.com/stashapp/stash/internal/manager/config"
 	"github.com/stashapp/stash/pkg/ffmpeg"
+	"github.com/stashapp/stash/pkg/file/video"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/models"
 )
@@ -50,26 +50,7 @@ var (
 	}
 )
 
-func GetVideoFileContainer(file *models.VideoFile) (ffmpeg.Container, error) {
-	var container ffmpeg.Container
-	format := file.Format
-	if format != "" {
-		container = ffmpeg.Container(format)
-	} else { // container isn't in the DB
-		// shouldn't happen, fallback to ffprobe
-		ffprobe := GetInstance().FFProbe
-		tmpVideoFile, err := ffprobe.NewVideoFile(file.Path)
-		if err != nil {
-			return ffmpeg.Container(""), fmt.Errorf("error reading video file: %v", err)
-		}
-
-		return ffmpeg.MatchContainer(tmpVideoFile.Container, file.Path)
-	}
-
-	return container, nil
-}
-
-func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStreamingTranscodeSize models.StreamingResolutionEnum) ([]*models.SceneStreamEndpoint, error) {
+func (s *Service) GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL) ([]*models.SceneStreamEndpoint, error) {
 	if scene == nil {
 		return nil, fmt.Errorf("nil scene")
 	}
@@ -80,6 +61,7 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 	}
 
 	// convert StreamingResolutionEnum to ResolutionEnum
+	maxStreamingTranscodeSize := s.Config.GetMaxStreamingTranscodeSize()
 	maxStreamingResolution := models.ResolutionEnum(maxStreamingTranscodeSize)
 	sceneResolution := models.GetMinResolution(pf)
 	includeSceneStreamPath := func(streamingResolution models.StreamingResolutionEnum) bool {
@@ -147,9 +129,9 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 	}
 
 	// don't care if we can't get the container
-	container, _ := GetVideoFileContainer(pf)
+	container, _ := video.GetVideoFileContainer(s.FFProbe, pf)
 
-	if HasTranscode(scene, config.GetInstance().GetVideoFileNamingAlgorithm()) || ffmpeg.IsValidAudioForContainer(audioCodec, container) {
+	if s.HasTranscode(scene) || ffmpeg.IsValidAudioForContainer(audioCodec, container) {
 		endpoints = append(endpoints, makeStreamEndpoint(directEndpointType, ""))
 	}
 
@@ -213,20 +195,18 @@ func GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL, maxStrea
 	return endpoints, nil
 }
 
-// HasTranscode returns true if a transcoded video exists for the provided
-// scene. It will check using the OSHash of the scene first, then fall back
-// to the checksum.
-func HasTranscode(scene *models.Scene, fileNamingAlgo models.HashAlgorithm) bool {
+// HasTranscode returns true if a transcoded video exists for the provided scene.
+func (s *Service) HasTranscode(scene *models.Scene) bool {
 	if scene == nil {
 		return false
 	}
 
-	sceneHash := scene.GetHash(fileNamingAlgo)
+	sceneHash := scene.GetHash(s.Config.GetVideoFileNamingAlgorithm())
 	if sceneHash == "" {
 		return false
 	}
 
-	transcodePath := instance.Paths.Scene.GetTranscodePath(sceneHash)
+	transcodePath := s.Paths.Scene.GetTranscodePath(sceneHash)
 	ret, _ := fsutil.FileExists(transcodePath)
 	return ret
 }

@@ -31,7 +31,6 @@ var (
 type resolverConfig interface {
 	GetAPIKey() string
 	GetVideoFileNamingAlgorithm() models.HashAlgorithm
-	GetMaxStreamingTranscodeSize() models.StreamingResolutionEnum
 	GetStashPaths() models.StashConfigs
 	GetStashBoxes() []*models.StashBox
 	GetVideoExtensions() []string

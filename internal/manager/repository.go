@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/stashapp/stash/pkg/image"
 	"github.com/stashapp/stash/pkg/models"
@@ -13,6 +14,9 @@ type SceneService interface {
 	AssignFile(ctx context.Context, sceneID int, fileID models.FileID) error
 	Merge(ctx context.Context, sourceIDs []int, destinationID int, values models.ScenePartial) error
 	Destroy(ctx context.Context, scene *models.Scene, fileDeleter *scene.FileDeleter, deleteGenerated, deleteFile bool) error
+
+	GetSceneStreamPaths(scene *models.Scene, directStreamURL *url.URL) ([]*models.SceneStreamEndpoint, error)
+	HasTranscode(scene *models.Scene) bool
 }
 
 type ImageService interface {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/stashapp/stash/internal/api/loaders"
 	"github.com/stashapp/stash/internal/api/urlbuilders"
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/utils"
 )
@@ -316,7 +315,7 @@ func (r *sceneResolver) SceneStreams(ctx context.Context, obj *models.Scene) ([]
 	builder := urlbuilders.NewSceneURLBuilder(baseURL, obj)
 	apiKey := r.config.GetAPIKey()
 
-	return manager.GetSceneStreamPaths(obj, builder.GetStreamURL(apiKey), r.config.GetMaxStreamingTranscodeSize())
+	return r.sceneService.GetSceneStreamPaths(obj, builder.GetStreamURL(apiKey))
 }
 
 func (r *sceneResolver) Interactive(ctx context.Context, obj *models.Scene) (bool, error) {

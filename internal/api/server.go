@@ -292,6 +292,7 @@ func (s *Server) getSceneRoutes() chi.Router {
 		tag:           repo.Tag,
 		config:        s.manager.Config,
 		paths:         s.manager.Paths,
+		ffprobe:       s.manager.FFProbe,
 		streamManager: s.manager.StreamManager,
 	}.Routes()
 }

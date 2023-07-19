@@ -33,6 +33,7 @@ type sceneRoutes struct {
 
 	config        sceneRoutesConfig
 	paths         *paths.Paths
+	ffprobe       *ffmpeg.FFProbe
 	streamManager *ffmpeg.StreamManager
 }
 
@@ -102,7 +103,7 @@ func (rs sceneRoutes) StreamMKV(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	container, err := manager.GetVideoFileContainer(pf)
+	container, err := video.GetVideoFileContainer(rs.ffprobe, pf)
 	if err != nil {
 		logger.Errorf("[transcode] error getting container: %v", err)
 	}

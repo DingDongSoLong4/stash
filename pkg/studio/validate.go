@@ -1,4 +1,4 @@
-package manager
+package studio
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/stashapp/stash/pkg/models"
 )
 
-func ValidateModifyStudio(ctx context.Context, studioID int, studio models.StudioPartial, qb models.StudioReader) error {
+func ValidatePartial(ctx context.Context, studioID int, studio models.StudioPartial, qb models.StudioReader) error {
 	if studio.ParentID.Ptr() == nil {
 		return nil
 	}

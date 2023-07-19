@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/stashapp/stash/internal/manager"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/plugin"
 	"github.com/stashapp/stash/pkg/sliceutil/stringslice"
@@ -134,7 +133,7 @@ func (r *mutationResolver) StudioUpdate(ctx context.Context, input models.Studio
 	if err := r.withTxn(ctx, func(ctx context.Context) error {
 		qb := r.repository.Studio
 
-		if err := manager.ValidateModifyStudio(ctx, studioID, updatedStudio, qb); err != nil {
+		if err := studio.ValidatePartial(ctx, studioID, updatedStudio, qb); err != nil {
 			return err
 		}
 
