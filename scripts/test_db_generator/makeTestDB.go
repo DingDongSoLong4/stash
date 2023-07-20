@@ -14,11 +14,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/stashapp/stash/pkg/db"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/hash/md5"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
-	"github.com/stashapp/stash/pkg/sqlite"
 	"github.com/stashapp/stash/pkg/txn"
 	"gopkg.in/yaml.v2"
 )
@@ -44,7 +44,7 @@ type config struct {
 var (
 	repo models.Repository
 	c    *config
-	db   *sqlite.Database
+	conn *db.Database
 )
 
 func main() {
@@ -58,11 +58,11 @@ func main() {
 
 	initNaming(*c)
 
-	db = sqlite.NewDatabase(c.Database)
-	repo = db.Repository()
+	conn = db.NewDatabase(c.Database)
+	repo = conn.Repository()
 
 	logf("Initializing database...")
-	if err = db.Open(); err != nil {
+	if err = conn.Open(); err != nil {
 		log.Fatalf("couldn't initialize database: %v", err)
 	}
 	logf("Populating database...")
@@ -100,7 +100,7 @@ func populateDB() {
 }
 
 func withTxn(f func(ctx context.Context) error) error {
-	return txn.WithTxn(context.Background(), db, f)
+	return txn.WithTxn(context.Background(), conn, f)
 }
 
 func retry(attempts int, fn func() error) error {

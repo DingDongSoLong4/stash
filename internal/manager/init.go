@@ -14,6 +14,7 @@ import (
 	"github.com/stashapp/stash/internal/dlna"
 	"github.com/stashapp/stash/internal/log"
 	"github.com/stashapp/stash/internal/manager/config"
+	"github.com/stashapp/stash/pkg/db"
 	"github.com/stashapp/stash/pkg/ffmpeg"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/gallery"
@@ -25,7 +26,6 @@ import (
 	"github.com/stashapp/stash/pkg/scene"
 	"github.com/stashapp/stash/pkg/scraper"
 	"github.com/stashapp/stash/pkg/session"
-	"github.com/stashapp/stash/pkg/sqlite"
 	"github.com/stashapp/stash/pkg/utils"
 	"github.com/stashapp/stash/ui"
 )
@@ -42,8 +42,8 @@ func Initialize() (*Manager, error) {
 	l := initLog(cfg)
 	initProfiling(cfg.GetCPUProfilePath())
 
-	db := sqlite.NewDatabase()
-	repo := db.Repository()
+	conn := db.NewDatabase()
+	repo := conn.Repository()
 
 	// start with empty paths
 	mgrPaths := &paths.Paths{}
@@ -62,9 +62,9 @@ func Initialize() (*Manager, error) {
 	streamManager := ffmpeg.NewStreamManager(ffMpeg, ffProbe, cfg, readLockMgr)
 
 	sceneService := &scene.Service{
-		File:             db.File,
-		Repository:       db.Scene,
-		MarkerRepository: db.SceneMarker,
+		File:             conn.File,
+		Repository:       conn.Scene,
+		MarkerRepository: conn.SceneMarker,
 		Config:           cfg,
 		FFProbe:          ffProbe,
 		Paths:            mgrPaths,
@@ -72,16 +72,16 @@ func Initialize() (*Manager, error) {
 	}
 
 	imageService := &image.Service{
-		File:       db.File,
-		Repository: db.Image,
+		File:       conn.File,
+		Repository: conn.Image,
 	}
 
 	galleryService := &gallery.Service{
-		Repository:   db.Gallery,
-		ImageFinder:  db.Image,
+		Repository:   conn.Gallery,
+		ImageFinder:  conn.Image,
 		ImageService: imageService,
-		File:         db.File,
-		Folder:       db.Folder,
+		File:         conn.File,
+		Folder:       conn.Folder,
 	}
 
 	sceneServer := &SceneServer{
@@ -117,7 +117,7 @@ func Initialize() (*Manager, error) {
 		StreamManager: streamManager,
 		DLNAService:   dlnaService,
 
-		Database:   db,
+		Database:   conn,
 		Repository: repo,
 
 		SceneService:   sceneService,
@@ -264,7 +264,7 @@ func (s *Manager) postInit(ctx context.Context) error {
 	}
 
 	if err := s.Database.Open(); err != nil {
-		var migrationNeededErr *sqlite.MigrationNeededError
+		var migrationNeededErr *db.MigrationNeededError
 		if errors.As(err, &migrationNeededErr) {
 			logger.Warn(err)
 		} else {
