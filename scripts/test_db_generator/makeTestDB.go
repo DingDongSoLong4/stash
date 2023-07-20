@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -15,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/stashapp/stash/pkg/file"
 	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/hash/md5"
 	"github.com/stashapp/stash/pkg/models"
@@ -36,7 +34,7 @@ type config struct {
 	Markers    int          `yaml:"markers"`
 	Images     int          `yaml:"images"`
 	Galleries  int          `yaml:"galleries"`
-        Chapters   int          `yaml:"chapters"`
+	Chapters   int          `yaml:"chapters"`
 	Performers int          `yaml:"performers"`
 	Studios    int          `yaml:"studios"`
 	Tags       int          `yaml:"tags"`
@@ -44,10 +42,9 @@ type config struct {
 }
 
 var (
-	repo     models.Repository
-	c        *config
-	db       *sqlite.Database
-	folderID file.FolderID
+	repo models.Repository
+	c    *config
+	db   *sqlite.Database
 )
 
 func main() {
@@ -61,11 +58,11 @@ func main() {
 
 	initNaming(*c)
 
-	db = sqlite.NewDatabase()
-	repo = db.TxnRepository()
+	db = sqlite.NewDatabase(c.Database)
+	repo = db.Repository()
 
 	logf("Initializing database...")
-	if err = db.Open(c.Database); err != nil {
+	if err = db.Open(); err != nil {
 		log.Fatalf("couldn't initialize database: %v", err)
 	}
 	logf("Populating database...")
@@ -98,7 +95,7 @@ func populateDB() {
 	makeScenes(c.Scenes)
 	makeImages(c.Images)
 	makeGalleries(c.Galleries)
-        makeChapters(c.Chapters)
+	makeChapters(c.Chapters)
 	makeMarkers(c.Markers)
 }
 
@@ -118,7 +115,7 @@ func retry(attempts int, fn func() error) error {
 	return err
 }
 
-func getOrCreateFolder(ctx context.Context, p string) (*file.Folder, error) {
+func getOrCreateFolder(ctx context.Context, p string) (*models.Folder, error) {
 	ret, err := repo.Folder.FindByPath(ctx, p)
 	if err != nil {
 		return nil, err
@@ -128,7 +125,7 @@ func getOrCreateFolder(ctx context.Context, p string) (*file.Folder, error) {
 		return ret, nil
 	}
 
-	var parentID *file.FolderID
+	var parentID *models.FolderID
 
 	if p != "." {
 		parent := path.Dir(p)
@@ -140,7 +137,7 @@ func getOrCreateFolder(ctx context.Context, p string) (*file.Folder, error) {
 		parentID = &parentFolder.ID
 	}
 
-	f := file.Folder{
+	f := models.Folder{
 		Path:           p,
 		ParentFolderID: parentID,
 	}
@@ -163,7 +160,7 @@ func makeTags(n int) {
 					Name: name,
 				}
 
-				created, err := repo.Tag.Create(ctx, tag)
+				err := repo.Tag.Create(ctx, &tag)
 				if err != nil {
 					return err
 				}
@@ -174,8 +171,8 @@ func makeTags(n int) {
 						return err
 					}
 
-					if len(t) > 0 && t[0].ID != created.ID {
-						if err := repo.Tag.UpdateParentTags(ctx, created.ID, []int{t[0].ID}); err != nil {
+					if len(t) > 0 && t[0].ID != tag.ID {
+						if err := repo.Tag.UpdateParentTags(ctx, tag.ID, []int{t[0].ID}); err != nil {
 							return err
 						}
 					}
@@ -196,8 +193,7 @@ func makeStudios(n int) {
 			return withTxn(func(ctx context.Context) error {
 				name := names[c.Naming.Tags].generateName(rand.Intn(5) + 1)
 				studio := models.Studio{
-					Name:     sql.NullString{String: name, Valid: true},
-					Checksum: md5.FromString(name),
+					Name: name,
 				}
 
 				if rand.Intn(100) > 5 {
@@ -207,14 +203,11 @@ func makeStudios(n int) {
 					}
 
 					if len(ss) > 0 {
-						studio.ParentID = sql.NullInt64{
-							Int64: int64(ss[0].ID),
-							Valid: true,
-						}
+						studio.ParentID = &ss[0].ID
 					}
 				}
 
-				_, err := repo.Studio.Create(ctx, studio)
+				err := repo.Studio.Create(ctx, &studio)
 				return err
 			})
 		}); err != nil {
@@ -230,8 +223,7 @@ func makePerformers(n int) {
 			return withTxn(func(ctx context.Context) error {
 				name := generatePerformerName()
 				performer := &models.Performer{
-					Name:     name,
-					Checksum: md5.FromString(name),
+					Name: name,
 				}
 
 				// TODO - set tags
@@ -248,16 +240,16 @@ func makePerformers(n int) {
 	}
 }
 
-func generateBaseFile(parentFolderID file.FolderID, path string) *file.BaseFile {
-	return &file.BaseFile{
+func generateBaseFile(parentFolderID models.FolderID, path string) *models.BaseFile {
+	return &models.BaseFile{
 		Basename:       path,
 		ParentFolderID: parentFolderID,
-		Fingerprints: []file.Fingerprint{
-			file.Fingerprint{
+		Fingerprints: []models.Fingerprint{
+			{
 				Type:        "md5",
 				Fingerprint: md5.FromString(path),
 			},
-			file.Fingerprint{
+			{
 				Type:        "oshash",
 				Fingerprint: md5.FromString(path),
 			},
@@ -267,10 +259,10 @@ func generateBaseFile(parentFolderID file.FolderID, path string) *file.BaseFile 
 	}
 }
 
-func generateVideoFile(parentFolderID file.FolderID, path string) file.File {
+func generateVideoFile(parentFolderID models.FolderID, path string) models.File {
 	w, h := getResolution()
 
-	return &file.VideoFile{
+	return &models.VideoFile{
 		BaseFile: generateBaseFile(parentFolderID, path),
 		Duration: rand.Float64() * 14400,
 		Height:   h,
@@ -278,7 +270,7 @@ func generateVideoFile(parentFolderID file.FolderID, path string) file.File {
 	}
 }
 
-func makeVideoFile(ctx context.Context, path string) (file.File, error) {
+func makeVideoFile(ctx context.Context, path string) (models.File, error) {
 	folderPath := fsutil.GetIntraDir(path, 2, 2)
 	parentFolder, err := getOrCreateFolder(ctx, folderPath)
 	if err != nil {
@@ -316,7 +308,7 @@ func makeScenes(n int) {
 					return err
 				}
 
-				if err := repo.Scene.Create(ctx, &scene, []file.ID{f.Base().ID}); err != nil {
+				if err := repo.Scene.Create(ctx, &scene, []models.FileID{f.Base().ID}); err != nil {
 					return err
 				}
 			}
@@ -347,10 +339,6 @@ func getResolution() (int, int) {
 	return w, h
 }
 
-func getBool() {
-	return rand.Intn(2) == 0
-}
-
 func getDate() time.Time {
 	s := rand.Int63n(time.Now().Unix())
 
@@ -368,25 +356,30 @@ func generateScene(i int) models.Scene {
 	}
 }
 
-func generateImageFile(parentFolderID file.FolderID, path string) file.File {
+func generateImageFile(parentFolderID models.FolderID, path string) models.File {
 	w, h := getResolution()
 
-	return &file.ImageFile{
+	return &models.ImageFile{
 		BaseFile: generateBaseFile(parentFolderID, path),
 		Height:   h,
 		Width:    w,
-		Clip:     getBool(),
 	}
 }
 
-func makeImageFile(ctx context.Context, path string) (file.File, error) {
+func makeImageFile(ctx context.Context, path string) (models.File, error) {
 	folderPath := fsutil.GetIntraDir(path, 2, 2)
 	parentFolder, err := getOrCreateFolder(ctx, folderPath)
 	if err != nil {
 		return nil, err
 	}
 
-	f := generateImageFile(parentFolder.ID, path)
+	var f models.File
+	if rand.Intn(10) == 9 {
+		// clip
+		f = generateVideoFile(parentFolder.ID, path)
+	} else {
+		f = generateImageFile(parentFolder.ID, path)
+	}
 
 	if err := repo.File.Create(ctx, f); err != nil {
 		return nil, err
@@ -412,10 +405,7 @@ func makeImages(n int) {
 					return err
 				}
 
-				if err := repo.Image.Create(ctx, &models.ImageCreateInput{
-					Image:   &image,
-					FileIDs: []file.ID{f.Base().ID},
-				}); err != nil {
+				if err := repo.Image.Create(ctx, &image, []models.FileID{f.Base().ID}); err != nil {
 					return err
 				}
 			}
@@ -456,7 +446,7 @@ func makeGalleries(n int) {
 					return err
 				}
 
-				if err := repo.Gallery.Create(ctx, &gallery, []file.ID{f.Base().ID}); err != nil {
+				if err := repo.Gallery.Create(ctx, &gallery, []models.FileID{f.Base().ID}); err != nil {
 					return err
 				}
 
@@ -472,11 +462,11 @@ func makeGalleries(n int) {
 	}
 }
 
-func generateZipFile(parentFolderID file.FolderID, path string) file.File {
+func generateZipFile(parentFolderID models.FolderID, path string) models.File {
 	return generateBaseFile(parentFolderID, path)
 }
 
-func makeZipFile(ctx context.Context, path string) (file.File, error) {
+func makeZipFile(ctx context.Context, path string) (models.File, error) {
 	folderPath := fsutil.GetIntraDir(path, 2, 2)
 	parentFolder, err := getOrCreateFolder(ctx, folderPath)
 	if err != nil {
@@ -504,35 +494,35 @@ func generateGallery(i int) models.Gallery {
 }
 
 func makeChapters(n int) {
-        logf("creating %d chapters...", n)
-        for i := 0; i < n; {
-                // do in batches of 1000
-                batch := i + batchSize
-                if err := withTxn(func(ctx context.Context) error {
-                        for ; i < batch && i < n; i++ {
-                                chapter := generateChapter(i)
-                                chapter.GalleryID = models.NullInt64(int64(getRandomGallery()))
+	logf("creating %d chapters...", n)
+	for i := 0; i < n; {
+		// do in batches of 1000
+		batch := i + batchSize
+		if err := withTxn(func(ctx context.Context) error {
+			for ; i < batch && i < n; i++ {
+				chapter := generateChapter(i)
+				chapter.GalleryID = getRandomGallery()
 
-                                created, err := repo.GalleryChapter.Create(ctx, chapter)
-                                if err != nil {
-                                        return err
-                                }
-                        }
+				err := repo.GalleryChapter.Create(ctx, &chapter)
+				if err != nil {
+					return err
+				}
+			}
 
-                        logf("... created %d chapters", i)
+			logf("... created %d chapters", i)
 
-                        return nil
-                }); err != nil {
-                        panic(err)
-                }
-        }
+			return nil
+		}); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func generateChapter(i int) models.GalleryChapter {
-        return models.GalleryChapter{
-                Title: names[c.Naming.Galleries].generateName(rand.Intn(7) + 1),
-                ImageIndex: rand.Intn(200),
-        }
+	return models.GalleryChapter{
+		Title:      names[c.Naming.Galleries].generateName(rand.Intn(7) + 1),
+		ImageIndex: rand.Intn(200),
+	}
 }
 
 func makeMarkers(n int) {
@@ -543,10 +533,10 @@ func makeMarkers(n int) {
 		if err := withTxn(func(ctx context.Context) error {
 			for ; i < batch && i < n; i++ {
 				marker := generateMarker(i)
-				marker.SceneID = models.NullInt64(int64(getRandomScene()))
+				marker.SceneID = getRandomScene()
 				marker.PrimaryTagID = getRandomTags(ctx, 1, 1)[0]
 
-				created, err := repo.SceneMarker.Create(ctx, marker)
+				err := repo.SceneMarker.Create(ctx, &marker)
 				if err != nil {
 					return err
 				}
@@ -554,7 +544,7 @@ func makeMarkers(n int) {
 				tags := getRandomTags(ctx, 0, 5)
 				// remove primary tag
 				tags = intslice.IntExclude(tags, []int{marker.PrimaryTagID})
-				if err := repo.SceneMarker.UpdateTags(ctx, created.ID, tags); err != nil {
+				if err := repo.SceneMarker.UpdateTags(ctx, marker.ID, tags); err != nil {
 					return err
 				}
 			}
@@ -657,7 +647,7 @@ func getRandomScene() int {
 }
 
 func getRandomGallery() int {
-        return rand.Intn(c.Galleries) + 1
+	return rand.Intn(c.Galleries) + 1
 }
 
 func getRandomTags(ctx context.Context, min, max int) []int {
