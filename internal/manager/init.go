@@ -259,7 +259,7 @@ func (s *Manager) postInit(ctx context.Context) error {
 		})
 	}
 
-	if err := s.Database.SetDatabasePath(s.Config.GetDatabasePath()); err != nil {
+	if err := s.Database.SetUrl(s.Config.GetDatabasePath()); err != nil {
 		return err
 	}
 

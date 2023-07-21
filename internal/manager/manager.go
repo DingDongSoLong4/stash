@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"time"
 
 	"github.com/stashapp/stash/internal/dlna"
 	"github.com/stashapp/stash/internal/log"
@@ -63,7 +64,7 @@ func (s *Manager) SetBlobStoreOptions() {
 	storageType := s.Config.GetBlobsStorage()
 	blobsPath := s.Config.GetBlobsPath()
 
-	s.Database.SetBlobStoreOptions(db.BlobStoreOptions{
+	s.Database.Blobs.Configure(db.BlobStoreOptions{
 		UseFilesystem: storageType == models.BlobStorageTypeFilesystem,
 		UseDatabase:   storageType == models.BlobStorageTypeDatabase,
 		Path:          blobsPath,
@@ -248,7 +249,7 @@ func (s *Manager) Migrate(ctx context.Context, input models.MigrateInput) error 
 	// migration fails
 	backupPath := input.BackupPath
 	if backupPath == "" {
-		backupPath = database.DatabaseBackupPath(s.Config.GetBackupDirectoryPath())
+		backupPath = s.DatabaseBackupPath(s.Config.GetBackupDirectoryPath())
 	} else {
 		// check if backup path is a filename or path
 		// filename goes into backup directory, path is kept as is
@@ -260,18 +261,31 @@ func (s *Manager) Migrate(ctx context.Context, input models.MigrateInput) error 
 
 	// perform database backup
 	if err := database.Backup(backupPath); err != nil {
-		return fmt.Errorf("error backing up database: %s", err)
+		var unsupportedErr *db.UnsupportedForDBTypeError
+		if errors.As(err, &unsupportedErr) {
+			// error if a backup was requested (backup_path non-empty)
+			if input.BackupPath != "" {
+				return err
+			}
+
+			// else disable restoring
+			backupPath = ""
+		} else {
+			return fmt.Errorf("error backing up database: %s", err)
+		}
 	}
 
 	if err := database.Migrate(); err != nil {
 		errStr := fmt.Sprintf("error performing migration: %s", err)
 
-		// roll back to the backed up version
-		restoreErr := database.RestoreFromBackup(backupPath)
-		if restoreErr != nil {
-			errStr = fmt.Sprintf("ERROR: unable to restore database from backup after migration failure: %s\n%s", restoreErr.Error(), errStr)
-		} else {
-			errStr = "An error occurred migrating the database to the latest schema version. The backup database file was automatically renamed to restore the database.\n" + errStr
+		if backupPath != "" {
+			// roll back to the backed up version
+			restoreErr := database.Restore(backupPath)
+			if restoreErr != nil {
+				errStr = fmt.Sprintf("ERROR: unable to restore database from backup after migration failure: %v\n%s", restoreErr, errStr)
+			} else {
+				errStr = "An error occurred migrating the database to the latest schema version. The backup database file was automatically renamed to restore the database.\n" + errStr
+			}
 		}
 
 		return errors.New(errStr)
@@ -283,7 +297,7 @@ func (s *Manager) Migrate(ctx context.Context, input models.MigrateInput) error 
 	}
 
 	// if no backup path was provided, then delete the created backup
-	if input.BackupPath == "" {
+	if backupPath != "" && input.BackupPath == "" {
 		if err := os.Remove(backupPath); err != nil {
 			logger.Warnf("error removing unwanted database backup (%s): %s", backupPath, err.Error())
 		}
@@ -292,7 +306,31 @@ func (s *Manager) Migrate(ctx context.Context, input models.MigrateInput) error 
 	return nil
 }
 
+func (s *Manager) DatabaseBackupPath(backupDirectoryPath string) string {
+	base := filepath.Base(s.Database.Url())
+	version := s.Database.Version()
+	time := time.Now().Format("20060102_150405")
+	fn := fmt.Sprintf("%s.%d.%s", base, version, time)
+
+	if backupDirectoryPath != "" {
+		return filepath.Join(backupDirectoryPath, fn)
+	}
+
+	return fn
+}
+
 func (s *Manager) BackupDatabase(download bool) (string, string, error) {
+	database := s.Database
+	switch database.DBType {
+	case db.SQLiteDB:
+		break
+	default:
+		return "", "", &db.UnsupportedForDBTypeError{
+			Operation: "backups",
+			DBType:    database.DBType,
+		}
+	}
+
 	var backupPath string
 	var backupName string
 	if download {
@@ -306,7 +344,7 @@ func (s *Manager) BackupDatabase(download bool) (string, string, error) {
 		}
 
 		backupPath = f.Name()
-		backupName = s.Database.DatabaseBackupPath("")
+		backupName = s.DatabaseBackupPath("")
 		f.Close()
 	} else {
 		backupDir := s.Config.GetBackupDirectoryPathOrDefault()
@@ -315,7 +353,7 @@ func (s *Manager) BackupDatabase(download bool) (string, string, error) {
 				return "", "", fmt.Errorf("could not create backup directory %v: %w", backupDir, err)
 			}
 		}
-		backupPath = s.Database.DatabaseBackupPath(backupDir)
+		backupPath = s.DatabaseBackupPath(backupDir)
 		backupName = filepath.Base(backupPath)
 	}
 
@@ -325,6 +363,19 @@ func (s *Manager) BackupDatabase(download bool) (string, string, error) {
 	}
 
 	return backupPath, backupName, nil
+}
+
+func (s *Manager) AnonymousDatabasePath(backupDirectoryPath string) string {
+	base := filepath.Base(s.Database.Url())
+	version := s.Database.Version()
+	time := time.Now().Format("20060102_150405")
+	fn := fmt.Sprintf("%s.anonymous.%d.%s", base, version, time)
+
+	if backupDirectoryPath != "" {
+		return filepath.Join(backupDirectoryPath, fn)
+	}
+
+	return fn
 }
 
 func (s *Manager) AnonymiseDatabase(download bool) (string, string, error) {
@@ -341,7 +392,7 @@ func (s *Manager) AnonymiseDatabase(download bool) (string, string, error) {
 		}
 
 		outPath = f.Name()
-		outName = s.Database.DatabaseBackupPath("")
+		outName = s.AnonymousDatabasePath("")
 		f.Close()
 	} else {
 		outDir := s.Config.GetBackupDirectoryPathOrDefault()
@@ -350,7 +401,7 @@ func (s *Manager) AnonymiseDatabase(download bool) (string, string, error) {
 				return "", "", fmt.Errorf("could not create output directory %v: %w", outDir, err)
 			}
 		}
-		outPath = s.Database.AnonymousDatabasePath(outDir)
+		outPath = s.AnonymousDatabasePath(outDir)
 		outName = filepath.Base(outPath)
 	}
 
@@ -366,8 +417,8 @@ func (s *Manager) GetSystemStatus() *models.SystemStatus {
 	database := s.Database
 	status := models.SystemStatusEnumOk
 	dbSchema := int(database.Version())
-	dbPath := database.DatabasePath()
-	appSchema := int(database.AppSchemaVersion())
+	dbUrl := database.Url()
+	appSchema := int(db.AppSchemaVersion)
 	configFile := s.Config.GetConfigFile()
 
 	if s.Config.IsNewSystem() {
@@ -378,7 +429,7 @@ func (s *Manager) GetSystemStatus() *models.SystemStatus {
 
 	return &models.SystemStatus{
 		DatabaseSchema: &dbSchema,
-		DatabasePath:   &dbPath,
+		DatabasePath:   &dbUrl,
 		AppSchema:      appSchema,
 		Status:         status,
 		ConfigPath:     &configFile,

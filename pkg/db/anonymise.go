@@ -38,7 +38,7 @@ func NewAnonymiser(db *Database, outPath string) (*Anonymiser, error) {
 	}
 
 	newDB := NewDatabase()
-	if err := newDB.SetDatabasePath(outPath); err != nil {
+	if err := newDB.SetSQLitePath(outPath); err != nil {
 		return nil, err
 	}
 	if err := newDB.Open(); err != nil {
@@ -70,7 +70,7 @@ func (db *Anonymiser) Anonymise(ctx context.Context) error {
 		})
 	}(); err != nil {
 		// delete the database
-		_ = db.Remove()
+		_ = db.sqliteRemove()
 
 		return err
 	}

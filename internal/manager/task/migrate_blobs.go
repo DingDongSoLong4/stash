@@ -2,8 +2,10 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/stashapp/stash/pkg/db"
 	"github.com/stashapp/stash/pkg/job"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/txn"
@@ -65,7 +67,8 @@ func (j *MigrateBlobsJob) Execute(ctx context.Context, progress *job.Progress) {
 	// run a vacuum to reclaim space
 	progress.ExecuteTask("Vacuuming database", func() {
 		err = j.Vacuumer.Vacuum(ctx)
-		if err != nil {
+		var unsupportedErr db.UnsupportedForDBTypeError
+		if err != nil && !errors.Is(err, &unsupportedErr) {
 			logger.Errorf("Error vacuuming database: %v", err)
 		}
 	})

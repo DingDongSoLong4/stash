@@ -9,6 +9,8 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/mattn/go-sqlite3"
 	"github.com/stashapp/stash/pkg/db/blob"
@@ -43,17 +45,21 @@ type BlobStore struct {
 }
 
 func NewBlobStore(options BlobStoreOptions) *BlobStore {
-	return &BlobStore{
+	ret := &BlobStore{
 		repository: repository{
 			tableName: blobTable,
 			idColumn:  blobChecksumColumn,
 		},
 
 		tableMgr: blobTableMgr,
-
-		fsStore: blob.NewFilesystemStore(options.Path, &file.OsFS{}),
-		options: options,
 	}
+	ret.Configure(options)
+	return ret
+}
+
+func (qb *BlobStore) Configure(options BlobStoreOptions) {
+	qb.fsStore = blob.NewFilesystemStore(options.Path, &file.OsFS{})
+	qb.options = options
 }
 
 type blobRow struct {
@@ -292,6 +298,10 @@ func (qb *BlobStore) isConstraintError(err error) bool {
 	var sqliteError sqlite3.Error
 	if errors.As(err, &sqliteError) {
 		return sqliteError.Code == sqlite3.ErrConstraint
+	}
+	var postgresError *pgconn.PgError
+	if errors.As(err, &postgresError) {
+		return postgresError.Code == pgerrcode.ForeignKeyViolation
 	}
 	return false
 }

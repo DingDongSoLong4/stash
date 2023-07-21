@@ -1,4 +1,4 @@
-package migrations
+package migrations_sqlite
 
 import (
 	"context"

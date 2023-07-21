@@ -2,43 +2,15 @@ package db
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"time"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	sqlite3mig "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jmoiron/sqlx"
-
-	"github.com/stashapp/stash/pkg/fsutil"
-	"github.com/stashapp/stash/pkg/logger"
-
-	// register custom migrations
-	"github.com/stashapp/stash/pkg/db/migrations"
 )
 
-const (
-	// Number of database connections to use
-	// The same value is used for both the maximum and idle limit,
-	// to prevent opening connections on the fly which has a notieable performance penalty.
-	// Fewer connections use less memory, more connections increase performance,
-	// but have diminishing returns.
-	// 10 was found to be a good tradeoff.
-	dbConns = 10
-	// Idle connection timeout, in seconds
-	// Closes a connection after a period of inactivity, which saves on memory and
-	// causes the sqlite -wal and -shm files to be automatically deleted.
-	dbConnTimeout = 30
-)
-
-var appSchemaVersion uint = 48
-
-//go:embed migrations/*.sql
-var migrationsBox embed.FS
+var AppSchemaVersion uint = 48
 
 var (
 	// ErrDatabaseNotInitialized indicates that the database is not
@@ -49,21 +21,35 @@ var (
 // ErrMigrationNeeded indicates that a database migration is needed
 // before the database can be initialized
 type MigrationNeededError struct {
-	CurrentSchemaVersion  uint
-	RequiredSchemaVersion uint
+	CurrentSchemaVersion uint
 }
 
 func (e *MigrationNeededError) Error() string {
-	return fmt.Sprintf("database schema version %d does not match required schema version %d", e.CurrentSchemaVersion, e.RequiredSchemaVersion)
+	return fmt.Sprintf("database schema version %d does not match required schema version %d", e.CurrentSchemaVersion, AppSchemaVersion)
 }
 
 type MismatchedSchemaVersionError struct {
-	CurrentSchemaVersion  uint
-	RequiredSchemaVersion uint
+	CurrentSchemaVersion uint
 }
 
 func (e *MismatchedSchemaVersionError) Error() string {
-	return fmt.Sprintf("schema version %d is incompatible with required schema version %d", e.CurrentSchemaVersion, e.RequiredSchemaVersion)
+	return fmt.Sprintf("schema version %d is incompatible with required schema version %d", e.CurrentSchemaVersion, AppSchemaVersion)
+}
+
+type DBType string
+
+const (
+	SQLiteDB   = "SQLite"
+	PostgresDB = "PostgreSQL"
+)
+
+type UnsupportedForDBTypeError struct {
+	Operation string
+	DBType    DBType
+}
+
+func (e *UnsupportedForDBTypeError) Error() string {
+	return fmt.Sprintf("%s does not support %s", e.DBType, e.Operation)
 }
 
 type Database struct {
@@ -81,8 +67,10 @@ type Database struct {
 	Movie          *MovieStore
 	SavedFilter    *SavedFilterStore
 
-	db     *sqlx.DB
-	dbPath string
+	db    *sqlx.DB
+	dbUrl string
+
+	DBType DBType
 
 	schemaVersion uint
 
@@ -113,10 +101,6 @@ func NewDatabase() *Database {
 	}
 
 	return db
-}
-
-func (db *Database) SetBlobStoreOptions(options BlobStoreOptions) {
-	*db.Blobs = *NewBlobStore(options)
 }
 
 // Ready returns an error if the database is not ready to begin transactions.
@@ -160,26 +144,32 @@ func (db *Database) open() error {
 			return fmt.Errorf("error running initial schema migrations: %v", err)
 		}
 	} else {
-		if databaseSchemaVersion > appSchemaVersion {
+		if databaseSchemaVersion > AppSchemaVersion {
 			return &MismatchedSchemaVersionError{
-				CurrentSchemaVersion:  databaseSchemaVersion,
-				RequiredSchemaVersion: appSchemaVersion,
+				CurrentSchemaVersion: databaseSchemaVersion,
 			}
 		}
 
 		// if migration is needed, then don't open the connection
-		if databaseSchemaVersion != appSchemaVersion {
+		if databaseSchemaVersion != AppSchemaVersion {
 			return &MigrationNeededError{
-				CurrentSchemaVersion:  databaseSchemaVersion,
-				RequiredSchemaVersion: appSchemaVersion,
+				CurrentSchemaVersion: databaseSchemaVersion,
 			}
 		}
 	}
 
-	const disableForeignKeys = false
-	db.db, err = db.openDB(disableForeignKeys)
-	if err != nil {
-		return err
+	switch db.DBType {
+	case SQLiteDB:
+		const disableForeignKeys = false
+		db.db, err = db.sqliteOpenDB(disableForeignKeys)
+		if err != nil {
+			return err
+		}
+	case PostgresDB:
+		db.db, err = db.postgresOpenDB()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -231,128 +221,72 @@ func (db *Database) close() error {
 	return nil
 }
 
-func (db *Database) openDB(disableForeignKeys bool) (*sqlx.DB, error) {
-	// https://github.com/mattn/go-sqlite3
-	url := "file:" + db.dbPath + "?_journal=WAL&_sync=NORMAL&_busy_timeout=50"
-	if !disableForeignKeys {
-		url += "&_fk=true"
-	}
-
-	conn, err := sqlx.Open(sqlite3Driver, url)
-	conn.SetMaxOpenConns(dbConns)
-	conn.SetMaxIdleConns(dbConns)
-	conn.SetConnMaxIdleTime(dbConnTimeout * time.Second)
-	if err != nil {
-		return nil, fmt.Errorf("opening database: %w", err)
-	}
-
-	return conn, nil
-}
-
-func (db *Database) Remove() error {
-	db.lockNoCtx()
-	defer db.unlock()
-
-	return db.remove()
-}
-
-func (db *Database) remove() error {
-	databasePath := db.dbPath
-
-	err := db.close()
-	if err != nil {
-		return fmt.Errorf("closing database: %w", err)
-	}
-
-	err = os.Remove(databasePath)
-	if err != nil {
-		return fmt.Errorf("removing database: %w", err)
-	}
-
-	// remove the -shm, -wal files ( if they exist )
-	walFiles := []string{databasePath + "-shm", databasePath + "-wal"}
-	for _, wf := range walFiles {
-		if exists, _ := fsutil.FileExists(wf); exists {
-			err = os.Remove(wf)
-			if err != nil {
-				return fmt.Errorf("removing database: %w", err)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (db *Database) Reset() error {
 	db.lockNoCtx()
 	defer db.unlock()
 
-	if err := db.remove(); err != nil {
-		return err
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteReset()
+	default:
+		return &UnsupportedForDBTypeError{
+			Operation: "resetting",
+			DBType:    db.DBType,
+		}
 	}
-
-	if err := db.open(); err != nil {
-		return fmt.Errorf("initializing new database: %w", err)
-	}
-
-	return nil
 }
 
 // Backup the database. Will open a temporary database connection if necessary.
 func (db *Database) Backup(backupPath string) error {
-	conn := db.db
-	if conn == nil {
-		var err error
-		const disableForeignKeys = false
-		conn, err = db.openDB(disableForeignKeys)
-		if err != nil {
-			return err
-		}
-		defer conn.Close()
-	}
-
-	logger.Infof("Backing up database to %s", backupPath)
-	_, err := conn.Exec(`VACUUM INTO "` + backupPath + `"`)
-	if err != nil {
-		return fmt.Errorf("vacuum failed: %v", err)
-	}
-
-	return nil
-}
-
-func (db *Database) Anonymise(outPath string) error {
-	logger.Infof("Anonymising database to %s", outPath)
-	anon, err := NewAnonymiser(db, outPath)
-	if err != nil {
-		return err
-	}
-
-	return anon.Anonymise(context.Background())
-}
-
-func (db *Database) RestoreFromBackup(backupPath string) error {
 	db.lockNoCtx()
 	defer db.unlock()
 
-	// ensure db is closed
-	err := db.close()
-	if err != nil {
-		return fmt.Errorf("closing database: %w", err)
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteBackup(backupPath)
+	default:
+		return &UnsupportedForDBTypeError{
+			Operation: "backups",
+			DBType:    db.DBType,
+		}
 	}
-
-	logger.Infof("Restoring from backup database %s", backupPath)
-	return os.Rename(backupPath, db.dbPath)
 }
 
-func (db *Database) AppSchemaVersion() uint {
-	return appSchemaVersion
+func (db *Database) Restore(backupPath string) error {
+	db.lockNoCtx()
+	defer db.unlock()
+
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteRestore(backupPath)
+	default:
+		return &UnsupportedForDBTypeError{
+			Operation: "restoring from backup",
+			DBType:    db.DBType,
+		}
+	}
 }
 
-func (db *Database) DatabasePath() string {
-	return db.dbPath
+func (db *Database) Anonymise(outPath string) error {
+	db.lockNoCtx()
+	defer db.unlock()
+
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteAnonymise(outPath)
+	default:
+		return &UnsupportedForDBTypeError{
+			Operation: "anonymising",
+			DBType:    db.DBType,
+		}
+	}
 }
 
-func (db *Database) SetDatabasePath(dbPath string) error {
+func (db *Database) Url() string {
+	return db.dbUrl
+}
+
+func (db *Database) SetUrl(dbPath string) error {
 	db.lockNoCtx()
 	defer db.unlock()
 
@@ -361,29 +295,15 @@ func (db *Database) SetDatabasePath(dbPath string) error {
 		return errors.New("database is open")
 	}
 
-	db.dbPath = dbPath
+	db.dbUrl = dbPath
+
+	if strings.HasPrefix(dbPath, "postgresql://") {
+		db.DBType = PostgresDB
+	} else {
+		db.DBType = SQLiteDB
+	}
 
 	return nil
-}
-
-func (db *Database) DatabaseBackupPath(backupDirectoryPath string) string {
-	fn := fmt.Sprintf("%s.%d.%s", filepath.Base(db.dbPath), db.schemaVersion, time.Now().Format("20060102_150405"))
-
-	if backupDirectoryPath != "" {
-		return filepath.Join(backupDirectoryPath, fn)
-	}
-
-	return fn
-}
-
-func (db *Database) AnonymousDatabasePath(backupDirectoryPath string) string {
-	fn := fmt.Sprintf("%s.anonymous.%d.%s", filepath.Base(db.dbPath), db.schemaVersion, time.Now().Format("20060102_150405"))
-
-	if backupDirectoryPath != "" {
-		return filepath.Join(backupDirectoryPath, fn)
-	}
-
-	return fn
 }
 
 func (db *Database) Version() uint {
@@ -391,29 +311,14 @@ func (db *Database) Version() uint {
 }
 
 func (db *Database) getMigrate() (*migrate.Migrate, error) {
-	migrations, err := iofs.New(migrationsBox, "migrations")
-	if err != nil {
-		return nil, err
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteGetMigrate()
+	case PostgresDB:
+		return db.postgresGetMigrate()
+	default:
+		panic(fmt.Sprintf("unknown dbType: %s", db.DBType))
 	}
-
-	const disableForeignKeys = true
-	conn, err := db.openDB(disableForeignKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	driver, err := sqlite3mig.WithInstance(conn.DB, &sqlite3mig.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	// use sqlite3Driver so that migration has access to durationToTinyInt
-	return migrate.NewWithInstance(
-		"iofs",
-		migrations,
-		db.dbPath,
-		driver,
-	)
 }
 
 func (db *Database) getDatabaseSchemaVersion() (uint, error) {
@@ -438,92 +343,27 @@ func (db *Database) Migrate() error {
 
 // Vacuum runs a VACUUM on the database, rebuilding the database file into a minimal amount of disk space.
 func (db *Database) Vacuum(ctx context.Context) error {
-	conn := db.db
-	if conn == nil {
-		return ErrDatabaseNotInitialized
-	}
+	db.lockNoCtx()
+	defer db.unlock()
 
-	_, err := conn.ExecContext(ctx, "VACUUM")
-	return err
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteVacuum(ctx)
+	default:
+		return &UnsupportedForDBTypeError{
+			Operation: "Vacuuming",
+			DBType:    db.DBType,
+		}
+	}
 }
 
 func (db *Database) runMigrations() error {
-	ctx := context.Background()
-
-	m, err := db.getMigrate()
-	if err != nil {
-		return err
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteRunMigrations()
+	case PostgresDB:
+		return db.postgresRunMigrations()
+	default:
+		panic(fmt.Sprintf("unknown dbType: %s", db.DBType))
 	}
-	defer m.Close()
-
-	databaseSchemaVersion, _, _ := m.Version()
-	stepNumber := appSchemaVersion - databaseSchemaVersion
-	if stepNumber != 0 {
-		logger.Infof("Migrating database from version %d to %d", databaseSchemaVersion, appSchemaVersion)
-
-		// run each migration individually, and run custom migrations as needed
-		var i uint = 1
-		for ; i <= stepNumber; i++ {
-			newVersion := databaseSchemaVersion + i
-
-			// run pre migrations as needed
-			if err := db.runCustomMigration(ctx, migrations.PreMigrations[newVersion]); err != nil {
-				return fmt.Errorf("running pre migration for schema version %d: %w", newVersion, err)
-			}
-
-			err = m.Steps(1)
-			if err != nil {
-				// migration failed
-				return err
-			}
-
-			// run post migrations as needed
-			if err := db.runCustomMigration(ctx, migrations.PostMigrations[newVersion]); err != nil {
-				return fmt.Errorf("running post migration for schema version %d: %w", newVersion, err)
-			}
-		}
-	}
-
-	// update the schema version
-	db.schemaVersion, _, _ = m.Version()
-
-	// optimize database after migration
-
-	const disableForeignKeys = false
-	conn, err := db.openDB(disableForeignKeys)
-	if err != nil {
-		return fmt.Errorf("reopening the database: %w", err)
-	}
-	defer conn.Close()
-
-	logger.Info("Optimizing database")
-	_, err = conn.Exec("ANALYZE")
-	if err != nil {
-		logger.Warnf("error while performing post-migration optimization: %v", err)
-	}
-	_, err = conn.Exec("VACUUM")
-	if err != nil {
-		logger.Warnf("error while performing post-migration vacuum: %v", err)
-	}
-
-	return nil
-}
-
-func (db *Database) runCustomMigration(ctx context.Context, fn migrations.CustomMigrationFunc) error {
-	if fn == nil {
-		return nil
-	}
-
-	const disableForeignKeys = false
-	d, err := db.openDB(disableForeignKeys)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-
-	if err := fn(ctx, d); err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -2,12 +2,10 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime/debug"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mattn/go-sqlite3"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 )
@@ -35,6 +33,14 @@ func (db *Database) Begin(ctx context.Context, exclusive bool) (context.Context,
 		logger.Error(string(debug.Stack()))
 
 		return nil, fmt.Errorf("already in transaction")
+	}
+
+	// only lock on writes for sqlite
+	switch db.DBType {
+	case SQLiteDB:
+		break
+	default:
+		exclusive = false
 	}
 
 	if exclusive {
@@ -116,11 +122,12 @@ func getDBReader(ctx context.Context) (dbReader, error) {
 }
 
 func (db *Database) IsLocked(err error) bool {
-	var sqliteError sqlite3.Error
-	if errors.As(err, &sqliteError) {
-		return sqliteError.Code == sqlite3.ErrBusy
+	switch db.DBType {
+	case SQLiteDB:
+		return db.sqliteIsLocked(err)
+	default:
+		return false
 	}
-	return false
 }
 
 func (db *Database) Repository() models.Repository {

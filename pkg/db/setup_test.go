@@ -587,12 +587,12 @@ func runTests(m *testing.M) int {
 	f.Close()
 	databaseFile := f.Name()
 	conn = db.NewDatabase()
-	conn.SetBlobStoreOptions(db.BlobStoreOptions{
+	conn.Blobs.Configure(db.BlobStoreOptions{
 		UseDatabase: true,
 		// don't use filesystem
 	})
 
-	if err := conn.SetDatabasePath(databaseFile); err != nil {
+	if err := conn.SetSQLitePath(databaseFile); err != nil {
 		panic(fmt.Sprintf("Could not initialize database: %s", err.Error()))
 	}
 	if err := conn.Open(); err != nil {
