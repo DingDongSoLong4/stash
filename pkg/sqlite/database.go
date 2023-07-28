@@ -135,22 +135,26 @@ func (db *Database) Open(dbPath string) error {
 
 	db.dbPath = dbPath
 
-	databaseSchemaVersion, err := db.getDatabaseSchemaVersion()
+	schemaVersion, dirty, err := db.getSchemaVersion()
 	if err != nil {
-		return fmt.Errorf("getting database schema version: %w", err)
+		if !errors.Is(err, migrate.ErrNilVersion) {
+			return fmt.Errorf("getting database schema version: %w", err)
+		}
 	}
+	if dirty {
+		return fmt.Errorf("dirty database schema version %v, fix or restore from a valid backup", schemaVersion)
+	}
+	db.schemaVersion = schemaVersion
 
-	db.schemaVersion = databaseSchemaVersion
-
-	if databaseSchemaVersion == 0 {
+	if schemaVersion == 0 {
 		// new database, just run the migrations
 		if err := db.RunMigrations(); err != nil {
 			return fmt.Errorf("error running initial schema migrations: %v", err)
 		}
 	} else {
-		if databaseSchemaVersion > appSchemaVersion {
+		if schemaVersion > appSchemaVersion {
 			return &MismatchedSchemaVersionError{
-				CurrentSchemaVersion:  databaseSchemaVersion,
+				CurrentSchemaVersion:  schemaVersion,
 				RequiredSchemaVersion: appSchemaVersion,
 			}
 		}
@@ -158,7 +162,7 @@ func (db *Database) Open(dbPath string) error {
 		// if migration is needed, then don't open the connection
 		if db.needsMigration() {
 			return &MigrationNeededError{
-				CurrentSchemaVersion:  databaseSchemaVersion,
+				CurrentSchemaVersion:  schemaVersion,
 				RequiredSchemaVersion: appSchemaVersion,
 			}
 		}
@@ -376,15 +380,14 @@ func (db *Database) getMigrate() (*migrate.Migrate, error) {
 	)
 }
 
-func (db *Database) getDatabaseSchemaVersion() (uint, error) {
+func (db *Database) getSchemaVersion() (uint, bool, error) {
 	m, err := db.getMigrate()
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	defer m.Close()
 
-	ret, _, _ := m.Version()
-	return ret, nil
+	return m.Version()
 }
 
 // Migrate the database
@@ -397,15 +400,24 @@ func (db *Database) RunMigrations() error {
 	}
 	defer m.Close()
 
-	databaseSchemaVersion, _, _ := m.Version()
-	stepNumber := appSchemaVersion - databaseSchemaVersion
+	currentVersion, dirty, err := m.Version()
+	if err != nil {
+		if !errors.Is(err, migrate.ErrNilVersion) {
+			return fmt.Errorf("getting schema version: %w", err)
+		}
+	}
+	if dirty {
+		return fmt.Errorf("dirty schema version %v, cannot migrate", currentVersion)
+	}
+
+	stepNumber := appSchemaVersion - currentVersion
 	if stepNumber != 0 {
-		logger.Infof("Migrating database from version %d to %d", databaseSchemaVersion, appSchemaVersion)
+		logger.Infof("Migrating database from version %d to %d", currentVersion, appSchemaVersion)
 
 		// run each migration individually, and run custom migrations as needed
 		var i uint = 1
 		for ; i <= stepNumber; i++ {
-			newVersion := databaseSchemaVersion + i
+			newVersion := currentVersion + i
 
 			// run pre migrations as needed
 			if err := db.runCustomMigrations(ctx, preMigrations[newVersion]); err != nil {
