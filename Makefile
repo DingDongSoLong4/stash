@@ -41,16 +41,16 @@ GO_BUILD_TAGS := $(GO_BUILD_TAGS)
 GO_BUILD_TAGS += sqlite_stat4 sqlite_math_functions
 
 # set STASH_BROTLI environment variable or uncomment to enable brotli compression
-# STASH_BROTLI := true
+STASH_BROTLI := true
 ifdef STASH_BROTLI
   GO_BUILD_TAGS += brotli
 endif
 
 # set STASH_NOLEGACY environment variable or uncomment to disable legacy browser support
-# STASH_NOLEGACY := true
+STASH_NOLEGACY := true
 
 # set STASH_SOURCEMAPS environment variable or uncomment to enable UI sourcemaps
-# STASH_SOURCEMAPS := true
+STASH_SOURCEMAPS := true
 
 export CGO_ENABLED := 1
 
