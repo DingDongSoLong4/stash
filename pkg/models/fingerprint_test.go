@@ -4,9 +4,9 @@ import "testing"
 
 func TestFingerprints_Equals(t *testing.T) {
 	var (
-		value1 = 1
-		value2 = "2"
-		value3 = 1.23
+		value1 = "1234567890abcdef0987654321fedcba"
+		value2 = "1f2e3d4c5b6a7089"
+		value3 = "00000000ffffffff"
 
 		fingerprint1 = Fingerprint{
 			Type:        FingerprintTypeMD5,
@@ -87,9 +87,9 @@ func TestFingerprints_Equals(t *testing.T) {
 
 func TestFingerprints_ContentsChanged(t *testing.T) {
 	var (
-		value1 = 1
-		value2 = "2"
-		value3 = 1.23
+		value1 = "1234567890abcdef0987654321fedcba"
+		value2 = "1f2e3d4c5b6a7089"
+		value3 = "00000000ffffffff"
 
 		fingerprint1 = Fingerprint{
 			Type:        FingerprintTypeMD5,

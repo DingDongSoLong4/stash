@@ -866,8 +866,9 @@ func getSceneStringValue(index int, field string) string {
 	return getPrefixedStringValue("scene", index, field)
 }
 
-func getScenePhash(index int, field string) int64 {
-	return int64(index % (totalScenes - dupeScenePhashes) * 1234)
+func getScenePhash(index int, field string) string {
+	intValue := index % (totalScenes - dupeScenePhashes) * 1234
+	return fmt.Sprintf("%016x", intValue)
 }
 
 func getSceneStringPtr(index int, field string) *string {

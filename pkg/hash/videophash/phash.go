@@ -23,18 +23,20 @@ const (
 	rows           = 5
 )
 
-func Generate(encoder *ffmpeg.FFMpeg, videoFile *models.VideoFile) (*uint64, error) {
+func Generate(encoder *ffmpeg.FFMpeg, videoFile *models.VideoFile) (string, error) {
 	sprite, err := generateSprite(encoder, videoFile)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	hash, err := goimagehash.PerceptionHash(sprite)
 	if err != nil {
-		return nil, fmt.Errorf("computing phash from sprite: %w", err)
+		return "", fmt.Errorf("computing phash from sprite: %w", err)
 	}
-	hashValue := hash.GetHash()
-	return &hashValue, nil
+	result := hash.GetHash()
+
+	// output as hex
+	return fmt.Sprintf("%016x", result), nil
 }
 
 func generateSpriteScreenshot(encoder *ffmpeg.FFMpeg, input string, t float64) (image.Image, error) {

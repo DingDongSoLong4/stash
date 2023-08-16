@@ -13,7 +13,7 @@ type oCounterManager struct {
 }
 
 func (qb *oCounterManager) getOCounter(ctx context.Context, id int) (int, error) {
-	q := dialect.From(qb.tableMgr.table).Select("o_counter").Where(goqu.Ex{"id": id})
+	q := goqu.From(qb.tableMgr.table).Select("o_counter").Where(goqu.Ex{"id": id})
 
 	const single = true
 	var ret int
@@ -49,11 +49,11 @@ func (qb *oCounterManager) DecrementOCounter(ctx context.Context, id int) (int, 
 	}
 
 	table := qb.tableMgr.table
-	q := dialect.Update(table).Set(goqu.Record{
+	q := goqu.Update(table).Set(goqu.Record{
 		"o_counter": goqu.L("o_counter - 1"),
 	}).Where(qb.tableMgr.byID(id), goqu.L("o_counter > 0"))
 
-	if _, err := exec(ctx, q); err != nil {
+	if _, err := update(ctx, q); err != nil {
 		return 0, fmt.Errorf("updating %s: %w", table.GetTable(), err)
 	}
 

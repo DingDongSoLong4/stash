@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
+	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	"github.com/jmoiron/sqlx"
 	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
@@ -20,7 +23,7 @@ const (
 
 func (db *Database) WithDatabase(ctx context.Context) (context.Context, error) {
 	// if we are already in a transaction or have a database already, just use it
-	if tx, _ := getDBReader(ctx); tx != nil {
+	if tx, _ := getDBWrapper(ctx); tx != nil {
 		return ctx, nil
 	}
 
@@ -107,7 +110,15 @@ func getTx(ctx context.Context) (*sqlx.Tx, error) {
 	return tx, nil
 }
 
-func getDBReader(ctx context.Context) (dbReader, error) {
+// func getDB(ctx context.Context) (*sqlx.DB, error) {
+// 	db, ok := ctx.Value(dbKey).(*sqlx.DB)
+// 	if !ok || db == nil {
+// 		return nil, fmt.Errorf("not in transaction")
+// 	}
+// 	return db, nil
+// }
+
+func getDBWrapper(ctx context.Context) (*dbWrapper, error) {
 	// get transaction first if present
 	tx, ok := ctx.Value(txnKey).(*sqlx.Tx)
 	if !ok || tx == nil {
@@ -116,9 +127,40 @@ func getDBReader(ctx context.Context) (dbReader, error) {
 		if !ok || db == nil {
 			return nil, fmt.Errorf("not in transaction")
 		}
-		return db, nil
+
+		driverName := db.DriverName()
+		return &dbWrapper{
+			tx:      txWrapper{db},
+			driver:  driverName,
+			dialect: getDialect(driverName),
+		}, nil
 	}
-	return tx, nil
+
+	driverName := tx.DriverName()
+	return &dbWrapper{
+		tx:      txWrapper{tx},
+		driver:  driverName,
+		dialect: getDialect(driverName),
+	}, nil
+}
+
+func getDialect(driverName string) goqu.SQLDialect {
+	switch driverName {
+	case sqlite3Driver:
+		return goqu.GetDialect("sqlite3")
+	case postgresDriver:
+		return goqu.GetDialect("postgres")
+	default:
+		return goqu.GetDialect("default")
+	}
+}
+
+func getDriverName(ctx context.Context) string {
+	db, _ := getDBWrapper(ctx)
+	if db == nil {
+		return ""
+	}
+	return db.driver
 }
 
 func (db *Database) IsLocked(err error) bool {

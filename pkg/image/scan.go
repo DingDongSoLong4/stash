@@ -116,8 +116,8 @@ func (h *ScanHandler) Handle(ctx context.Context, f models.File, oldFile models.
 
 	// remove the old thumbnail if the checksum changed - we'll regenerate it
 	if oldFile != nil {
-		oldHash := oldFile.Base().Fingerprints.GetString(models.FingerprintTypeMD5)
-		newHash := f.Base().Fingerprints.GetString(models.FingerprintTypeMD5)
+		oldHash := oldFile.Base().Fingerprints.Get(models.FingerprintTypeMD5)
+		newHash := f.Base().Fingerprints.Get(models.FingerprintTypeMD5)
 
 		if oldHash != "" && newHash != "" && oldHash != newHash {
 			// remove cache dir of gallery

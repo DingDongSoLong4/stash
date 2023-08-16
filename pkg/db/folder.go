@@ -67,19 +67,6 @@ func (r *folderQueryRow) resolve() *models.Folder {
 	return ret
 }
 
-type folderQueryRows []folderQueryRow
-
-func (r folderQueryRows) resolve() []*models.Folder {
-	var ret []*models.Folder
-
-	for _, row := range r {
-		f := row.resolve()
-		ret = append(ret, f)
-	}
-
-	return ret
-}
-
 type FolderStore struct {
 	repository
 
@@ -150,7 +137,7 @@ func (qb *FolderStore) selectDataset() *goqu.SelectDataset {
 		zipFolderTable.Col("path").As("zip_folder_path"),
 	}
 
-	ret := dialect.From(table).Select(cols...)
+	ret := goqu.From(table).Select(cols...)
 
 	return ret.LeftJoin(
 		zipFileTable,
@@ -168,7 +155,7 @@ func (qb *FolderStore) countDataset() *goqu.SelectDataset {
 	zipFileTable := fileTable.As("zip_files")
 	zipFolderTable := table.As("zip_files_folders")
 
-	ret := dialect.From(table).Select(goqu.COUNT(goqu.DISTINCT(table.Col("id"))))
+	ret := goqu.From(table).Select(goqu.COUNT(goqu.DISTINCT(table.Col("id"))))
 
 	return ret.LeftJoin(
 		zipFileTable,
@@ -194,20 +181,22 @@ func (qb *FolderStore) get(ctx context.Context, q *goqu.SelectDataset) (*models.
 
 func (qb *FolderStore) getMany(ctx context.Context, q *goqu.SelectDataset) ([]*models.Folder, error) {
 	const single = false
-	var rows folderQueryRows
+	var ret []*models.Folder
 	if err := queryFunc(ctx, q, single, func(r *sqlx.Rows) error {
 		var f folderQueryRow
 		if err := r.StructScan(&f); err != nil {
 			return err
 		}
 
-		rows = append(rows, f)
+		ff := f.resolve()
+
+		ret = append(ret, ff)
 		return nil
 	}); err != nil {
 		return nil, err
 	}
 
-	return rows.resolve(), nil
+	return ret, nil
 }
 
 func (qb *FolderStore) Find(ctx context.Context, id models.FolderID) (*models.Folder, error) {
@@ -285,7 +274,7 @@ func (qb *FolderStore) CountAllInPaths(ctx context.Context, p []string) (int, er
 	q := qb.countDataset().Prepared(true)
 	q = qb.allInPaths(q, p)
 
-	return count(ctx, q)
+	return queryInt(ctx, q)
 }
 
 // func (qb *FolderStore) findBySubquery(ctx context.Context, sq *goqu.SelectDataset) ([]*models.Folder, error) {

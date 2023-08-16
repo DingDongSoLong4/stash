@@ -202,7 +202,7 @@ func (qb *PerformerStore) table() exp.IdentifierExpression {
 }
 
 func (qb *PerformerStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *PerformerStore) Create(ctx context.Context, newObject *models.Performer) error {
@@ -413,7 +413,7 @@ func (qb *PerformerStore) getMany(ctx context.Context, q *goqu.SelectDataset) ([
 }
 
 func (qb *PerformerStore) FindBySceneID(ctx context.Context, sceneID int) ([]*models.Performer, error) {
-	sq := dialect.From(scenesPerformersJoinTable).Select(scenesPerformersJoinTable.Col(performerIDColumn)).Where(
+	sq := goqu.From(scenesPerformersJoinTable).Select(scenesPerformersJoinTable.Col(performerIDColumn)).Where(
 		scenesPerformersJoinTable.Col(sceneIDColumn).Eq(sceneID),
 	)
 	ret, err := qb.findBySubquery(ctx, sq)
@@ -426,7 +426,7 @@ func (qb *PerformerStore) FindBySceneID(ctx context.Context, sceneID int) ([]*mo
 }
 
 func (qb *PerformerStore) FindByImageID(ctx context.Context, imageID int) ([]*models.Performer, error) {
-	sq := dialect.From(performersImagesJoinTable).Select(performersImagesJoinTable.Col(performerIDColumn)).Where(
+	sq := goqu.From(performersImagesJoinTable).Select(performersImagesJoinTable.Col(performerIDColumn)).Where(
 		performersImagesJoinTable.Col(imageIDColumn).Eq(imageID),
 	)
 	ret, err := qb.findBySubquery(ctx, sq)
@@ -439,7 +439,7 @@ func (qb *PerformerStore) FindByImageID(ctx context.Context, imageID int) ([]*mo
 }
 
 func (qb *PerformerStore) FindByGalleryID(ctx context.Context, galleryID int) ([]*models.Performer, error) {
-	sq := dialect.From(performersGalleriesJoinTable).Select(performersGalleriesJoinTable.Col(performerIDColumn)).Where(
+	sq := goqu.From(performersGalleriesJoinTable).Select(performersGalleriesJoinTable.Col(performerIDColumn)).Where(
 		performersGalleriesJoinTable.Col(galleryIDColumn).Eq(galleryID),
 	)
 	ret, err := qb.findBySubquery(ctx, sq)
@@ -452,6 +452,10 @@ func (qb *PerformerStore) FindByGalleryID(ctx context.Context, galleryID int) ([
 }
 
 func (qb *PerformerStore) FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Performer, error) {
+	if len(names) == 0 {
+		return []*models.Performer{}, nil
+	}
+
 	clause := "name "
 	if nocase {
 		clause += "COLLATE NOCASE "
@@ -478,13 +482,13 @@ func (qb *PerformerStore) FindByNames(ctx context.Context, names []string, nocas
 func (qb *PerformerStore) CountByTagID(ctx context.Context, tagID int) (int, error) {
 	joinTable := performersTagsJoinTable
 
-	q := dialect.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(tagIDColumn).Eq(tagID))
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(tagIDColumn).Eq(tagID))
+	return queryInt(ctx, q)
 }
 
 func (qb *PerformerStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *PerformerStore) All(ctx context.Context) ([]*models.Performer, error) {
@@ -496,7 +500,7 @@ func (qb *PerformerStore) QueryForAutoTag(ctx context.Context, words []string) (
 	// TODO - Query needs to be changed to support queries of this type, and
 	// this method should be removed
 	table := qb.table()
-	sq := dialect.From(table).Select(table.Col(idColumn))
+	sq := goqu.From(table).Select(table.Col(idColumn))
 	// TODO - disabled alias matching until we get finer control over it
 	// .LeftJoin(
 	// 	performersAliasesJoinTable,
@@ -684,7 +688,9 @@ func (qb *PerformerStore) makeQuery(ctx context.Context, performerFilter *models
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, performerTable)
+
+	query.addColumn(getColumn(performerTable, "id"))
+	query.from = performerTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		query.join(performersAliasesTable, "", "performer_aliases.performer_id = performers.id")
@@ -788,8 +794,6 @@ func performerAliasCriterionHandler(qb *PerformerStore, alias *models.StringCrit
 
 func performerTagsCriterionHandler(qb *PerformerStore, tags *models.HierarchicalMultiCriterionInput) criterionHandlerFunc {
 	h := joinedHierarchicalMultiCriterionHandlerBuilder{
-		tx: qb.tx,
-
 		primaryTable: performerTable,
 		foreignTable: tagTable,
 		foreignFK:    "tag_id",
@@ -916,7 +920,7 @@ func performerStudiosCriterionHandler(qb *PerformerStore, studios *models.Hierar
 			}
 
 			const derivedPerformerStudioTable = "performer_studio"
-			valuesClause, err := getHierarchicalValues(ctx, qb.tx, studios.Value, studioTable, "", "parent_id", "child_id", studios.Depth)
+			valuesClause, err := getHierarchicalValues(ctx, studios.Value, studioTable, "", "parent_id", "child_id", studios.Depth)
 			if err != nil {
 				f.setError(err)
 				return
@@ -1023,14 +1027,13 @@ func (qb *PerformerStore) getPerformerSort(findFilter *models.FindFilterType) st
 	}
 
 	// Whatever the sorting, always use name/id as a final sort
-	sortQuery += ", COALESCE(performers.name, performers.id) COLLATE NATURAL_CI ASC"
+	sortQuery += ", performers.name COLLATE NATURAL_CI ASC, performers.id ASC"
 	return sortQuery
 }
 
 func (qb *PerformerStore) tagsRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: performersTagsTable,
 			idColumn:  performerIDColumn,
 		},
@@ -1061,7 +1064,6 @@ func (qb *PerformerStore) destroyImage(ctx context.Context, performerID int) err
 func (qb *PerformerStore) stashIDRepository() *stashIDRepository {
 	return &stashIDRepository{
 		repository{
-			tx:        qb.tx,
 			tableName: "performer_stash_ids",
 			idColumn:  performerIDColumn,
 		},
@@ -1077,7 +1079,7 @@ func (qb *PerformerStore) GetStashIDs(ctx context.Context, performerID int) ([]m
 }
 
 func (qb *PerformerStore) FindByStashID(ctx context.Context, stashID models.StashID) ([]*models.Performer, error) {
-	sq := dialect.From(performersStashIDsJoinTable).Select(performersStashIDsJoinTable.Col(performerIDColumn)).Where(
+	sq := goqu.From(performersStashIDsJoinTable).Select(performersStashIDsJoinTable.Col(performerIDColumn)).Where(
 		performersStashIDsJoinTable.Col("stash_id").Eq(stashID.StashID),
 		performersStashIDsJoinTable.Col("endpoint").Eq(stashID.Endpoint),
 	)
@@ -1092,7 +1094,7 @@ func (qb *PerformerStore) FindByStashID(ctx context.Context, stashID models.Stas
 
 func (qb *PerformerStore) FindByStashIDStatus(ctx context.Context, hasStashID bool, stashboxEndpoint string) ([]*models.Performer, error) {
 	table := qb.table()
-	sq := dialect.From(table).LeftJoin(
+	sq := goqu.From(table).LeftJoin(
 		performersStashIDsJoinTable,
 		goqu.On(table.Col(idColumn).Eq(performersStashIDsJoinTable.Col(performerIDColumn))),
 	).Select(table.Col(idColumn))

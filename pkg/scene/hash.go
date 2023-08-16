@@ -9,9 +9,9 @@ import (
 func GetHash(f models.File, hashAlgorithm models.HashAlgorithm) string {
 	switch hashAlgorithm {
 	case models.HashAlgorithmMd5:
-		return f.Base().Fingerprints.GetString(models.FingerprintTypeMD5)
+		return f.Base().Fingerprints.Get(models.FingerprintTypeMD5)
 	case models.HashAlgorithmOshash:
-		return f.Base().Fingerprints.GetString(models.FingerprintTypeOshash)
+		return f.Base().Fingerprints.Get(models.FingerprintTypeOshash)
 	default:
 		panic("unknown hash algorithm")
 	}

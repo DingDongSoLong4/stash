@@ -133,11 +133,11 @@ func (qb *ImageStore) selectDataset() *goqu.SelectDataset {
 	folders := folderTableMgr.table
 	checksum := fingerprintTableMgr.table
 
-	return dialect.From(table).LeftJoin(
+	return goqu.From(table).LeftJoin(
 		imagesFilesJoinTable,
 		goqu.On(
 			imagesFilesJoinTable.Col(imageIDColumn).Eq(table.Col(idColumn)),
-			imagesFilesJoinTable.Col("primary").Eq(1),
+			imagesFilesJoinTable.Col("primary").Eq(true),
 		),
 	).LeftJoin(
 		files,
@@ -298,8 +298,13 @@ func (qb *ImageStore) Find(ctx context.Context, id int) (*models.Image, error) {
 func (qb *ImageStore) FindMany(ctx context.Context, ids []int) ([]*models.Image, error) {
 	images := make([]*models.Image, len(ids))
 
+	if len(ids) == 0 {
+		return images, nil
+	}
+
+	table := qb.table()
 	if err := batchExec(ids, defaultBatchSize, func(batch []int) error {
-		q := qb.selectDataset().Prepared(true).Where(qb.table().Col(idColumn).In(batch))
+		q := qb.selectDataset().Prepared(true).Where(table.Col(idColumn).In(batch))
 		unsorted, err := qb.getMany(ctx, q)
 		if err != nil {
 			return err
@@ -411,7 +416,7 @@ func (qb *ImageStore) GetManyFileIDs(ctx context.Context, ids []int) ([][]models
 func (qb *ImageStore) FindByFileID(ctx context.Context, fileID models.FileID) ([]*models.Image, error) {
 	table := qb.table()
 
-	sq := dialect.From(table).
+	sq := goqu.From(table).
 		InnerJoin(
 			imagesFilesJoinTable,
 			goqu.On(table.Col(idColumn).Eq(imagesFilesJoinTable.Col(imageIDColumn))),
@@ -429,8 +434,8 @@ func (qb *ImageStore) FindByFileID(ctx context.Context, fileID models.FileID) ([
 func (qb *ImageStore) CountByFileID(ctx context.Context, fileID models.FileID) (int, error) {
 	joinTable := imagesFilesJoinTable
 
-	q := dialect.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(fileIDColumn).Eq(fileID))
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(fileIDColumn).Eq(fileID))
+	return queryInt(ctx, q)
 }
 
 func (qb *ImageStore) FindByFingerprints(ctx context.Context, fp []models.Fingerprint) ([]*models.Image, error) {
@@ -446,7 +451,7 @@ func (qb *ImageStore) FindByFingerprints(ctx context.Context, fp []models.Finger
 		))
 	}
 
-	sq := dialect.From(table).
+	sq := goqu.From(table).
 		InnerJoin(
 			imagesFilesJoinTable,
 			goqu.On(table.Col(idColumn).Eq(imagesFilesJoinTable.Col(imageIDColumn))),
@@ -479,7 +484,7 @@ func (qb *ImageStore) FindByGalleryID(ctx context.Context, galleryID int) ([]*mo
 	fileTable := fileTableMgr.table
 	folderTable := folderTableMgr.table
 
-	sq := dialect.From(table).
+	sq := goqu.From(table).
 		InnerJoin(
 			galleriesImagesJoinTable,
 			goqu.On(table.Col(idColumn).Eq(galleriesImagesJoinTable.Col(imageIDColumn))),
@@ -505,28 +510,23 @@ func (qb *ImageStore) FindByGalleryID(ctx context.Context, galleryID int) ([]*mo
 func (qb *ImageStore) CountByGalleryID(ctx context.Context, galleryID int) (int, error) {
 	joinTable := goqu.T(galleriesImagesTable)
 
-	q := dialect.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col("gallery_id").Eq(galleryID))
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col("gallery_id").Eq(galleryID))
+	return queryInt(ctx, q)
 }
 
 func (qb *ImageStore) OCountByPerformerID(ctx context.Context, performerID int) (int, error) {
 	table := qb.table()
 	joinTable := performersImagesJoinTable
-	q := dialect.Select(goqu.COALESCE(goqu.SUM("o_counter"), 0)).From(table).InnerJoin(joinTable, goqu.On(table.Col(idColumn).Eq(joinTable.Col(imageIDColumn)))).Where(joinTable.Col(performerIDColumn).Eq(performerID))
+	q := goqu.Select(goqu.COALESCE(goqu.SUM("o_counter"), 0)).From(table).InnerJoin(joinTable, goqu.On(table.Col(idColumn).Eq(joinTable.Col(imageIDColumn)))).Where(joinTable.Col(performerIDColumn).Eq(performerID))
 
-	var ret int
-	if err := querySimple(ctx, q, &ret); err != nil {
-		return 0, err
-	}
-
-	return ret, nil
+	return queryInt(ctx, q)
 }
 
 func (qb *ImageStore) FindByFolderID(ctx context.Context, folderID models.FolderID) ([]*models.Image, error) {
 	table := qb.table()
 	fileTable := goqu.T(fileTable)
 
-	sq := dialect.From(table).
+	sq := goqu.From(table).
 		InnerJoin(
 			imagesFilesJoinTable,
 			goqu.On(table.Col(idColumn).Eq(imagesFilesJoinTable.Col(imageIDColumn))),
@@ -551,7 +551,7 @@ func (qb *ImageStore) FindByZipFileID(ctx context.Context, zipFileID models.File
 	table := qb.table()
 	fileTable := goqu.T(fileTable)
 
-	sq := dialect.From(table).
+	sq := goqu.From(table).
 		InnerJoin(
 			imagesFilesJoinTable,
 			goqu.On(table.Col(idColumn).Eq(imagesFilesJoinTable.Col(imageIDColumn))),
@@ -573,14 +573,14 @@ func (qb *ImageStore) FindByZipFileID(ctx context.Context, zipFileID models.File
 }
 
 func (qb *ImageStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *ImageStore) Size(ctx context.Context) (float64, error) {
 	table := qb.table()
 	fileTable := fileTableMgr.table
-	q := dialect.Select(
+	q := goqu.Select(
 		goqu.SUM(fileTableMgr.table.Col("size")),
 	).From(table).InnerJoin(
 		imagesFilesJoinTable,
@@ -590,7 +590,7 @@ func (qb *ImageStore) Size(ctx context.Context) (float64, error) {
 		goqu.On(imagesFilesJoinTable.Col(fileIDColumn).Eq(fileTable.Col(idColumn))),
 	)
 	var ret float64
-	if err := querySimple(ctx, q, &ret); err != nil {
+	if err := queryValue(ctx, &ret, q); err != nil {
 		return 0, err
 	}
 
@@ -684,7 +684,7 @@ func (qb *ImageStore) makeFilter(ctx context.Context, imageFilter *models.ImageF
 }
 
 func (qb *ImageStore) addImagesFilesTable(f *filterBuilder) {
-	f.addLeftJoin(imagesFilesTable, "", "images_files.image_id = images.id")
+	f.addLeftJoin(imagesFilesTable, "", `images_files.image_id = images.id AND images_files."primary" = TRUE`)
 }
 
 func (qb *ImageStore) addFilesTable(f *filterBuilder) {
@@ -711,7 +711,9 @@ func (qb *ImageStore) makeQuery(ctx context.Context, imageFilter *models.ImageFi
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, imageTable)
+
+	query.addColumn(getColumn(imageTable, "id"))
+	query.from = imageTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		query.addJoins(
@@ -803,7 +805,8 @@ func (qb *ImageStore) queryGroupedFields(ctx context.Context, options models.Ima
 		Megapixels float64
 		Size       float64
 	}{}
-	if err := qb.repository.queryStruct(ctx, aggregateQuery.toSQL(includeSortPagination), query.args, &out); err != nil {
+	err := qb.querySingle(ctx, &out, aggregateQuery.toSQL(includeSortPagination), query.args...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -868,8 +871,6 @@ func (qb *ImageStore) getMultiCriterionHandlerBuilder(foreignTable, joinTable, f
 
 func imageTagsCriterionHandler(qb *ImageStore, tags *models.HierarchicalMultiCriterionInput) criterionHandlerFunc {
 	h := joinedHierarchicalMultiCriterionHandlerBuilder{
-		tx: qb.tx,
-
 		primaryTable: imageTable,
 		foreignTable: tagTable,
 		foreignFK:    "tag_id",
@@ -1015,7 +1016,7 @@ func (qb *ImageStore) setImageSortAndPagination(q *queryBuilder, findFilter *mod
 		}
 
 		// Whatever the sorting, always use title/id as a final sort
-		sortClause += ", COALESCE(images.title, images.id) COLLATE NATURAL_CI ASC"
+		sortClause += ", images.title COLLATE NATURAL_CI ASC, images.id ASC"
 	}
 
 	q.sortAndPagination = sortClause + getPagination(findFilter)
@@ -1024,7 +1025,6 @@ func (qb *ImageStore) setImageSortAndPagination(q *queryBuilder, findFilter *mod
 func (qb *ImageStore) galleriesRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: galleriesImagesTable,
 			idColumn:  imageIDColumn,
 		},
@@ -1035,7 +1035,6 @@ func (qb *ImageStore) galleriesRepository() *joinRepository {
 func (qb *ImageStore) filesRepository() *filesRepository {
 	return &filesRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: imagesFilesTable,
 			idColumn:  imageIDColumn,
 		},
@@ -1059,7 +1058,6 @@ func (qb *ImageStore) GetGalleryIDs(ctx context.Context, imageID int) ([]int, er
 func (qb *ImageStore) performersRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: performersImagesTable,
 			idColumn:  imageIDColumn,
 		},
@@ -1079,13 +1077,12 @@ func (qb *ImageStore) UpdatePerformers(ctx context.Context, imageID int, perform
 func (qb *ImageStore) tagsRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: imagesTagsTable,
 			idColumn:  imageIDColumn,
 		},
 		fkColumn:     tagIDColumn,
 		foreignTable: tagTable,
-		orderBy:      "tags.name ASC",
+		orderExp:     goqu.I("tags.name").Asc(),
 	}
 }
 

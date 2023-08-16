@@ -9,7 +9,6 @@ import (
 	"github.com/stashapp/stash/internal/api/loaders"
 	"github.com/stashapp/stash/internal/api/urlbuilders"
 	"github.com/stashapp/stash/pkg/models"
-	"github.com/stashapp/stash/pkg/utils"
 )
 
 func convertVideoFile(f models.File) (*models.VideoFile, error) {
@@ -291,17 +290,11 @@ func (r *sceneResolver) Phash(ctx context.Context, obj *models.Scene) (*string, 
 	}
 
 	val := f.Fingerprints.Get(models.FingerprintTypePhash)
-	if val == nil {
+	if val == "" {
 		return nil, nil
 	}
 
-	phash, _ := val.(int64)
-
-	if phash != 0 {
-		hexval := utils.PhashToString(phash)
-		return &hexval, nil
-	}
-	return nil, nil
+	return &val, nil
 }
 
 func (r *sceneResolver) SceneStreams(ctx context.Context, obj *models.Scene) ([]*models.SceneStreamEndpoint, error) {

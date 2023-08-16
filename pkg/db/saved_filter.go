@@ -65,7 +65,7 @@ func (qb *SavedFilterStore) table() exp.IdentifierExpression {
 }
 
 func (qb *SavedFilterStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *SavedFilterStore) Create(ctx context.Context, newObject *models.SavedFilter) error {
@@ -130,6 +130,10 @@ func (qb *SavedFilterStore) Find(ctx context.Context, id int) (*models.SavedFilt
 
 func (qb *SavedFilterStore) FindMany(ctx context.Context, ids []int, ignoreNotFound bool) ([]*models.SavedFilter, error) {
 	ret := make([]*models.SavedFilter, len(ids))
+
+	if len(ids) == 0 {
+		return ret, nil
+	}
 
 	table := qb.table()
 	q := qb.selectDataset().Prepared(true).Where(table.Col(idColumn).In(ids))

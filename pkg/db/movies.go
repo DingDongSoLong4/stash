@@ -123,7 +123,7 @@ func (qb *MovieStore) table() exp.IdentifierExpression {
 }
 
 func (qb *MovieStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *MovieStore) Create(ctx context.Context, newObject *models.Movie) error {
@@ -194,6 +194,10 @@ func (qb *MovieStore) Find(ctx context.Context, id int) (*models.Movie, error) {
 
 func (qb *MovieStore) FindMany(ctx context.Context, ids []int) ([]*models.Movie, error) {
 	ret := make([]*models.Movie, len(ids))
+
+	if len(ids) == 0 {
+		return ret, nil
+	}
 
 	table := qb.table()
 	if err := batchExec(ids, defaultBatchSize, func(batch []int) error {
@@ -289,11 +293,10 @@ func (qb *MovieStore) FindByName(ctx context.Context, name string, nocase bool) 
 }
 
 func (qb *MovieStore) FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Movie, error) {
-	// query := "SELECT * FROM movies WHERE name"
-	// if nocase {
-	// 	query += " COLLATE NOCASE"
-	// }
-	// query += " IN " + getInBinding(len(names))
+	if len(names) == 0 {
+		return []*models.Movie{}, nil
+	}
+
 	where := "name"
 	if nocase {
 		where += " COLLATE NOCASE"
@@ -314,8 +317,8 @@ func (qb *MovieStore) FindByNames(ctx context.Context, names []string, nocase bo
 }
 
 func (qb *MovieStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *MovieStore) All(ctx context.Context) ([]*models.Movie, error) {
@@ -357,7 +360,9 @@ func (qb *MovieStore) makeQuery(ctx context.Context, movieFilter *models.MovieFi
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, movieTable)
+
+	query.addColumn(getColumn(movieTable, "id"))
+	query.from = movieTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		searchColumns := []string{"movies.name"}
@@ -488,7 +493,7 @@ func (qb *MovieStore) getMovieSort(findFilter *models.FindFilterType) string {
 	}
 
 	// Whatever the sorting, always use name/id as a final sort
-	sortQuery += ", COALESCE(movies.name, movies.id) COLLATE NATURAL_CI ASC"
+	sortQuery += ", movies.name COLLATE NATURAL_CI ASC, movies.id ASC"
 	return sortQuery
 }
 
@@ -564,8 +569,7 @@ FROM movies_scenes
 INNER JOIN performers_scenes ON performers_scenes.scene_id = movies_scenes.scene_id
 WHERE performers_scenes.performer_id = ?
 `
-	args := []interface{}{performerID}
-	return qb.runCountQuery(ctx, query, args)
+	return qb.queryInt(ctx, query, performerID)
 }
 
 func (qb *MovieStore) FindByStudioID(ctx context.Context, studioID int) ([]*models.Movie, error) {
@@ -582,6 +586,5 @@ func (qb *MovieStore) CountByStudioID(ctx context.Context, studioID int) (int, e
 FROM movies
 WHERE movies.studio_id = ?
 `
-	args := []interface{}{studioID}
-	return qb.runCountQuery(ctx, query, args)
+	return qb.queryInt(ctx, query, studioID)
 }

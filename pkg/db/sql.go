@@ -18,11 +18,6 @@ func selectAll(tableName string) string {
 	return "SELECT " + idColumn + " FROM " + tableName + " "
 }
 
-func distinctIDs(qb *queryBuilder, tableName string) {
-	qb.addColumn("DISTINCT " + getColumn(tableName, "id"))
-	qb.from = tableName
-}
-
 func getColumn(tableName string, columnName string) string {
 	return tableName + "." + columnName
 }
@@ -176,6 +171,12 @@ func getEnumSearchClause(column string, enumVals []string, not bool) sqlClause {
 }
 
 func getInBinding(length int) string {
+	if length == 0 {
+		// IN () is an error in postgres
+		// return a dummy subquery that returns no rows
+		return "(SELECT * FROM (VALUES (NULL)) AS temp LIMIT 0)"
+	}
+
 	bindings := strings.Repeat("?, ", length)
 	bindings = strings.TrimRight(bindings, ", ")
 	return "(" + bindings + ")"
@@ -312,25 +313,25 @@ func getMultiCriterionClause(primaryTable, foreignTable, joinTable, primaryFK, f
 	case models.CriterionModifierIncludes:
 		// includes any of the provided ids
 		if joinTable != "" {
-			whereClause = joinTable + "." + foreignFK + " IN " + getInBinding(len(criterion.Value))
+			whereClause = fmt.Sprintf("%s.%s IN %s", joinTable, foreignFK, getInBinding(len(criterion.Value)))
 		} else {
-			whereClause = foreignTable + ".id IN " + getInBinding(len(criterion.Value))
+			whereClause = fmt.Sprintf("%s.id IN %s", foreignTable, getInBinding(len(criterion.Value)))
 		}
 	case models.CriterionModifierIncludesAll:
 		// includes all of the provided ids
 		if joinTable != "" {
-			whereClause = joinTable + "." + foreignFK + " IN " + getInBinding(len(criterion.Value))
-			havingClause = "count(distinct " + joinTable + "." + foreignFK + ") IS " + strconv.Itoa(len(criterion.Value))
+			whereClause = fmt.Sprintf("%s.%s IN %s", joinTable, foreignFK, getInBinding(len(criterion.Value)))
+			havingClause = fmt.Sprintf("COUNT(DISTINCT %s.%s) = %d", joinTable, foreignFK, len(criterion.Value))
 		} else {
-			whereClause = foreignTable + ".id IN " + getInBinding(len(criterion.Value))
-			havingClause = "count(distinct " + foreignTable + ".id) IS " + strconv.Itoa(len(criterion.Value))
+			whereClause = fmt.Sprintf("%s.id IN %s", foreignTable, getInBinding(len(criterion.Value)))
+			havingClause = fmt.Sprintf("COUNT(DISTINCT %s.id) = %d", foreignTable, len(criterion.Value))
 		}
 	case models.CriterionModifierExcludes:
 		// excludes all of the provided ids
 		if joinTable != "" {
-			whereClause = primaryTable + ".id not in (select " + joinTable + "." + primaryFK + " from " + joinTable + " where " + joinTable + "." + foreignFK + " in " + getInBinding(len(criterion.Value)) + ")"
+			whereClause = fmt.Sprintf("%s.id NOT IN (SELECT s.%s FROM %s AS s WHERE s.%s IN %s)", primaryTable, primaryFK, joinTable, foreignFK, getInBinding(len(criterion.Value)))
 		} else {
-			whereClause = "not exists (select s.id from " + primaryTable + " as s where s.id = " + primaryTable + ".id and s." + foreignFK + " in " + getInBinding(len(criterion.Value)) + ")"
+			whereClause = fmt.Sprintf("NOT EXISTS (SELECT s.id FROM %s AS s WHERE s.id = %[1]s.id AND s.%s IN %s)", primaryTable, foreignFK, getInBinding(len(criterion.Value)))
 		}
 	}
 

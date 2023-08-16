@@ -55,7 +55,7 @@ func (qb queryBuilder) toSQL(includeSortPagination bool) string {
 func (qb queryBuilder) findIDs(ctx context.Context) ([]int, error) {
 	const includeSortPagination = true
 	sql := qb.toSQL(includeSortPagination)
-	return qb.repository.runIdsQuery(ctx, sql, qb.args)
+	return qb.repository.queryInts(ctx, sql, qb.args...)
 }
 
 func (qb queryBuilder) executeFind(ctx context.Context) ([]int, int, error) {
@@ -77,7 +77,7 @@ func (qb queryBuilder) executeCount(ctx context.Context) (int, error) {
 
 	body = qb.repository.buildQueryBody(body, qb.whereClauses, qb.havingClauses)
 	countQuery := withClause + qb.repository.buildCountQuery(body)
-	return qb.repository.runCountQuery(ctx, countQuery, qb.args)
+	return qb.repository.queryInt(ctx, countQuery, qb.args...)
 }
 
 func (qb *queryBuilder) addWhere(clauses ...string) {

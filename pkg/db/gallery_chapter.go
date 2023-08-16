@@ -70,7 +70,7 @@ func (qb *GalleryChapterStore) table() exp.IdentifierExpression {
 }
 
 func (qb *GalleryChapterStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *GalleryChapterStore) Create(ctx context.Context, newObject *models.GalleryChapter) error {
@@ -118,6 +118,10 @@ func (qb *GalleryChapterStore) Find(ctx context.Context, id int) (*models.Galler
 
 func (qb *GalleryChapterStore) FindMany(ctx context.Context, ids []int) ([]*models.GalleryChapter, error) {
 	ret := make([]*models.GalleryChapter, len(ids))
+
+	if len(ids) == 0 {
+		return ret, nil
+	}
 
 	table := qb.table()
 	q := qb.selectDataset().Prepared(true).Where(table.Col(idColumn).In(ids))
@@ -187,32 +191,8 @@ func (qb *GalleryChapterStore) getMany(ctx context.Context, q *goqu.SelectDatase
 }
 
 func (qb *GalleryChapterStore) FindByGalleryID(ctx context.Context, galleryID int) ([]*models.GalleryChapter, error) {
-	query := `
-		SELECT galleries_chapters.* FROM galleries_chapters
-		WHERE galleries_chapters.gallery_id = ?
-		GROUP BY galleries_chapters.id
-		ORDER BY galleries_chapters.image_index ASC
-	`
-	args := []interface{}{galleryID}
-	return qb.queryGalleryChapters(ctx, query, args)
-}
-
-func (qb *GalleryChapterStore) queryGalleryChapters(ctx context.Context, query string, args []interface{}) ([]*models.GalleryChapter, error) {
-	const single = false
-	var ret []*models.GalleryChapter
-	if err := qb.queryFunc(ctx, query, args, single, func(r *sqlx.Rows) error {
-		var f galleryChapterRow
-		if err := r.StructScan(&f); err != nil {
-			return err
-		}
-
-		s := f.resolve()
-
-		ret = append(ret, s)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return ret, nil
+	table := qb.table()
+	q := qb.selectDataset().Where(table.Col("gallery_id").Eq(galleryID)).
+		GroupBy(table.Col(idColumn)).Order(table.Col("image_index").Asc())
+	return qb.getMany(ctx, q)
 }

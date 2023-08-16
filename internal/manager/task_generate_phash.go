@@ -38,10 +38,9 @@ func (t *GeneratePhashTask) Start(ctx context.Context) {
 	r := t.Repository
 	if err := r.WithTxn(ctx, func(ctx context.Context) error {
 		qb := r.File
-		hashValue := int64(*hash)
 		t.File.Fingerprints = t.File.Fingerprints.AppendUnique(models.Fingerprint{
 			Type:        models.FingerprintTypePhash,
-			Fingerprint: hashValue,
+			Fingerprint: hash,
 		})
 
 		return qb.Update(ctx, t.File)
@@ -55,5 +54,5 @@ func (t *GeneratePhashTask) required() bool {
 		return true
 	}
 
-	return t.File.Fingerprints.Get(models.FingerprintTypePhash) == nil
+	return t.File.Fingerprints.Get(models.FingerprintTypePhash) == ""
 }

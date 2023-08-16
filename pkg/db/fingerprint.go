@@ -7,7 +7,6 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/stashapp/stash/pkg/models"
-	"gopkg.in/guregu/null.v4"
 )
 
 const (
@@ -15,17 +14,17 @@ const (
 )
 
 type fingerprintQueryRow struct {
-	Type        null.String `db:"fingerprint_type"`
-	Fingerprint interface{} `db:"fingerprint"`
+	Type        string `db:"fingerprint_type"`
+	Fingerprint string `db:"fingerprint"`
 }
 
 func (r fingerprintQueryRow) valid() bool {
-	return r.Type.Valid
+	return r.Type != "" && r.Fingerprint != ""
 }
 
 func (r *fingerprintQueryRow) resolve() models.Fingerprint {
 	return models.Fingerprint{
-		Type:        r.Type.String,
+		Type:        r.Type,
 		Fingerprint: r.Fingerprint,
 	}
 }
@@ -47,10 +46,10 @@ var FingerprintReaderWriter = &fingerprintQueryBuilder{
 
 func (qb *fingerprintQueryBuilder) insert(ctx context.Context, fileID models.FileID, f models.Fingerprint) error {
 	table := qb.table()
-	q := dialect.Insert(table).Cols(fileIDColumn, "type", "fingerprint").Vals(
+	q := goqu.Insert(table).Cols(fileIDColumn, "type", "fingerprint").Vals(
 		goqu.Vals{fileID, f.Type, f.Fingerprint},
 	)
-	_, err := exec(ctx, q)
+	_, err := insert(ctx, q)
 	if err != nil {
 		return fmt.Errorf("inserting into %s: %w", table.GetTable(), err)
 	}

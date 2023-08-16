@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -403,17 +402,27 @@ func stringCriterionHandler(c *models.StringCriterionInput, column string) crite
 				case models.CriterionModifierNotEquals:
 					f.addWhere(column+" NOT LIKE ?", c.Value)
 				case models.CriterionModifierMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						f.addWhere(fmt.Sprintf("(%s IS NOT NULL AND %[1]s regexp ?)", column), c.Value)
+					case postgresDriver:
+						f.addWhere(fmt.Sprintf("(%s IS NOT NULL AND %[1]s ~ ?)", column), c.Value)
 					}
-					f.addWhere(fmt.Sprintf("(%s IS NOT NULL AND %[1]s regexp ?)", column), c.Value)
 				case models.CriterionModifierNotMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						f.addWhere(fmt.Sprintf("(%s IS NULL OR %[1]s NOT regexp ?)", column), c.Value)
+					case postgresDriver:
+						f.addWhere(fmt.Sprintf("(%s IS NULL OR %[1]s !~ ?)", column), c.Value)
 					}
-					f.addWhere(fmt.Sprintf("(%s IS NULL OR %[1]s NOT regexp ?)", column), c.Value)
 				case models.CriterionModifierIsNull:
 					f.addWhere("(" + column + " IS NULL OR TRIM(" + column + ") = '')")
 				case models.CriterionModifierNotNull:
@@ -473,19 +482,29 @@ func pathCriterionHandler(c *models.StringCriterionInput, pathColumn string, bas
 					not = true
 					f.whereClauses = append(f.whereClauses, getPathSearchClause(pathColumn, basenameColumn, c.Value, addWildcards, not))
 				case models.CriterionModifierMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
-					}
 					filepathColumn := fmt.Sprintf("%s || '%s' || %s", pathColumn, string(filepath.Separator), basenameColumn)
-					f.addWhere(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						f.addWhere(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					case postgresDriver:
+						f.addWhere(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s ~ ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					}
 				case models.CriterionModifierNotMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
-					}
 					filepathColumn := fmt.Sprintf("%s || '%s' || %s", pathColumn, string(filepath.Separator), basenameColumn)
-					f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s NOT regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s NOT regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					case postgresDriver:
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s !~ ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+					}
 				case models.CriterionModifierIsNull:
 					f.addWhere(fmt.Sprintf("%s IS NULL OR TRIM(%[1]s) = '' OR %s IS NULL OR TRIM(%[2]s) = ''", pathColumn, basenameColumn))
 				case models.CriterionModifierNotNull:
@@ -692,7 +711,7 @@ func (m *joinedMultiCriterionHandlerBuilder) handler(c *models.MultiCriterionInp
 						"primaryFK":    m.primaryFK,
 						"primaryTable": m.primaryTable,
 					})
-					havingClause = fmt.Sprintf("count(distinct %s.%s) IS %d", joinAlias, m.foreignFK, len(criterion.Value))
+					havingClause = fmt.Sprintf("count(distinct %s.%s) = %d", joinAlias, m.foreignFK, len(criterion.Value))
 					args = append(args, len(criterion.Value))
 				case models.CriterionModifierNotEquals:
 					f.setError(fmt.Errorf("not equals modifier is not supported for multi criterion input"))
@@ -700,7 +719,7 @@ func (m *joinedMultiCriterionHandlerBuilder) handler(c *models.MultiCriterionInp
 					// includes all of the provided ids
 					m.addJoinTable(f)
 					whereClause = fmt.Sprintf("%s.%s IN %s", joinAlias, m.foreignFK, getInBinding(len(criterion.Value)))
-					havingClause = fmt.Sprintf("count(distinct %s.%s) IS %d", joinAlias, m.foreignFK, len(criterion.Value))
+					havingClause = fmt.Sprintf("count(distinct %s.%s) = %d", joinAlias, m.foreignFK, len(criterion.Value))
 				}
 
 				f.addWhere(whereClause, args...)
@@ -847,8 +866,6 @@ func studioCriterionHandler(primaryTable string, studios *models.HierarchicalMul
 		}
 
 		hh := hierarchicalMultiCriterionHandlerBuilder{
-			tx: dbWrapper{},
-
 			primaryTable: primaryTable,
 			foreignTable: studioTable,
 			foreignFK:    studioIDColumn,
@@ -860,8 +877,6 @@ func studioCriterionHandler(primaryTable string, studios *models.HierarchicalMul
 }
 
 type hierarchicalMultiCriterionHandlerBuilder struct {
-	tx dbWrapper
-
 	primaryTable string
 	foreignTable string
 	foreignFK    string
@@ -871,7 +886,12 @@ type hierarchicalMultiCriterionHandlerBuilder struct {
 	relationsTable string
 }
 
-func getHierarchicalValues(ctx context.Context, tx dbWrapper, values []string, table, relationsTable, parentFK string, childFK string, depth *int) (string, error) {
+func getHierarchicalValues(ctx context.Context, values []string, table, relationsTable, parentFK string, childFK string, depth *int) (string, error) {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	var args []interface{}
 
 	if parentFK == "" {
@@ -898,11 +918,11 @@ func getHierarchicalValues(ctx context.Context, tx dbWrapper, values []string, t
 				break
 			}
 
-			valuesClauses = append(valuesClauses, fmt.Sprintf("(%d,%d)", id, id))
+			valuesClauses = append(valuesClauses, fmt.Sprintf("(%d, %d)", id, id))
 		}
 
 		if valid {
-			return "VALUES" + strings.Join(valuesClauses, ","), nil
+			return "VALUES " + strings.Join(valuesClauses, ", "), nil
 		}
 	}
 
@@ -928,44 +948,37 @@ func getHierarchicalValues(ctx context.Context, tx dbWrapper, values []string, t
 	}
 
 	if relationsTable != "" {
-		withClauseMap["recursiveSelect"] = utils.StrFormat(`SELECT p.root_id, c.{childFK}, depth + 1 FROM {relationsTable} AS c
-INNER JOIN items as p ON c.{parentFK} = p.item_id
-`, withClauseMap)
+		withClauseMap["recursiveSelect"] = utils.StrFormat(
+			"SELECT p.root_id, c.{childFK}, depth + 1 FROM {relationsTable} AS c INNER JOIN items as p ON c.{parentFK} = p.item_id",
+			withClauseMap)
 	} else {
-		withClauseMap["recursiveSelect"] = utils.StrFormat(`SELECT p.root_id, c.id, depth + 1 FROM {table} as c
-INNER JOIN items as p ON c.{parentFK} = p.item_id
-`, withClauseMap)
+		withClauseMap["recursiveSelect"] = utils.StrFormat(
+			"SELECT p.root_id, c.id, depth + 1 FROM {table} AS c INNER JOIN items AS p ON c.{parentFK} = p.item_id",
+			withClauseMap)
 	}
 
 	if depthVal != 0 {
-		withClauseMap["unionClause"] = utils.StrFormat(`
-UNION {recursiveSelect} {depthCondition}
-`, withClauseMap)
+		withClauseMap["unionClause"] = utils.StrFormat("UNION {recursiveSelect} {depthCondition}", withClauseMap)
 	}
 
-	withClause := utils.StrFormat(`items AS (
-SELECT id as root_id, id as item_id, 0 as depth FROM {table}
-WHERE id in {inBinding}
-{unionClause})
-`, withClauseMap)
+	withClause := utils.StrFormat("SELECT id AS root_id, id AS item_id, 0 AS depth FROM {table} WHERE id IN {inBinding} {unionClause}", withClauseMap)
 
-	query := fmt.Sprintf("WITH RECURSIVE %s SELECT 'VALUES' || GROUP_CONCAT('(' || root_id || ', ' || item_id || ')') AS val FROM items", withClause)
+	query := fmt.Sprintf("WITH RECURSIVE items AS (%s) SELECT '(' || root_id || ', ' || item_id || ')' FROM items", withClause)
 
-	var valuesClause sql.NullString
-	err := tx.Get(ctx, &valuesClause, query, args...)
+	var valuesClauses []string
+	err = db.tx.Select(ctx, &valuesClauses, query, args...)
 	if err != nil {
 		return "", fmt.Errorf("failed to get hierarchical values: %w", err)
 	}
 
 	// if no values are found, just return a values string with the values only
-	if !valuesClause.Valid {
-		for i, value := range values {
-			values[i] = fmt.Sprintf("(%s, %s)", value, value)
+	if len(valuesClauses) == 0 {
+		for _, value := range values {
+			valuesClauses = append(valuesClauses, fmt.Sprintf("(%s, %s)", value, value))
 		}
-		valuesClause.String = "VALUES" + strings.Join(values, ",")
 	}
 
-	return valuesClause.String, nil
+	return "VALUES " + strings.Join(valuesClauses, ", "), nil
 }
 
 func addHierarchicalConditionClauses(f *filterBuilder, criterion models.HierarchicalMultiCriterionInput, table, idColumn string) {
@@ -974,7 +987,7 @@ func addHierarchicalConditionClauses(f *filterBuilder, criterion models.Hierarch
 		f.addWhere(fmt.Sprintf("%s.%s IS NOT NULL", table, idColumn))
 	case models.CriterionModifierIncludesAll:
 		f.addWhere(fmt.Sprintf("%s.%s IS NOT NULL", table, idColumn))
-		f.addHaving(fmt.Sprintf("count(distinct %s.%s) IS %d", table, idColumn, len(criterion.Value)))
+		f.addHaving(fmt.Sprintf("count(distinct %s.%s) = %d", table, idColumn, len(criterion.Value)))
 	case models.CriterionModifierExcludes:
 		f.addWhere(fmt.Sprintf("%s.%s IS NULL", table, idColumn))
 	}
@@ -1018,7 +1031,7 @@ func (m *hierarchicalMultiCriterionHandlerBuilder) handler(c *models.Hierarchica
 			}
 
 			if len(criterion.Value) > 0 {
-				valuesClause, err := getHierarchicalValues(ctx, m.tx, criterion.Value, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
+				valuesClause, err := getHierarchicalValues(ctx, criterion.Value, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
 				if err != nil {
 					f.setError(err)
 					return
@@ -1026,29 +1039,27 @@ func (m *hierarchicalMultiCriterionHandlerBuilder) handler(c *models.Hierarchica
 
 				switch criterion.Modifier {
 				case models.CriterionModifierIncludes:
-					f.addWhere(fmt.Sprintf("%s.%s IN (SELECT column2 FROM (%s))", m.primaryTable, m.foreignFK, valuesClause))
+					f.addWhere(fmt.Sprintf("%s.%s IN (SELECT column2 FROM (%s) as temp)", m.primaryTable, m.foreignFK, valuesClause))
 				case models.CriterionModifierIncludesAll:
-					f.addWhere(fmt.Sprintf("%s.%s IN (SELECT column2 FROM (%s))", m.primaryTable, m.foreignFK, valuesClause))
-					f.addHaving(fmt.Sprintf("count(distinct %s.%s) IS %d", m.primaryTable, m.foreignFK, len(criterion.Value)))
+					f.addWhere(fmt.Sprintf("%s.%s IN (SELECT column2 FROM (%s) as temp)", m.primaryTable, m.foreignFK, valuesClause))
+					f.addHaving(fmt.Sprintf("count(distinct %s.%s) = %d", m.primaryTable, m.foreignFK, len(criterion.Value)))
 				}
 			}
 
 			if len(criterion.Excludes) > 0 {
-				valuesClause, err := getHierarchicalValues(ctx, m.tx, criterion.Excludes, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
+				valuesClause, err := getHierarchicalValues(ctx, criterion.Excludes, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
 				if err != nil {
 					f.setError(err)
 					return
 				}
 
-				f.addWhere(fmt.Sprintf("%s.%s NOT IN (SELECT column2 FROM (%s)) OR %[1]s.%[2]s IS NULL", m.primaryTable, m.foreignFK, valuesClause))
+				f.addWhere(fmt.Sprintf("%s.%s NOT IN (SELECT column2 FROM (%s) as temp) OR %[1]s.%[2]s IS NULL", m.primaryTable, m.foreignFK, valuesClause))
 			}
 		}
 	}
 }
 
 type joinedHierarchicalMultiCriterionHandlerBuilder struct {
-	tx dbWrapper
-
 	primaryTable string
 	primaryKey   string
 	foreignTable string
@@ -1073,7 +1084,7 @@ func (m *joinedHierarchicalMultiCriterionHandlerBuilder) addHierarchicalConditio
 	case models.CriterionModifierEquals:
 		// includes only the provided ids
 		f.addWhere(fmt.Sprintf("%s.%s IS NOT NULL", table, idColumn))
-		f.addHaving(fmt.Sprintf("count(distinct %s.%s) IS %d", table, idColumn, len(criterion.Value)))
+		f.addHaving(fmt.Sprintf("count(distinct %s.%s) = %d", table, idColumn, len(criterion.Value)))
 		f.addWhere(utils.StrFormat("(SELECT COUNT(*) FROM {joinTable} s WHERE s.{primaryFK} = {primaryTable}.{primaryKey}) = ?", utils.StrFormatMap{
 			"joinTable":    m.joinTable,
 			"primaryFK":    m.primaryFK,
@@ -1131,7 +1142,7 @@ func (m *joinedHierarchicalMultiCriterionHandlerBuilder) handler(c *models.Hiera
 			}
 
 			if len(criterion.Value) > 0 {
-				valuesClause, err := getHierarchicalValues(ctx, m.tx, criterion.Value, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
+				valuesClause, err := getHierarchicalValues(ctx, criterion.Value, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
 				if err != nil {
 					f.setError(err)
 					return
@@ -1153,7 +1164,7 @@ func (m *joinedHierarchicalMultiCriterionHandlerBuilder) handler(c *models.Hiera
 			}
 
 			if len(criterion.Excludes) > 0 {
-				valuesClause, err := getHierarchicalValues(ctx, m.tx, criterion.Excludes, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
+				valuesClause, err := getHierarchicalValues(ctx, criterion.Excludes, m.foreignTable, m.relationsTable, m.parentFK, m.childFK, criterion.Depth)
 				if err != nil {
 					f.setError(err)
 					return
@@ -1231,7 +1242,7 @@ func (h *joinedPerformerTagsHandler) handle(ctx context.Context, f *filterBuilde
 		}
 
 		if len(criterion.Value) > 0 {
-			valuesClause, err := getHierarchicalValues(ctx, dbWrapper{}, criterion.Value, tagTable, "tags_relations", "", "", criterion.Depth)
+			valuesClause, err := getHierarchicalValues(ctx, criterion.Value, tagTable, "tags_relations", "", "", criterion.Depth)
 			if err != nil {
 				f.setError(err)
 				return
@@ -1249,7 +1260,7 @@ INNER JOIN (`+valuesClause+`) t ON t.column2 = pt.tag_id
 		}
 
 		if len(criterion.Excludes) > 0 {
-			valuesClause, err := getHierarchicalValues(ctx, dbWrapper{}, criterion.Excludes, tagTable, "tags_relations", "", "", criterion.Depth)
+			valuesClause, err := getHierarchicalValues(ctx, criterion.Excludes, tagTable, "tags_relations", "", "", criterion.Depth)
 			if err != nil {
 				f.setError(err)
 				return

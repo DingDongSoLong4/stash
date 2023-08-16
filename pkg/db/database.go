@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var AppSchemaVersion uint = 48
+var AppSchemaVersion uint = 49
 
 var (
 	// ErrDatabaseNotInitialized indicates that the database is not
@@ -133,7 +133,7 @@ func (db *Database) open() error {
 
 	databaseSchemaVersion, err := db.getDatabaseSchemaVersion()
 	if err != nil {
-		return fmt.Errorf("getting database schema version: %w", err)
+		return err
 	}
 
 	db.schemaVersion = databaseSchemaVersion
@@ -297,7 +297,7 @@ func (db *Database) SetUrl(dbPath string) error {
 
 	db.dbUrl = dbPath
 
-	if strings.HasPrefix(dbPath, "postgresql://") {
+	if strings.HasPrefix(dbPath, "postgresql://") || strings.HasPrefix(dbPath, "postgres://") {
 		db.DBType = PostgresDB
 	} else {
 		db.DBType = SQLiteDB

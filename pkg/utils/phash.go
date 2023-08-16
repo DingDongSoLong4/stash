@@ -2,7 +2,6 @@ package utils
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/corona10/goimagehash"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
@@ -62,17 +61,4 @@ func findNeighbors(bucket int, neighbors []int, hashes []*Phash, scenes *[]int) 
 			findNeighbors(bucket, hash.Neighbors, hashes, scenes)
 		}
 	}
-}
-
-func PhashToString(phash int64) string {
-	return strconv.FormatUint(uint64(phash), 16)
-}
-
-func StringToPhash(s string) (int64, error) {
-	ret, err := strconv.ParseUint(s, 16, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return int64(ret), nil
 }

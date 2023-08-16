@@ -73,14 +73,9 @@ func (qb *BlobStore) table() exp.IdentifierExpression {
 
 func (qb *BlobStore) Count(ctx context.Context) (int, error) {
 	table := qb.table()
-	q := dialect.From(table).Select(goqu.COUNT(table.Col(blobChecksumColumn)))
+	q := goqu.From(table).Select(goqu.COUNT(table.Col(blobChecksumColumn)))
 
-	var ret int
-	if err := querySimple(ctx, q, &ret); err != nil {
-		return 0, err
-	}
-
-	return ret, nil
+	return queryInt(ctx, q)
 }
 
 // Write stores the data and its checksum in enabled stores.
@@ -118,12 +113,12 @@ func (qb *BlobStore) Write(ctx context.Context, data []byte) (string, error) {
 
 func (qb *BlobStore) write(ctx context.Context, checksum string, data []byte) error {
 	table := qb.table()
-	q := dialect.Insert(table).Prepared(true).Rows(blobRow{
+	q := goqu.Insert(table).Prepared(true).Rows(blobRow{
 		Checksum: checksum,
 		Blob:     data,
 	}).OnConflict(goqu.DoNothing())
 
-	_, err := exec(ctx, q)
+	_, err := insert(ctx, q)
 	if err != nil {
 		return fmt.Errorf("inserting into %s: %w", table, err)
 	}
@@ -133,11 +128,11 @@ func (qb *BlobStore) write(ctx context.Context, checksum string, data []byte) er
 
 func (qb *BlobStore) update(ctx context.Context, checksum string, data []byte) error {
 	table := qb.table()
-	q := dialect.Update(table).Prepared(true).Set(goqu.Record{
+	q := goqu.Update(table).Prepared(true).Set(goqu.Record{
 		"blob": data,
 	}).Where(goqu.C(blobChecksumColumn).Eq(checksum))
 
-	_, err := exec(ctx, q)
+	_, err := update(ctx, q)
 	if err != nil {
 		return fmt.Errorf("updating %s: %w", table, err)
 	}
@@ -251,7 +246,7 @@ func (qb *BlobStore) Read(ctx context.Context, checksum string) ([]byte, error) 
 }
 
 func (qb *BlobStore) readFromDatabase(ctx context.Context, checksum string) ([]byte, error) {
-	q := dialect.From(qb.table()).Select(qb.table().All()).Where(qb.tableMgr.byID(checksum))
+	q := goqu.From(qb.table()).Select(qb.table().All()).Where(qb.tableMgr.byID(checksum))
 
 	var row blobRow
 	const single = true
@@ -309,9 +304,9 @@ func (qb *BlobStore) isConstraintError(err error) bool {
 func (qb *BlobStore) delete(ctx context.Context, checksum string) error {
 	table := qb.table()
 
-	q := dialect.Delete(table).Where(goqu.C(blobChecksumColumn).Eq(checksum))
+	q := goqu.Delete(table).Where(goqu.C(blobChecksumColumn).Eq(checksum))
 
-	_, err := exec(ctx, q)
+	_, err := destroy(ctx, q)
 	if err != nil {
 		return fmt.Errorf("deleting from %s: %w", table, err)
 	}
@@ -354,8 +349,12 @@ func (qb *blobJoinQueryBuilder) UpdateImage(ctx context.Context, id int, blobCol
 		return err
 	}
 
-	sqlQuery := fmt.Sprintf("UPDATE %s SET %s = ? WHERE id = ?", qb.joinTable, blobCol)
-	if _, err := qb.tx.Exec(ctx, sqlQuery, checksum, id); err != nil {
+	set := goqu.Record{}
+	set[blobCol] = checksum
+
+	q := goqu.Update(goqu.T(qb.joinTable)).Prepared(true).Set(set).Where(goqu.C(idColumn).Eq(id))
+
+	if _, err := update(ctx, q); err != nil {
 		return err
 	}
 
@@ -370,15 +369,10 @@ func (qb *blobJoinQueryBuilder) UpdateImage(ctx context.Context, id int, blobCol
 }
 
 func (qb *blobJoinQueryBuilder) getChecksum(ctx context.Context, id int, blobCol string) (*string, error) {
-	sqlQuery := utils.StrFormat(`
-SELECT {joinTable}.{joinCol} FROM {joinTable} WHERE {joinTable}.id = ?
-`, utils.StrFormatMap{
-		"joinTable": qb.joinTable,
-		"joinCol":   blobCol,
-	})
+	q := goqu.Select(goqu.C(blobCol)).From(goqu.T(qb.joinTable)).Where(goqu.C(idColumn).Eq(id))
 
 	var checksum null.String
-	err := qb.repository.querySimple(ctx, sqlQuery, []interface{}{id}, &checksum)
+	err := queryValue(ctx, &checksum, q)
 	if err != nil {
 		return nil, err
 	}
@@ -401,8 +395,12 @@ func (qb *blobJoinQueryBuilder) DestroyImage(ctx context.Context, id int, blobCo
 		return nil
 	}
 
-	updateQuery := fmt.Sprintf("UPDATE %s SET %s = NULL WHERE id = ?", qb.joinTable, blobCol)
-	if _, err = qb.tx.Exec(ctx, updateQuery, id); err != nil {
+	set := goqu.Record{}
+	set[blobCol] = nil
+
+	q := goqu.Update(goqu.T(qb.joinTable)).Set(set).Where(goqu.C(idColumn).Eq(id))
+
+	if _, err := update(ctx, q); err != nil {
 		return err
 	}
 
@@ -410,12 +408,9 @@ func (qb *blobJoinQueryBuilder) DestroyImage(ctx context.Context, id int, blobCo
 }
 
 func (qb *blobJoinQueryBuilder) HasImage(ctx context.Context, id int, blobCol string) (bool, error) {
-	stmt := utils.StrFormat("SELECT COUNT(*) as count FROM (SELECT {joinCol} FROM {joinTable} WHERE id = ? AND {joinCol} IS NOT NULL LIMIT 1)", utils.StrFormatMap{
-		"joinTable": qb.joinTable,
-		"joinCol":   blobCol,
-	})
+	q := goqu.Select(goqu.COUNT("*")).From(goqu.T(qb.joinTable)).Where(goqu.C(idColumn).Eq(id), goqu.C(blobCol).IsNotNull())
 
-	c, err := qb.runCountQuery(ctx, stmt, []interface{}{id})
+	c, err := queryInt(ctx, q)
 	if err != nil {
 		return false, err
 	}

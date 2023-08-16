@@ -126,12 +126,7 @@ func (g *Gallery) LoadTagIDs(ctx context.Context, l TagIDLoader) error {
 func (g Gallery) PrimaryChecksum() string {
 	// renamed from Checksum to prevent gqlgen from using it in the resolver
 	if p := g.Files.Primary(); p != nil {
-		v := p.Base().Fingerprints.Get(FingerprintTypeMD5)
-		if v == nil {
-			return ""
-		}
-
-		return v.(string)
+		return p.Base().Fingerprints.Get(FingerprintTypeMD5)
 	}
 	return ""
 }

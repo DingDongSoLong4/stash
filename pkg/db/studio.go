@@ -112,7 +112,7 @@ func (qb *StudioStore) table() exp.IdentifierExpression {
 }
 
 func (qb *StudioStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *StudioStore) Create(ctx context.Context, newObject *models.Studio) error {
@@ -183,6 +183,10 @@ func (qb *StudioStore) Find(ctx context.Context, id int) (*models.Studio, error)
 
 func (qb *StudioStore) FindMany(ctx context.Context, ids []int) ([]*models.Studio, error) {
 	ret := make([]*models.Studio, len(ids))
+
+	if len(ids) == 0 {
+		return ret, nil
+	}
 
 	table := qb.table()
 	if err := batchExec(ids, defaultBatchSize, func(batch []int) error {
@@ -319,8 +323,8 @@ func (qb *StudioStore) FindByStashID(ctx context.Context, stashID models.StashID
 }
 
 func (qb *StudioStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *StudioStore) All(ctx context.Context) ([]*models.Studio, error) {
@@ -445,7 +449,9 @@ func (qb *StudioStore) Query(ctx context.Context, studioFilter *models.StudioFil
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, studioTable)
+
+	query.addColumn(getColumn(studioTable, "id"))
+	query.from = studioTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		query.join(studioAliasesTable, "", "studio_aliases.studio_id = studios.id")
@@ -577,7 +583,7 @@ func (qb *StudioStore) getStudioSort(findFilter *models.FindFilterType) string {
 	}
 
 	// Whatever the sorting, always use name/id as a final sort
-	sortQuery += ", COALESCE(studios.name, studios.id) COLLATE NATURAL_CI ASC"
+	sortQuery += ", studios.name COLLATE NATURAL_CI ASC, studios.id ASC"
 	return sortQuery
 }
 
@@ -620,7 +626,6 @@ func (qb *StudioStore) destroyImage(ctx context.Context, studioID int) error {
 func (qb *StudioStore) stashIDRepository() *stashIDRepository {
 	return &stashIDRepository{
 		repository{
-			tx:        qb.tx,
 			tableName: "studio_stash_ids",
 			idColumn:  studioIDColumn,
 		},
@@ -638,7 +643,6 @@ func (qb *StudioStore) UpdateStashIDs(ctx context.Context, studioID int, stashID
 func (qb *StudioStore) aliasRepository() *stringRepository {
 	return &stringRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: studioAliasesTable,
 			idColumn:  studioIDColumn,
 		},

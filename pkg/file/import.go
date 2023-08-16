@@ -104,9 +104,16 @@ func (i *Importer) baseFileJSONToBaseFile(ctx context.Context, baseJSON *jsonsch
 	}
 
 	for _, fp := range baseJSON.Fingerprints {
+		var fpString string
+		switch v := fp.Fingerprint.(type) {
+		case int64:
+			fpString = fmt.Sprintf("%016x", uint64(v))
+		default:
+			fpString = fmt.Sprintf("%v", v)
+		}
 		baseFile.Fingerprints = append(baseFile.Fingerprints, models.Fingerprint{
 			Type:        fp.Type,
-			Fingerprint: fp.Fingerprint,
+			Fingerprint: fpString,
 		})
 	}
 

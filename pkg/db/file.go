@@ -457,7 +457,7 @@ func (qb *FileStore) selectDataset() *goqu.SelectDataset {
 	cols = append(cols, videoFileQueryColumns()...)
 	cols = append(cols, imageFileQueryRow{}.columns(imageFileTableMgr)...)
 
-	ret := dialect.From(table).Select(cols...)
+	ret := goqu.From(table).Select(cols...)
 
 	return ret.InnerJoin(
 		folderTable,
@@ -491,7 +491,7 @@ func (qb *FileStore) countDataset() *goqu.SelectDataset {
 	zipFileTable := table.As("zip_files")
 	zipFolderTable := folderTable.As("zip_files_folders")
 
-	ret := dialect.From(table).Select(goqu.COUNT(goqu.DISTINCT(table.Col("id"))))
+	ret := goqu.From(table).Select(goqu.COUNT(goqu.DISTINCT(table.Col("id"))))
 
 	return ret.InnerJoin(
 		folderTable,
@@ -649,7 +649,7 @@ func (qb *FileStore) FindAllInPaths(ctx context.Context, p []string, limit, offs
 	table := qb.table()
 	folderTable := folderTableMgr.table
 
-	q := dialect.From(table).Prepared(true).InnerJoin(
+	q := goqu.From(table).Prepared(true).InnerJoin(
 		folderTable,
 		goqu.On(table.Col("parent_folder_id").Eq(folderTable.Col(idColumn))),
 	).Select(table.Col(idColumn))
@@ -676,7 +676,7 @@ func (qb *FileStore) CountAllInPaths(ctx context.Context, p []string) (int, erro
 	q := qb.countDataset().Prepared(true)
 	q = qb.allInPaths(q, p)
 
-	return count(ctx, q)
+	return queryInt(ctx, q)
 }
 
 func (qb *FileStore) findBySubquery(ctx context.Context, sq *goqu.SelectDataset) ([]models.File, error) {
@@ -696,7 +696,7 @@ func (qb *FileStore) FindByFingerprint(ctx context.Context, fp models.Fingerprin
 
 	fingerprints := fingerprintTable.As("fp")
 
-	sq := dialect.From(fingerprints).Select(fingerprints.Col(fileIDColumn)).Where(
+	sq := goqu.From(fingerprints).Select(fingerprints.Col(fileIDColumn)).Where(
 		fingerprints.Col("type").Eq(fp.Type),
 		fingerprints.Col("fingerprint").Eq(fp.Fingerprint),
 	)
@@ -736,7 +736,7 @@ func (qb *FileStore) CountByFolderID(ctx context.Context, folderID models.Folder
 		table.Col("parent_folder_id").Eq(folderID),
 	)
 
-	return count(ctx, q)
+	return queryInt(ctx, q)
 }
 
 func (qb *FileStore) IsPrimary(ctx context.Context, fileID models.FileID) (bool, error) {
@@ -749,9 +749,9 @@ func (qb *FileStore) IsPrimary(ctx context.Context, fileID models.FileID) (bool,
 	var sq *goqu.SelectDataset
 
 	for _, t := range joinTables {
-		qq := dialect.From(t).Select(t.Col(fileIDColumn)).Where(
+		qq := goqu.From(t).Select(t.Col(fileIDColumn)).Where(
 			t.Col(fileIDColumn).Eq(fileID),
-			t.Col("primary").Eq(1),
+			t.Col("primary").Eq(true),
 		)
 
 		if sq == nil {
@@ -761,16 +761,16 @@ func (qb *FileStore) IsPrimary(ctx context.Context, fileID models.FileID) (bool,
 		}
 	}
 
-	q := dialect.Select(goqu.COUNT("*").As("count")).Prepared(true).From(
+	q := goqu.Select(goqu.COUNT("*").As("count")).Prepared(true).From(
 		sq,
 	)
 
-	var ret int
-	if err := querySimple(ctx, q, &ret); err != nil {
+	count, err := queryInt(ctx, q)
+	if err != nil {
 		return false, err
 	}
 
-	return ret > 0, nil
+	return count > 0, nil
 }
 
 func (qb *FileStore) validateFilter(fileFilter *models.FileFilterType) error {
@@ -834,9 +834,11 @@ func (qb *FileStore) Query(ctx context.Context, options models.FileQueryOptions)
 	}
 
 	query := qb.newQuery()
-	query.join(folderTable, "", "files.parent_folder_id = folders.id")
 
-	distinctIDs(&query, fileTable)
+	query.addColumn(getColumn(fileTable, "id"))
+	query.from = fileTable
+
+	query.join(folderTable, "", "files.parent_folder_id = folders.id")
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		filepathColumn := "folders.path || '" + string(filepath.Separator) + "' || files.basename"
@@ -892,7 +894,8 @@ func (qb *FileStore) queryGroupedFields(ctx context.Context, options models.File
 	out := struct {
 		Total int
 	}{}
-	if err := qb.repository.queryStruct(ctx, aggregateQuery.toSQL(includeSortPagination), query.args, &out); err != nil {
+	err := qb.querySingle(ctx, &out, aggregateQuery.toSQL(includeSortPagination), query.args...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -921,7 +924,6 @@ func (qb *FileStore) setQuerySort(query *queryBuilder, findFilter *models.FindFi
 func (qb *FileStore) captionRepository() *captionRepository {
 	return &captionRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: videoCaptionsTable,
 			idColumn:  fileIDColumn,
 		},

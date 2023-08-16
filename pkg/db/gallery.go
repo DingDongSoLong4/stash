@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -138,11 +137,11 @@ func (qb *GalleryStore) selectDataset() *goqu.SelectDataset {
 	folders := folderTableMgr.table
 	galleryFolder := folderTableMgr.table.As("gallery_folder")
 
-	return dialect.From(table).LeftJoin(
+	return goqu.From(table).LeftJoin(
 		galleriesFilesJoinTable,
 		goqu.On(
 			galleriesFilesJoinTable.Col(galleryIDColumn).Eq(table.Col(idColumn)),
-			galleriesFilesJoinTable.Col("primary").Eq(1),
+			galleriesFilesJoinTable.Col("primary").Eq(true),
 		),
 	).LeftJoin(
 		files,
@@ -321,6 +320,10 @@ func (qb *GalleryStore) Find(ctx context.Context, id int) (*models.Gallery, erro
 func (qb *GalleryStore) FindMany(ctx context.Context, ids []int) ([]*models.Gallery, error) {
 	galleries := make([]*models.Gallery, len(ids))
 
+	if len(ids) == 0 {
+		return galleries, nil
+	}
+
 	if err := batchExec(ids, defaultBatchSize, func(batch []int) error {
 		q := qb.selectDataset().Prepared(true).Where(qb.table().Col(idColumn).In(batch))
 		unsorted, err := qb.getMany(ctx, q)
@@ -412,7 +415,7 @@ func (qb *GalleryStore) getMany(ctx context.Context, q *goqu.SelectDataset) ([]*
 }
 
 func (qb *GalleryStore) FindByFileID(ctx context.Context, fileID models.FileID) ([]*models.Gallery, error) {
-	sq := dialect.From(galleriesFilesJoinTable).Select(galleriesFilesJoinTable.Col(galleryIDColumn)).Where(
+	sq := goqu.From(galleriesFilesJoinTable).Select(galleriesFilesJoinTable.Col(galleryIDColumn)).Where(
 		galleriesFilesJoinTable.Col(fileIDColumn).Eq(fileID),
 	)
 
@@ -427,8 +430,8 @@ func (qb *GalleryStore) FindByFileID(ctx context.Context, fileID models.FileID) 
 func (qb *GalleryStore) CountByFileID(ctx context.Context, fileID models.FileID) (int, error) {
 	joinTable := galleriesFilesJoinTable
 
-	q := dialect.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(fileIDColumn).Eq(fileID))
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(fileIDColumn).Eq(fileID))
+	return queryInt(ctx, q)
 }
 
 func (qb *GalleryStore) FindByFingerprints(ctx context.Context, fp []models.Fingerprint) ([]*models.Gallery, error) {
@@ -443,7 +446,7 @@ func (qb *GalleryStore) FindByFingerprints(ctx context.Context, fp []models.Fing
 		))
 	}
 
-	sq := dialect.From(galleriesFilesJoinTable).
+	sq := goqu.From(galleriesFilesJoinTable).
 		InnerJoin(
 			fingerprintTable,
 			goqu.On(fingerprintTable.Col(fileIDColumn).Eq(galleriesFilesJoinTable.Col(fileIDColumn))),
@@ -488,7 +491,7 @@ func (qb *GalleryStore) FindByPath(ctx context.Context, p string) ([]*models.Gal
 	basename := filepath.Base(p)
 	dir := filepath.Dir(p)
 
-	sq := dialect.From(table).LeftJoin(
+	sq := goqu.From(table).LeftJoin(
 		galleriesFilesJoinTable,
 		goqu.On(galleriesFilesJoinTable.Col(galleryIDColumn).Eq(table.Col(idColumn))),
 	).LeftJoin(
@@ -521,7 +524,7 @@ func (qb *GalleryStore) FindByPath(ctx context.Context, p string) ([]*models.Gal
 func (qb *GalleryStore) FindByFolderID(ctx context.Context, folderID models.FolderID) ([]*models.Gallery, error) {
 	table := qb.table()
 
-	sq := dialect.From(table).Select(table.Col(idColumn)).Where(
+	sq := goqu.From(table).Select(table.Col(idColumn)).Where(
 		table.Col("folder_id").Eq(folderID),
 	)
 
@@ -534,7 +537,7 @@ func (qb *GalleryStore) FindByFolderID(ctx context.Context, folderID models.Fold
 }
 
 func (qb *GalleryStore) FindBySceneID(ctx context.Context, sceneID int) ([]*models.Gallery, error) {
-	sq := dialect.From(galleriesScenesJoinTable).Select(galleriesScenesJoinTable.Col(galleryIDColumn)).Where(
+	sq := goqu.From(galleriesScenesJoinTable).Select(galleriesScenesJoinTable.Col(galleryIDColumn)).Where(
 		galleriesScenesJoinTable.Col(sceneIDColumn).Eq(sceneID),
 	)
 
@@ -547,7 +550,7 @@ func (qb *GalleryStore) FindBySceneID(ctx context.Context, sceneID int) ([]*mode
 }
 
 func (qb *GalleryStore) FindByImageID(ctx context.Context, imageID int) ([]*models.Gallery, error) {
-	sq := dialect.From(galleriesImagesJoinTable).Select(galleriesImagesJoinTable.Col(galleryIDColumn)).Where(
+	sq := goqu.From(galleriesImagesJoinTable).Select(galleriesImagesJoinTable.Col(galleryIDColumn)).Where(
 		galleriesImagesJoinTable.Col(imageIDColumn).Eq(imageID),
 	)
 
@@ -562,14 +565,14 @@ func (qb *GalleryStore) FindByImageID(ctx context.Context, imageID int) ([]*mode
 func (qb *GalleryStore) CountByImageID(ctx context.Context, imageID int) (int, error) {
 	joinTable := galleriesImagesJoinTable
 
-	q := dialect.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(imageIDColumn).Eq(imageID))
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(joinTable).Where(joinTable.Col(imageIDColumn).Eq(imageID))
+	return queryInt(ctx, q)
 }
 
 func (qb *GalleryStore) FindUserGalleryByTitle(ctx context.Context, title string) ([]*models.Gallery, error) {
 	table := qb.table()
 
-	sq := dialect.From(table).LeftJoin(
+	sq := goqu.From(table).LeftJoin(
 		galleriesFilesJoinTable,
 		goqu.On(galleriesFilesJoinTable.Col(galleryIDColumn).Eq(table.Col(idColumn))),
 	).Select(table.Col(idColumn)).Where(
@@ -587,8 +590,8 @@ func (qb *GalleryStore) FindUserGalleryByTitle(ctx context.Context, title string
 }
 
 func (qb *GalleryStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *GalleryStore) All(ctx context.Context) ([]*models.Gallery, error) {
@@ -713,7 +716,9 @@ func (qb *GalleryStore) makeQuery(ctx context.Context, galleryFilter *models.Gal
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, galleryTable)
+
+	query.addColumn(getColumn(galleryTable, "id"))
+	query.from = galleryTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		query.addJoins(
@@ -829,22 +834,35 @@ func (qb *GalleryStore) galleryPathCriterionHandler(c *models.StringCriterionInp
 					clause2 := makeClause(folderPathColumn+" NOT LIKE ?", c.Value)
 					f.whereClauses = append(f.whereClauses, orClauses(clause, clause2))
 				case models.CriterionModifierMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
-					}
 					filepathColumn := fmt.Sprintf("%s || '%s' || %s", pathColumn, string(filepath.Separator), basenameColumn)
-					clause := makeClause(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
-					clause2 := makeClause(fmt.Sprintf("%s IS NOT NULL AND %[1]s regexp ?", folderPathColumn), c.Value)
+					var clause, clause2 sqlClause
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						clause = makeClause(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+						clause2 = makeClause(fmt.Sprintf("%s IS NOT NULL AND %[1]s regexp ?", folderPathColumn), c.Value)
+					case postgresDriver:
+						clause = makeClause(fmt.Sprintf("%s IS NOT NULL AND %s IS NOT NULL AND %s ~ ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+						clause2 = makeClause(fmt.Sprintf("%s IS NOT NULL AND %[1]s ~ ?", folderPathColumn), c.Value)
+					}
 					f.whereClauses = append(f.whereClauses, orClauses(clause, clause2))
 				case models.CriterionModifierNotMatchesRegex:
-					if _, err := regexp.Compile(c.Value); err != nil {
-						f.setError(err)
-						return
-					}
 					filepathColumn := fmt.Sprintf("%s || '%s' || %s", pathColumn, string(filepath.Separator), basenameColumn)
-					f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s NOT regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
-					f.addWhere(fmt.Sprintf("%s IS NULL OR %[1]s NOT regexp ?", folderPathColumn), c.Value)
+					switch getDriverName(ctx) {
+					case sqlite3Driver:
+						if _, err := regexpGet(c.Value); err != nil {
+							f.setError(err)
+							return
+						}
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s NOT regexp ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %[1]s NOT regexp ?", folderPathColumn), c.Value)
+					case postgresDriver:
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %s IS NULL OR %s !~ ?", pathColumn, basenameColumn, filepathColumn), c.Value)
+						f.addWhere(fmt.Sprintf("%s IS NULL OR %[1]s NOT !~ ?", folderPathColumn), c.Value)
+					}
 				case models.CriterionModifierIsNull:
 					f.addWhere(fmt.Sprintf("%s IS NULL OR TRIM(%[1]s) = '' OR %s IS NULL OR TRIM(%[2]s) = ''", pathColumn, basenameColumn))
 					f.addWhere(fmt.Sprintf("%s IS NULL OR TRIM(%[1]s) = ''", folderPathColumn))
@@ -896,8 +914,6 @@ func galleryIsMissingCriterionHandler(qb *GalleryStore, isMissing *string) crite
 
 func galleryTagsCriterionHandler(qb *GalleryStore, tags *models.HierarchicalMultiCriterionInput) criterionHandlerFunc {
 	h := joinedHierarchicalMultiCriterionHandlerBuilder{
-		tx: qb.tx,
-
 		primaryTable: galleryTable,
 		foreignTable: tagTable,
 		foreignFK:    "tag_id",
@@ -1104,13 +1120,12 @@ func (qb *GalleryStore) setGallerySort(query *queryBuilder, findFilter *models.F
 	}
 
 	// Whatever the sorting, always use title/id as a final sort
-	query.sortAndPagination += ", COALESCE(galleries.title, galleries.id) COLLATE NATURAL_CI ASC"
+	query.sortAndPagination += ", galleries.title COLLATE NATURAL_CI ASC, galleries.id ASC"
 }
 
 func (qb *GalleryStore) filesRepository() *filesRepository {
 	return &filesRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: galleriesFilesTable,
 			idColumn:  galleryIDColumn,
 		},
@@ -1125,7 +1140,6 @@ func (qb *GalleryStore) AddFileID(ctx context.Context, id int, fileID models.Fil
 func (qb *GalleryStore) performersRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: performersGalleriesTable,
 			idColumn:  galleryIDColumn,
 		},
@@ -1140,13 +1154,12 @@ func (qb *GalleryStore) GetPerformerIDs(ctx context.Context, id int) ([]int, err
 func (qb *GalleryStore) tagsRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: galleriesTagsTable,
 			idColumn:  galleryIDColumn,
 		},
 		fkColumn:     "tag_id",
 		foreignTable: tagTable,
-		orderBy:      "tags.name ASC",
+		orderExp:     goqu.I("tags.name").Asc(),
 	}
 }
 
@@ -1157,7 +1170,6 @@ func (qb *GalleryStore) GetTagIDs(ctx context.Context, id int) ([]int, error) {
 func (qb *GalleryStore) imagesRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: galleriesImagesTable,
 			idColumn:  galleryIDColumn,
 		},
@@ -1170,11 +1182,11 @@ func (qb *GalleryStore) GetImageIDs(ctx context.Context, galleryID int) ([]int, 
 }
 
 func (qb *GalleryStore) AddImages(ctx context.Context, galleryID int, imageIDs ...int) error {
-	return qb.imagesRepository().insertOrIgnore(ctx, galleryID, imageIDs...)
+	return qb.imagesRepository().insertOrIgnore(ctx, galleryID, imageIDs)
 }
 
 func (qb *GalleryStore) RemoveImages(ctx context.Context, galleryID int, imageIDs ...int) error {
-	return qb.imagesRepository().destroyJoins(ctx, galleryID, imageIDs...)
+	return qb.imagesRepository().destroyJoins(ctx, galleryID, imageIDs)
 }
 
 func (qb *GalleryStore) UpdateImages(ctx context.Context, galleryID int, imageIDs []int) error {
@@ -1185,7 +1197,6 @@ func (qb *GalleryStore) UpdateImages(ctx context.Context, galleryID int, imageID
 func (qb *GalleryStore) scenesRepository() *joinRepository {
 	return &joinRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: galleriesScenesTable,
 			idColumn:  galleryIDColumn,
 		},

@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/stashapp/stash/pkg/models"
@@ -14,20 +15,14 @@ import (
 
 const idColumn = "id"
 
-type objectList interface {
-	Append(o interface{})
-	New() interface{}
-}
-
 type repository struct {
-	tx        dbWrapper
 	tableName string
 	idColumn  string
 }
 
 func (r *repository) getAll(ctx context.Context, id int, f func(rows *sqlx.Rows) error) error {
-	stmt := fmt.Sprintf("SELECT * FROM %s WHERE %s = ?", r.tableName, r.idColumn)
-	return r.queryFunc(ctx, stmt, []interface{}{id}, false, f)
+	q := goqu.Select().From(r.tableName).Where(goqu.C(r.idColumn).Eq(id))
+	return queryFunc(ctx, q, false, f)
 }
 
 func (r *repository) destroyExisting(ctx context.Context, ids []int) error {
@@ -47,8 +42,8 @@ func (r *repository) destroyExisting(ctx context.Context, ids []int) error {
 
 func (r *repository) destroy(ctx context.Context, ids []int) error {
 	for _, id := range ids {
-		stmt := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", r.tableName, r.idColumn)
-		if _, err := r.tx.Exec(ctx, stmt, id); err != nil {
+		q := goqu.Delete(r.tableName).Where(goqu.C(r.idColumn).Eq(id))
+		if _, err := destroy(ctx, q); err != nil {
 			return err
 		}
 	}
@@ -57,117 +52,88 @@ func (r *repository) destroy(ctx context.Context, ids []int) error {
 }
 
 func (r *repository) exists(ctx context.Context, id int) (bool, error) {
-	stmt := fmt.Sprintf("SELECT %s FROM %s WHERE %s = ? LIMIT 1", r.idColumn, r.tableName, r.idColumn)
-	stmt = r.buildCountQuery(stmt)
+	q := goqu.Select(goqu.COUNT("*")).From(r.tableName).Where(goqu.C(r.idColumn).Eq(id))
 
-	c, err := r.runCountQuery(ctx, stmt, []interface{}{id})
+	c, err := queryInt(ctx, q)
 	if err != nil {
 		return false, err
 	}
 
-	return c == 1, nil
+	return c > 0, nil
 }
 
 func (r *repository) buildCountQuery(query string) string {
-	return "SELECT COUNT(*) as count FROM (" + query + ") as temp"
+	return "SELECT COUNT(*) FROM (" + query + ") as temp"
 }
 
-func (r *repository) runCountQuery(ctx context.Context, query string, args []interface{}) (int, error) {
-	result := struct {
-		Int int `db:"count"`
-	}{0}
+// query executes a query, using sql.Exec
+func (r *repository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	// Perform query and fetch result
-	if err := r.tx.Get(ctx, &result, query, args...); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	return db.tx.Exec(ctx, query, args...)
+}
+
+// query prepares a query, using sql.Prepare
+// func (r *repository) queryPrepare(ctx context.Context, query string) (*stmt, error) {
+// 	db, err := getDBWrapper(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	return db.tx.Prepare(ctx, query)
+// }
+
+// query runs a query returning a single row, using sqlx.Get
+func (r *repository) querySingle(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return err
+	}
+
+	return db.tx.Get(ctx, dest, query, args...)
+}
+
+// query runs a query returning multiple rows, using sqlx.Select
+// func (r *repository) query(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+// 	db, err := getDBWrapper(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	return db.tx.Select(ctx, dest, query, args...)
+// }
+
+// query runs a query returning a single integer value, using sqlx.Get
+func (r *repository) queryInt(ctx context.Context, query string, args ...interface{}) (int, error) {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
 		return 0, err
 	}
 
-	return result.Int, nil
+	return db.tx.GetInt(ctx, query, args...)
 }
 
-func (r *repository) runIdsQuery(ctx context.Context, query string, args []interface{}) ([]int, error) {
-	var result []struct {
-		Int int `db:"id"`
+// query runs a query returning multiple rows, each with a singular integer value, using sqlx.Select
+func (r *repository) queryInts(ctx context.Context, query string, args ...interface{}) ([]int, error) {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := r.tx.Select(ctx, &result, query, args...); err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return []int{}, fmt.Errorf("running query: %s [%v]: %w", query, args, err)
-	}
-
-	vsm := make([]int, len(result))
-	for i, v := range result {
-		vsm[i] = v.Int
-	}
-	return vsm, nil
+	return db.tx.GetInts(ctx, query, args...)
 }
 
+// query runs a query returning a single or multiple rows, running f for each returned row
 func (r *repository) queryFunc(ctx context.Context, query string, args []interface{}, single bool, f func(rows *sqlx.Rows) error) error {
-	rows, err := r.tx.Queryx(ctx, query, args...)
-
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := f(rows); err != nil {
-			return err
-		}
-		if single {
-			break
-		}
-	}
-
-	if err := rows.Err(); err != nil {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (r *repository) query(ctx context.Context, query string, args []interface{}, out objectList) error {
-	return r.queryFunc(ctx, query, args, false, func(rows *sqlx.Rows) error {
-		object := out.New()
-		if err := rows.StructScan(object); err != nil {
-			return err
-		}
-		out.Append(object)
-		return nil
-	})
-}
-
-func (r *repository) queryStruct(ctx context.Context, query string, args []interface{}, out interface{}) error {
-	if err := r.queryFunc(ctx, query, args, true, func(rows *sqlx.Rows) error {
-		if err := rows.StructScan(out); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("executing query: %s [%v]: %w", query, args, err)
-	}
-
-	return nil
-}
-
-func (r *repository) querySimple(ctx context.Context, query string, args []interface{}, out interface{}) error {
-	rows, err := r.tx.Queryx(ctx, query, args...)
-
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		if err := rows.Scan(out); err != nil {
-			return err
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return db.tx.QueryFunc(ctx, query, args, single, f)
 }
 
 func (r *repository) buildQueryBody(body string, whereClauses []string, havingClauses []string) string {
@@ -198,19 +164,15 @@ func (r *repository) executeFindQuery(ctx context.Context, body string, args []i
 	idsQuery := withClause + body + sortAndPagination
 
 	// Perform query and fetch result
-	var countResult int
-	var countErr error
-	var idsResult []int
-	var idsErr error
 
-	countResult, countErr = r.runCountQuery(ctx, countQuery, args)
-	idsResult, idsErr = r.runIdsQuery(ctx, idsQuery, args)
-
-	if countErr != nil {
-		return nil, 0, fmt.Errorf("error executing count query with SQL: %s, args: %v, error: %s", countQuery, args, countErr.Error())
+	countResult, err := r.queryInt(ctx, countQuery, args...)
+	if err != nil {
+		return nil, 0, err
 	}
-	if idsErr != nil {
-		return nil, 0, fmt.Errorf("error executing find query with SQL: %s, args: %v, error: %s", idsQuery, args, idsErr.Error())
+
+	idsResult, err := r.queryInts(ctx, idsQuery, args...)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	return idsResult, countResult, nil
@@ -250,26 +212,34 @@ type joinRepository struct {
 
 	// fields for ordering
 	foreignTable string
-	orderBy      string
+	orderExp     exp.OrderedExpression
 }
 
 func (r *joinRepository) getIDs(ctx context.Context, id int) ([]int, error) {
-	var joinStr string
+	table := goqu.T(r.tableName)
+	q := goqu.Select(table.Col(r.fkColumn)).From(table)
 	if r.foreignTable != "" {
-		joinStr = fmt.Sprintf(" INNER JOIN %s ON %[1]s.id = %s.%s", r.foreignTable, r.tableName, r.fkColumn)
+		fTable := goqu.T(r.foreignTable)
+		q = q.InnerJoin(fTable, goqu.On(fTable.Col("id").Eq(table.Col(r.fkColumn))))
 	}
 
-	query := fmt.Sprintf(`SELECT %[2]s.%[1]s as id from %s%s WHERE %s = ?`, r.fkColumn, r.tableName, joinStr, r.idColumn)
+	q = q.Where(goqu.C(r.idColumn).Eq(id))
 
-	if r.orderBy != "" {
-		query += " ORDER BY " + r.orderBy
+	if r.orderExp != nil {
+		q = q.Order(r.orderExp)
 	}
 
-	return r.runIdsQuery(ctx, query, []interface{}{id})
+	return queryInts(ctx, q)
 }
 
 func (r *joinRepository) insert(ctx context.Context, id int, foreignIDs ...int) error {
-	stmt, err := r.tx.Prepare(ctx, fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES (?, ?)", r.tableName, r.idColumn, r.fkColumn))
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES ($1, $2)", r.tableName, r.idColumn, r.fkColumn)
+	stmt, err := db.tx.Prepare(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -277,7 +247,7 @@ func (r *joinRepository) insert(ctx context.Context, id int, foreignIDs ...int) 
 	defer stmt.Close()
 
 	for _, fk := range foreignIDs {
-		if _, err := r.tx.ExecStmt(ctx, stmt, id, fk); err != nil {
+		if _, err := stmt.Exec(ctx, id, fk); err != nil {
 			return err
 		}
 	}
@@ -285,8 +255,14 @@ func (r *joinRepository) insert(ctx context.Context, id int, foreignIDs ...int) 
 }
 
 // insertOrIgnore inserts a join into the table, silently failing in the event that a conflict occurs (ie when the join already exists)
-func (r *joinRepository) insertOrIgnore(ctx context.Context, id int, foreignIDs ...int) error {
-	stmt, err := r.tx.Prepare(ctx, fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES (?, ?) ON CONFLICT (%[2]s, %s) DO NOTHING", r.tableName, r.idColumn, r.fkColumn))
+func (r *joinRepository) insertOrIgnore(ctx context.Context, id int, foreignIDs []int) error {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES ($1, $2) ON CONFLICT (%[2]s, %s) DO NOTHING", r.tableName, r.idColumn, r.fkColumn)
+	stmt, err := db.tx.Prepare(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -294,27 +270,21 @@ func (r *joinRepository) insertOrIgnore(ctx context.Context, id int, foreignIDs 
 	defer stmt.Close()
 
 	for _, fk := range foreignIDs {
-		if _, err := r.tx.ExecStmt(ctx, stmt, id, fk); err != nil {
+		if _, err := stmt.Exec(ctx, id, fk); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *joinRepository) destroyJoins(ctx context.Context, id int, foreignIDs ...int) error {
-	stmt := fmt.Sprintf("DELETE FROM %s WHERE %s = ? AND %s IN %s", r.tableName, r.idColumn, r.fkColumn, getInBinding(len(foreignIDs)))
-
-	args := make([]interface{}, len(foreignIDs)+1)
-	args[0] = id
-	for i, v := range foreignIDs {
-		args[i+1] = v
+func (r *joinRepository) destroyJoins(ctx context.Context, id int, foreignIDs []int) error {
+	if len(foreignIDs) == 0 {
+		return nil
 	}
 
-	if _, err := r.tx.Exec(ctx, stmt, args...); err != nil {
-		return err
-	}
-
-	return nil
+	q := goqu.Delete(r.tableName).Where(goqu.C(r.idColumn).Eq(id), goqu.C(r.fkColumn).In(foreignIDs))
+	_, err := destroy(ctx, q)
+	return err
 }
 
 func (r *joinRepository) replace(ctx context.Context, id int, foreignIDs []int) error {
@@ -359,8 +329,14 @@ func (r *captionRepository) get(ctx context.Context, id models.FileID) ([]*model
 }
 
 func (r *captionRepository) insert(ctx context.Context, id models.FileID, caption *models.VideoCaption) (sql.Result, error) {
-	stmt := fmt.Sprintf("INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)", r.tableName, r.idColumn, captionCodeColumn, captionFilenameColumn, captionTypeColumn)
-	return r.tx.Exec(ctx, stmt, id, caption.LanguageCode, caption.Filename, caption.CaptionType)
+	row := goqu.Record{}
+	row[r.idColumn] = id
+	row[captionCodeColumn] = caption.LanguageCode
+	row[captionFilenameColumn] = caption.Filename
+	row[captionTypeColumn] = caption.CaptionType
+
+	q := goqu.Insert(r.tableName).Prepared(true).Rows(row)
+	return insert(ctx, q)
 }
 
 func (r *captionRepository) replace(ctx context.Context, id models.FileID, captions []*models.VideoCaption) error {
@@ -383,23 +359,20 @@ type stringRepository struct {
 }
 
 func (r *stringRepository) get(ctx context.Context, id int) ([]string, error) {
-	query := fmt.Sprintf("SELECT %s from %s WHERE %s = ?", r.stringColumn, r.tableName, r.idColumn)
-	var ret []string
-	err := r.queryFunc(ctx, query, []interface{}{id}, false, func(rows *sqlx.Rows) error {
-		var out string
-		if err := rows.Scan(&out); err != nil {
-			return err
-		}
+	q := goqu.Select(goqu.C(r.stringColumn)).From(goqu.T(r.tableName)).Where(goqu.C(r.idColumn).Eq(id))
 
-		ret = append(ret, out)
-		return nil
-	})
+	var ret []string
+	err := querySelect(ctx, &ret, q)
 	return ret, err
 }
 
 func (r *stringRepository) insert(ctx context.Context, id int, s string) (sql.Result, error) {
-	stmt := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES (?, ?)", r.tableName, r.idColumn, r.stringColumn)
-	return r.tx.Exec(ctx, stmt, id, s)
+	row := goqu.Record{}
+	row[r.idColumn] = id
+	row[r.stringColumn] = s
+
+	q := goqu.Insert(r.tableName).Prepared(true).Rows(row)
+	return insert(ctx, q)
 }
 
 func (r *stringRepository) replace(ctx context.Context, id int, newStrings []string) error {
@@ -420,21 +393,12 @@ type stashIDRepository struct {
 	repository
 }
 
-type stashIDs []models.StashID
-
-func (s *stashIDs) Append(o interface{}) {
-	*s = append(*s, *o.(*models.StashID))
-}
-
-func (s *stashIDs) New() interface{} {
-	return &models.StashID{}
-}
-
 func (r *stashIDRepository) get(ctx context.Context, id int) ([]models.StashID, error) {
-	query := fmt.Sprintf("SELECT stash_id, endpoint from %s WHERE %s = ?", r.tableName, r.idColumn)
-	var ret stashIDs
-	err := r.query(ctx, query, []interface{}{id}, &ret)
-	return []models.StashID(ret), err
+	q := goqu.Select(goqu.C("stash_id"), goqu.C("endpoint")).From(goqu.T(r.tableName)).Where(goqu.C(r.idColumn).Eq(id))
+
+	var ret []models.StashID
+	err := querySelect(ctx, &ret, q)
+	return ret, err
 }
 
 func (r *stashIDRepository) replace(ctx context.Context, id int, newIDs []models.StashID) error {
@@ -442,13 +406,21 @@ func (r *stashIDRepository) replace(ctx context.Context, id int, newIDs []models
 		return err
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s (%s, endpoint, stash_id) VALUES (?, ?, ?)", r.tableName, r.idColumn)
-	for _, stashID := range newIDs {
-		_, err := r.tx.Exec(ctx, query, id, stashID.Endpoint, stashID.StashID)
-		if err != nil {
-			return err
-		}
+	if len(newIDs) == 0 {
+		return nil
 	}
+
+	var vals [][]interface{}
+	for _, stashID := range newIDs {
+		vals = append(vals, goqu.Vals{id, stashID.Endpoint, stashID.StashID})
+	}
+
+	q := goqu.Insert(goqu.T(r.tableName)).Prepared(true).Cols(r.idColumn, "endpoint", "stash_id").Vals(vals...)
+	_, err := insert(ctx, q)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -463,30 +435,19 @@ type relatedFileRow struct {
 }
 
 func (r *filesRepository) getMany(ctx context.Context, ids []int, primaryOnly bool) ([][]models.FileID, error) {
-	var primaryClause string
-	if primaryOnly {
-		primaryClause = " AND `primary` = 1"
+	if len(ids) == 0 {
+		return [][]models.FileID{}, nil
 	}
 
-	query := fmt.Sprintf("SELECT %s as id, file_id, `primary` from %s WHERE %[1]s IN %[3]s%s", r.idColumn, r.tableName, getInBinding(len(ids)), primaryClause)
+	q := goqu.Select(goqu.C(r.idColumn).As("id"), "file_id", "primary").From(r.tableName).Where(goqu.C(r.idColumn).In(ids))
 
-	idi := make([]interface{}, len(ids))
-	for i, id := range ids {
-		idi[i] = id
+	if primaryOnly {
+		q = q.Where(goqu.C("primary").Eq(true))
 	}
 
 	var fileRows []relatedFileRow
-	if err := r.queryFunc(ctx, query, idi, false, func(rows *sqlx.Rows) error {
-		var f relatedFileRow
-
-		if err := rows.StructScan(&f); err != nil {
-			return err
-		}
-
-		fileRows = append(fileRows, f)
-
-		return nil
-	}); err != nil {
+	err := querySelect(ctx, &fileRows, q)
+	if err != nil {
 		return nil, err
 	}
 
@@ -512,34 +473,10 @@ func (r *filesRepository) getMany(ctx context.Context, ids []int, primaryOnly bo
 }
 
 func (r *filesRepository) get(ctx context.Context, id int) ([]models.FileID, error) {
-	query := fmt.Sprintf("SELECT file_id, `primary` from %s WHERE %s = ?", r.tableName, r.idColumn)
-
-	type relatedFile struct {
-		FileID  int  `db:"file_id"`
-		Primary bool `db:"primary"`
-	}
+	// ORDER BY primary DESC to sort primary file first
+	q := goqu.Select("file_id").From(r.tableName).Where(goqu.C(r.idColumn).Eq(id)).Order(goqu.C("primary").Desc())
 
 	var ret []models.FileID
-	if err := r.queryFunc(ctx, query, []interface{}{id}, false, func(rows *sqlx.Rows) error {
-		var f relatedFile
-
-		if err := rows.StructScan(&f); err != nil {
-			return err
-		}
-
-		fileID := models.FileID(f.FileID)
-
-		if f.Primary {
-			// prepend to list
-			ret = append([]models.FileID{fileID}, ret...)
-		} else {
-			ret = append(ret, fileID)
-		}
-
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return ret, nil
+	err := querySelect(ctx, &ret, q)
+	return ret, err
 }

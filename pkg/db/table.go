@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
@@ -11,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/stashapp/stash/pkg/logger"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/sliceutil"
 	"github.com/stashapp/stash/pkg/sliceutil/intslice"
@@ -33,8 +31,8 @@ func (e *NotFoundError) Error() string {
 }
 
 func (t *table) insert(ctx context.Context, o interface{}) (sql.Result, error) {
-	q := dialect.Insert(t.table).Prepared(true).Rows(o)
-	ret, err := exec(ctx, q)
+	q := goqu.Insert(t.table).Prepared(true).Rows(o)
+	ret, err := insert(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("inserting into %s: %w", t.table.GetTable(), err)
 	}
@@ -43,23 +41,19 @@ func (t *table) insert(ctx context.Context, o interface{}) (sql.Result, error) {
 }
 
 func (t *table) insertID(ctx context.Context, o interface{}) (int, error) {
-	result, err := t.insert(ctx, o)
+	q := goqu.Insert(t.table).Prepared(true).Rows(o)
+	ret, err := insertID(ctx, q)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("inserting into %s: %w", t.table.GetTable(), err)
 	}
 
-	ret, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(ret), nil
+	return ret, nil
 }
 
 func (t *table) updateByID(ctx context.Context, id interface{}, o interface{}) error {
-	q := dialect.Update(t.table).Prepared(true).Set(o).Where(t.byID(id))
+	q := goqu.Update(t.table).Prepared(true).Set(o).Where(t.byID(id))
 
-	if _, err := exec(ctx, q); err != nil {
+	if _, err := update(ctx, q); err != nil {
 		return fmt.Errorf("updating %s: %w", t.table.GetTable(), err)
 	}
 
@@ -79,10 +73,10 @@ func (t *table) byIDInts(ids ...int) exp.Expression {
 }
 
 func (t *table) idExists(ctx context.Context, id interface{}) (bool, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(t.table).Where(t.byID(id))
+	q := goqu.Select(goqu.COUNT("*")).From(t.table).Where(t.byID(id))
 
-	var count int
-	if err := querySimple(ctx, q, &count); err != nil {
+	count, err := queryInt(ctx, q)
+	if err != nil {
 		return false, err
 	}
 
@@ -121,9 +115,13 @@ func (t *table) destroyExisting(ctx context.Context, ids []int) error {
 }
 
 func (t *table) destroy(ctx context.Context, ids []int) error {
-	q := dialect.Delete(t.table).Where(t.idColumn.In(ids))
+	if len(ids) == 0 {
+		return nil
+	}
 
-	if _, err := exec(ctx, q); err != nil {
+	q := goqu.Delete(t.table).Where(t.idColumn.In(ids))
+
+	if _, err := destroy(ctx, q); err != nil {
 		return fmt.Errorf("destroying %s: %w", t.table.GetTable(), err)
 	}
 
@@ -169,7 +167,7 @@ func (t *joinTable) invert() *joinTable {
 }
 
 func (t *joinTable) get(ctx context.Context, id int) ([]int, error) {
-	q := dialect.Select(t.fkColumn).From(t.table.table).Where(t.idColumn.Eq(id))
+	q := goqu.Select(t.fkColumn).From(t.table.table).Where(t.idColumn.Eq(id))
 
 	const single = false
 	var ret []int
@@ -190,12 +188,16 @@ func (t *joinTable) get(ctx context.Context, id int) ([]int, error) {
 }
 
 func (t *joinTable) insertJoins(ctx context.Context, id int, foreignIDs []int) error {
+	db, err := getDBWrapper(ctx)
+	if err != nil {
+		return err
+	}
+
 	// manually create SQL so that we can prepare once
 	// ignore duplicates
 	q := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES (?, ?) ON CONFLICT (%[2]s, %s) DO NOTHING", t.table.table.GetTable(), t.idColumn.GetCol(), t.fkColumn.GetCol())
 
-	tx := dbWrapper{}
-	stmt, err := tx.Prepare(ctx, q)
+	stmt, err := db.tx.Prepare(ctx, q)
 	if err != nil {
 		return err
 	}
@@ -205,7 +207,7 @@ func (t *joinTable) insertJoins(ctx context.Context, id int, foreignIDs []int) e
 	foreignIDs = intslice.IntAppendUniques(nil, foreignIDs)
 
 	for _, fk := range foreignIDs {
-		if _, err := tx.ExecStmt(ctx, stmt, id, fk); err != nil {
+		if _, err := stmt.Exec(ctx, id, fk); err != nil {
 			return err
 		}
 	}
@@ -234,12 +236,16 @@ func (t *joinTable) addJoins(ctx context.Context, id int, foreignIDs []int) erro
 }
 
 func (t *joinTable) destroyJoins(ctx context.Context, id int, foreignIDs []int) error {
-	q := dialect.Delete(t.table.table).Where(
+	if len(foreignIDs) == 0 {
+		return nil
+	}
+
+	q := goqu.Delete(t.table.table).Where(
 		t.idColumn.Eq(id),
 		t.fkColumn.In(foreignIDs),
 	)
 
-	if _, err := exec(ctx, q); err != nil {
+	if _, err := destroy(ctx, q); err != nil {
 		return fmt.Errorf("destroying %s: %w", t.table.table.GetTable(), err)
 	}
 
@@ -276,7 +282,7 @@ func (r *stashIDRow) resolve() models.StashID {
 }
 
 func (t *stashIDTable) get(ctx context.Context, id int) ([]models.StashID, error) {
-	q := dialect.Select("endpoint", "stash_id").From(t.table.table).Where(t.idColumn.Eq(id))
+	q := goqu.Select("endpoint", "stash_id").From(t.table.table).Where(t.idColumn.Eq(id))
 
 	const single = false
 	var ret []models.StashID
@@ -297,10 +303,10 @@ func (t *stashIDTable) get(ctx context.Context, id int) ([]models.StashID, error
 }
 
 func (t *stashIDTable) insertJoin(ctx context.Context, id int, v models.StashID) (sql.Result, error) {
-	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), "endpoint", "stash_id").Vals(
+	q := goqu.Insert(t.table.table).Cols(t.idColumn.GetCol(), "endpoint", "stash_id").Vals(
 		goqu.Vals{id, v.Endpoint, v.StashID},
 	)
-	ret, err := exec(ctx, q)
+	ret, err := insert(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("inserting into %s: %w", t.table.table.GetTable(), err)
 	}
@@ -349,13 +355,13 @@ func (t *stashIDTable) addJoins(ctx context.Context, id int, v []models.StashID)
 
 func (t *stashIDTable) destroyJoins(ctx context.Context, id int, v []models.StashID) error {
 	for _, vv := range v {
-		q := dialect.Delete(t.table.table).Where(
+		q := goqu.Delete(t.table.table).Where(
 			t.idColumn.Eq(id),
 			t.table.table.Col("endpoint").Eq(vv.Endpoint),
 			t.table.table.Col("stash_id").Eq(vv.StashID),
 		)
 
-		if _, err := exec(ctx, q); err != nil {
+		if _, err := destroy(ctx, q); err != nil {
 			return fmt.Errorf("destroying %s: %w", t.table.table.GetTable(), err)
 		}
 	}
@@ -382,7 +388,7 @@ type stringTable struct {
 }
 
 func (t *stringTable) get(ctx context.Context, id int) ([]string, error) {
-	q := dialect.Select(t.stringColumn).From(t.table.table).Where(t.idColumn.Eq(id))
+	q := goqu.Select(t.stringColumn).From(t.table.table).Where(t.idColumn.Eq(id))
 
 	const single = false
 	var ret []string
@@ -403,10 +409,10 @@ func (t *stringTable) get(ctx context.Context, id int) ([]string, error) {
 }
 
 func (t *stringTable) insertJoin(ctx context.Context, id int, v string) (sql.Result, error) {
-	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), t.stringColumn.GetCol()).Vals(
+	q := goqu.Insert(t.table.table).Cols(t.idColumn.GetCol(), t.stringColumn.GetCol()).Vals(
 		goqu.Vals{id, v},
 	)
-	ret, err := exec(ctx, q)
+	ret, err := insert(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("inserting into %s: %w", t.table.table.GetTable(), err)
 	}
@@ -446,12 +452,12 @@ func (t *stringTable) addJoins(ctx context.Context, id int, v []string) error {
 
 func (t *stringTable) destroyJoins(ctx context.Context, id int, v []string) error {
 	for _, vv := range v {
-		q := dialect.Delete(t.table.table).Where(
+		q := goqu.Delete(t.table.table).Where(
 			t.idColumn.Eq(id),
 			t.stringColumn.Eq(vv),
 		)
 
-		if _, err := exec(ctx, q); err != nil {
+		if _, err := destroy(ctx, q); err != nil {
 			return fmt.Errorf("destroying %s: %w", t.table.table.GetTable(), err)
 		}
 	}
@@ -483,7 +489,7 @@ func (t *orderedValueTable[T]) positionColumn() exp.IdentifierExpression {
 }
 
 func (t *orderedValueTable[T]) get(ctx context.Context, id int) ([]T, error) {
-	q := dialect.Select(t.valueColumn).From(t.table.table).Where(t.idColumn.Eq(id)).Order(t.positionColumn().Asc())
+	q := goqu.Select(t.valueColumn).From(t.table.table).Where(t.idColumn.Eq(id)).Order(t.positionColumn().Asc())
 
 	const single = false
 	var ret []T
@@ -504,10 +510,10 @@ func (t *orderedValueTable[T]) get(ctx context.Context, id int) ([]T, error) {
 }
 
 func (t *orderedValueTable[T]) insertJoin(ctx context.Context, id int, position int, v T) (sql.Result, error) {
-	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), t.positionColumn().GetCol(), t.valueColumn.GetCol()).Vals(
+	q := goqu.Insert(t.table.table).Cols(t.idColumn.GetCol(), t.positionColumn().GetCol(), t.valueColumn.GetCol()).Vals(
 		goqu.Vals{id, position, v},
 	)
-	ret, err := exec(ctx, q)
+	ret, err := insert(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("inserting into %s: %w", t.table.table.GetTable(), err)
 	}
@@ -584,20 +590,20 @@ type scenesMoviesTable struct {
 }
 
 type moviesScenesRow struct {
-	SceneID    null.Int `db:"scene_id"`
-	MovieID    null.Int `db:"movie_id"`
+	SceneID    int      `db:"scene_id"`
+	MovieID    int      `db:"movie_id"`
 	SceneIndex null.Int `db:"scene_index"`
 }
 
 func (r moviesScenesRow) resolve(sceneID int) models.MoviesScenes {
 	return models.MoviesScenes{
-		MovieID:    int(r.MovieID.Int64),
+		MovieID:    r.MovieID,
 		SceneIndex: nullIntPtr(r.SceneIndex),
 	}
 }
 
 func (t *scenesMoviesTable) get(ctx context.Context, id int) ([]models.MoviesScenes, error) {
-	q := dialect.Select("movie_id", "scene_index").From(t.table.table).Where(t.idColumn.Eq(id))
+	q := goqu.Select("movie_id", "scene_index").From(t.table.table).Where(t.idColumn.Eq(id))
 
 	const single = false
 	var ret []models.MoviesScenes
@@ -618,10 +624,10 @@ func (t *scenesMoviesTable) get(ctx context.Context, id int) ([]models.MoviesSce
 }
 
 func (t *scenesMoviesTable) insertJoin(ctx context.Context, id int, v models.MoviesScenes) (sql.Result, error) {
-	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), "movie_id", "scene_index").Vals(
+	q := goqu.Insert(t.table.table).Cols(t.idColumn.GetCol(), "movie_id", "scene_index").Vals(
 		goqu.Vals{id, v.MovieID, intFromPtr(v.SceneIndex)},
 	)
-	ret, err := exec(ctx, q)
+	ret, err := insert(ctx, q)
 	if err != nil {
 		return nil, fmt.Errorf("inserting into %s: %w", t.table.table.GetTable(), err)
 	}
@@ -675,12 +681,12 @@ func (t *scenesMoviesTable) addJoins(ctx context.Context, id int, v []models.Mov
 
 func (t *scenesMoviesTable) destroyJoins(ctx context.Context, id int, v []models.MoviesScenes) error {
 	for _, vv := range v {
-		q := dialect.Delete(t.table.table).Where(
+		q := goqu.Delete(t.table.table).Where(
 			t.idColumn.Eq(id),
 			t.table.table.Col("movie_id").Eq(vv.MovieID),
 		)
 
-		if _, err := exec(ctx, q); err != nil {
+		if _, err := destroy(ctx, q); err != nil {
 			return fmt.Errorf("destroying %s: %w", t.table.table.GetTable(), err)
 		}
 	}
@@ -712,10 +718,10 @@ type relatedFilesTable struct {
 // }
 
 func (t *relatedFilesTable) insertJoin(ctx context.Context, id int, primary bool, fileID models.FileID) error {
-	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), "primary", "file_id").Vals(
+	q := goqu.Insert(t.table.table).Cols(t.idColumn.GetCol(), "primary", "file_id").Vals(
 		goqu.Vals{id, primary, fileID},
 	)
-	_, err := exec(ctx, q)
+	_, err := insert(ctx, q)
 	if err != nil {
 		return fmt.Errorf("inserting into %s: %w", t.table.table.GetTable(), err)
 	}
@@ -744,9 +750,13 @@ func (t *relatedFilesTable) replaceJoins(ctx context.Context, id int, fileIDs []
 
 // destroyJoins destroys all entries in the table with the provided fileIDs
 func (t *relatedFilesTable) destroyJoins(ctx context.Context, fileIDs []models.FileID) error {
-	q := dialect.Delete(t.table.table).Where(t.table.table.Col("file_id").In(fileIDs))
+	if len(fileIDs) == 0 {
+		return nil
+	}
 
-	if _, err := exec(ctx, q); err != nil {
+	q := goqu.Delete(t.table.table).Where(t.table.table.Col("file_id").In(fileIDs))
+
+	if _, err := destroy(ctx, q); err != nil {
 		return fmt.Errorf("destroying file joins in %s: %w", t.table.table.GetTable(), err)
 	}
 
@@ -756,118 +766,21 @@ func (t *relatedFilesTable) destroyJoins(ctx context.Context, fileIDs []models.F
 func (t *relatedFilesTable) setPrimary(ctx context.Context, id int, fileID models.FileID) error {
 	table := t.table.table
 
-	q := dialect.Update(table).Prepared(true).Set(goqu.Record{
-		"primary": 0,
-	}).Where(t.idColumn.Eq(id), table.Col(fileIDColumn).Neq(fileID))
+	q := goqu.Update(table).Prepared(true).Set(
+		goqu.Record{"primary": false},
+	).Where(t.idColumn.Eq(id), table.Col(fileIDColumn).Neq(fileID))
 
-	if _, err := exec(ctx, q); err != nil {
+	if _, err := update(ctx, q); err != nil {
 		return fmt.Errorf("unsetting primary flags in %s: %w", t.table.table.GetTable(), err)
 	}
 
-	q = dialect.Update(table).Prepared(true).Set(goqu.Record{
-		"primary": 1,
-	}).Where(t.idColumn.Eq(id), table.Col(fileIDColumn).Eq(fileID))
+	q = goqu.Update(table).Prepared(true).Set(
+		goqu.Record{"primary": true},
+	).Where(t.idColumn.Eq(id), table.Col(fileIDColumn).Eq(fileID))
 
-	if _, err := exec(ctx, q); err != nil {
+	if _, err := update(ctx, q); err != nil {
 		return fmt.Errorf("setting primary flag in %s: %w", t.table.table.GetTable(), err)
 	}
 
 	return nil
 }
-
-type sqler interface {
-	ToSQL() (sql string, params []interface{}, err error)
-}
-
-func exec(ctx context.Context, stmt sqler) (sql.Result, error) {
-	tx, err := getTx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	sql, args, err := stmt.ToSQL()
-	if err != nil {
-		return nil, fmt.Errorf("generating sql: %w", err)
-	}
-
-	logger.Tracef("SQL: %s [%v]", sql, args)
-	ret, err := tx.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return nil, fmt.Errorf("executing `%s` [%v]: %w", sql, args, err)
-	}
-
-	return ret, nil
-}
-
-func count(ctx context.Context, q *goqu.SelectDataset) (int, error) {
-	var count int
-	if err := querySimple(ctx, q, &count); err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
-func queryFunc(ctx context.Context, query *goqu.SelectDataset, single bool, f func(rows *sqlx.Rows) error) error {
-	q, args, err := query.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	wrapper := dbWrapper{}
-	rows, err := wrapper.QueryxContext(ctx, q, args...)
-
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("querying `%s` [%v]: %w", q, args, err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := f(rows); err != nil {
-			return err
-		}
-		if single {
-			break
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func querySimple(ctx context.Context, query *goqu.SelectDataset, out interface{}) error {
-	q, args, err := query.ToSQL()
-	if err != nil {
-		return err
-	}
-
-	wrapper := dbWrapper{}
-	rows, err := wrapper.QueryxContext(ctx, q, args...)
-	if err != nil {
-		return fmt.Errorf("querying `%s` [%v]: %w", q, args, err)
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		if err := rows.Scan(out); err != nil {
-			return err
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// func cols(table exp.IdentifierExpression, cols []string) []interface{} {
-// 	var ret []interface{}
-// 	for _, c := range cols {
-// 		ret = append(ret, table.Col(c))
-// 	}
-// 	return ret
-// }

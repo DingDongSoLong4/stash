@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/golang-migrate/migrate/v4"
 	postgresmig "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -21,7 +22,7 @@ const (
 	// Max number of database connections to use
 	postgresDBConns = 10
 	// Number of idle database connections to use
-	postgresDBIdleConns = 2
+	postgresDBIdleConns = 10
 	// Idle connection timeout, in seconds
 	postgresDBConnTimeout = 30
 

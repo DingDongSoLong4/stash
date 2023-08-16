@@ -18,7 +18,7 @@ func customUsage() {
 	flag.PrintDefaults()
 }
 
-func printPhash(ff *ffmpeg.FFMpeg, ffp *ffmpeg.FFProbe, inputfile string, quiet *bool) error {
+func printPhash(ff *ffmpeg.FFMpeg, ffp *ffmpeg.FFProbe, inputfile string, quiet bool) error {
 	ffvideoFile, err := ffp.NewVideoFile(inputfile)
 	if err != nil {
 		return err
@@ -38,10 +38,10 @@ func printPhash(ff *ffmpeg.FFMpeg, ffp *ffmpeg.FFProbe, inputfile string, quiet 
 		return err
 	}
 
-	if *quiet {
-		fmt.Printf("%x\n", *phash)
+	if quiet {
+		fmt.Printf("%s\n", phash)
 	} else {
-		fmt.Printf("%x %v\n", *phash, vf.Path)
+		fmt.Printf("%s %s\n", phash, vf.Path)
 	}
 	return nil
 }
@@ -78,7 +78,7 @@ func main() {
 	ffprobe.Configure(ffprobePath)
 
 	for _, item := range args {
-		if err := printPhash(encoder, ffprobe, item, quiet); err != nil {
+		if err := printPhash(encoder, ffprobe, item, *quiet); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}

@@ -111,7 +111,7 @@ func (qb *TagStore) table() exp.IdentifierExpression {
 }
 
 func (qb *TagStore) selectDataset() *goqu.SelectDataset {
-	return dialect.From(qb.table()).Select(qb.table().All())
+	return goqu.From(qb.table()).Select(qb.table().All())
 }
 
 func (qb *TagStore) Create(ctx context.Context, newObject *models.Tag) error {
@@ -170,8 +170,7 @@ func (qb *TagStore) Destroy(ctx context.Context, id int) error {
 
 	// cannot unset primary_tag_id in scene_markers because it is not nullable
 	countQuery := "SELECT COUNT(*) as count FROM scene_markers where primary_tag_id = ?"
-	args := []interface{}{id}
-	primaryMarkers, err := qb.runCountQuery(ctx, countQuery, args)
+	primaryMarkers, err := qb.queryInt(ctx, countQuery, id)
 	if err != nil {
 		return err
 	}
@@ -194,6 +193,10 @@ func (qb *TagStore) Find(ctx context.Context, id int) (*models.Tag, error) {
 
 func (qb *TagStore) FindMany(ctx context.Context, ids []int) ([]*models.Tag, error) {
 	ret := make([]*models.Tag, len(ids))
+
+	if len(ids) == 0 {
+		return ret, nil
+	}
 
 	table := qb.table()
 	if err := batchExec(ids, defaultBatchSize, func(batch []int) error {
@@ -349,6 +352,10 @@ func (qb *TagStore) FindByName(ctx context.Context, name string, nocase bool) (*
 }
 
 func (qb *TagStore) FindByNames(ctx context.Context, names []string, nocase bool) ([]*models.Tag, error) {
+	if len(names) == 0 {
+		return []*models.Tag{}, nil
+	}
+
 	// query := "SELECT * FROM tags WHERE name"
 	// if nocase {
 	// 	query += " COLLATE NOCASE"
@@ -396,8 +403,8 @@ func (qb *TagStore) FindByChildTagID(ctx context.Context, parentID int) ([]*mode
 }
 
 func (qb *TagStore) Count(ctx context.Context) (int, error) {
-	q := dialect.Select(goqu.COUNT("*")).From(qb.table())
-	return count(ctx, q)
+	q := goqu.Select(goqu.COUNT("*")).From(qb.table())
+	return queryInt(ctx, q)
 }
 
 func (qb *TagStore) All(ctx context.Context) ([]*models.Tag, error) {
@@ -511,7 +518,9 @@ func (qb *TagStore) Query(ctx context.Context, tagFilter *models.TagFilterType, 
 	}
 
 	query := qb.newQuery()
-	distinctIDs(&query, tagTable)
+
+	query.addColumn(getColumn(tagTable, "id"))
+	query.from = tagTable
 
 	if q := findFilter.Q; q != nil && *q != "" {
 		query.join(tagAliasesTable, "", "tag_aliases.tag_id = tags.id")
@@ -865,7 +874,7 @@ func (qb *TagStore) getTagSort(query *queryBuilder, findFilter *models.FindFilte
 	}
 
 	// Whatever the sorting, always use name/id as a final sort
-	sortQuery += ", COALESCE(tags.name, tags.id) COLLATE NATURAL_CI ASC"
+	sortQuery += ", tags.name COLLATE NATURAL_CI ASC, tags.id ASC"
 	return sortQuery
 }
 
@@ -928,7 +937,6 @@ func (qb *TagStore) destroyImage(ctx context.Context, tagID int) error {
 func (qb *TagStore) aliasRepository() *stringRepository {
 	return &stringRepository{
 		repository: repository{
-			tx:        qb.tx,
 			tableName: tagAliasesTable,
 			idColumn:  tagIDColumn,
 		},
@@ -972,7 +980,7 @@ func (qb *TagStore) Merge(ctx context.Context, source []int, destination int) er
 
 	args = append(args, destination)
 	for table, idColumn := range tagTables {
-		_, err := qb.tx.Exec(ctx, `UPDATE OR IGNORE `+table+`
+		_, err := qb.exec(ctx, `UPDATE OR IGNORE `+table+`
 SET tag_id = ?
 WHERE tag_id IN `+inBinding+`
 AND NOT EXISTS(SELECT 1 FROM `+table+` o WHERE o.`+idColumn+` = `+table+`.`+idColumn+` AND o.tag_id = ?)`,
@@ -983,22 +991,22 @@ AND NOT EXISTS(SELECT 1 FROM `+table+` o WHERE o.`+idColumn+` = `+table+`.`+idCo
 		}
 
 		// delete source tag ids from the table where they couldn't be set
-		if _, err := qb.tx.Exec(ctx, `DELETE FROM `+table+` WHERE tag_id IN `+inBinding, srcArgs...); err != nil {
+		if _, err := qb.exec(ctx, `DELETE FROM `+table+` WHERE tag_id IN `+inBinding, srcArgs...); err != nil {
 			return err
 		}
 	}
 
-	_, err := qb.tx.Exec(ctx, "UPDATE "+sceneMarkerTable+" SET primary_tag_id = ? WHERE primary_tag_id IN "+inBinding, args...)
+	_, err := qb.exec(ctx, "UPDATE "+sceneMarkerTable+" SET primary_tag_id = ? WHERE primary_tag_id IN "+inBinding, args...)
 	if err != nil {
 		return err
 	}
 
-	_, err = qb.tx.Exec(ctx, "INSERT INTO "+tagAliasesTable+" (tag_id, alias) SELECT ?, name FROM "+tagTable+" WHERE id IN "+inBinding, args...)
+	_, err = qb.exec(ctx, "INSERT INTO "+tagAliasesTable+" (tag_id, alias) SELECT ?, name FROM "+tagTable+" WHERE id IN "+inBinding, args...)
 	if err != nil {
 		return err
 	}
 
-	_, err = qb.tx.Exec(ctx, "UPDATE "+tagAliasesTable+" SET tag_id = ? WHERE tag_id IN "+inBinding, args...)
+	_, err = qb.exec(ctx, "UPDATE "+tagAliasesTable+" SET tag_id = ? WHERE tag_id IN "+inBinding, args...)
 	if err != nil {
 		return err
 	}
@@ -1014,8 +1022,7 @@ AND NOT EXISTS(SELECT 1 FROM `+table+` o WHERE o.`+idColumn+` = `+table+`.`+idCo
 }
 
 func (qb *TagStore) UpdateParentTags(ctx context.Context, tagID int, parentIDs []int) error {
-	tx := qb.tx
-	if _, err := tx.Exec(ctx, "DELETE FROM tags_relations WHERE child_id = ?", tagID); err != nil {
+	if _, err := qb.exec(ctx, "DELETE FROM tags_relations WHERE child_id = ?", tagID); err != nil {
 		return err
 	}
 
@@ -1028,7 +1035,7 @@ func (qb *TagStore) UpdateParentTags(ctx context.Context, tagID int, parentIDs [
 		}
 
 		query := "INSERT INTO tags_relations (parent_id, child_id) VALUES " + strings.Join(values, ", ")
-		if _, err := tx.Exec(ctx, query, args...); err != nil {
+		if _, err := qb.exec(ctx, query, args...); err != nil {
 			return err
 		}
 	}
@@ -1037,8 +1044,7 @@ func (qb *TagStore) UpdateParentTags(ctx context.Context, tagID int, parentIDs [
 }
 
 func (qb *TagStore) UpdateChildTags(ctx context.Context, tagID int, childIDs []int) error {
-	tx := qb.tx
-	if _, err := tx.Exec(ctx, "DELETE FROM tags_relations WHERE parent_id = ?", tagID); err != nil {
+	if _, err := qb.exec(ctx, "DELETE FROM tags_relations WHERE parent_id = ?", tagID); err != nil {
 		return err
 	}
 
@@ -1051,7 +1057,7 @@ func (qb *TagStore) UpdateChildTags(ctx context.Context, tagID int, childIDs []i
 		}
 
 		query := "INSERT INTO tags_relations (parent_id, child_id) VALUES " + strings.Join(values, ", ")
-		if _, err := tx.Exec(ctx, query, args...); err != nil {
+		if _, err := qb.exec(ctx, query, args...); err != nil {
 			return err
 		}
 	}

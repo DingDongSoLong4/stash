@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/doug-martin/goqu/v9"
 	"github.com/jmoiron/sqlx"
 )
 
 func (qb *BlobStore) FindBlobs(ctx context.Context, n uint, lastChecksum string) ([]string, error) {
 	table := qb.table()
-	q := dialect.From(table).Select(table.Col(blobChecksumColumn)).Order(table.Col(blobChecksumColumn).Asc()).Limit(n)
+	q := goqu.From(table).Select(table.Col(blobChecksumColumn)).Order(table.Col(blobChecksumColumn).Asc()).Limit(n)
 
 	if lastChecksum != "" {
 		q = q.Where(table.Col(blobChecksumColumn).Gt(lastChecksum))
