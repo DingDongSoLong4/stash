@@ -376,7 +376,7 @@ const PerformerTaggerList: React.FC<IPerformerTaggerListProps> = ({
     const performerID = modalPerformer?.stored_id;
     if (performerID) {
       // handle stash ids - we want to add, not set them
-      if (input.stash_ids?.length) {
+      if (input.stash_ids) {
         input.stash_ids = mergeStashIDs(existing.stash_ids, input.stash_ids);
       }
 

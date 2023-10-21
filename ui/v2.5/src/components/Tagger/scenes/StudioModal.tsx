@@ -115,7 +115,7 @@ interface IStudioModalProps {
   studio: GQL.ScrapedSceneStudioDataFragment;
   modalVisible: boolean;
   closeModal: () => void;
-  handleStudioCreate: (
+  onSave: (
     input: GQL.StudioCreateInput,
     parent?: GQL.StudioCreateInput
   ) => void;
@@ -128,7 +128,7 @@ interface IStudioModalProps {
 const StudioModal: React.FC<IStudioModalProps> = ({
   modalVisible,
   studio,
-  handleStudioCreate,
+  onSave,
   closeModal,
   excludedStudioFields = [],
   header,
@@ -183,7 +183,7 @@ const StudioModal: React.FC<IStudioModalProps> = ({
     return "actions.create_parent_studio";
   };
 
-  function onSave() {
+  function onSaveClicked() {
     if (!studio.name) {
       throw new Error("studio name must set");
     }
@@ -239,7 +239,7 @@ const StudioModal: React.FC<IStudioModalProps> = ({
       excludeFields(parentData, parentExcluded);
     }
 
-    handleStudioCreate(studioData, parentData);
+    onSave(studioData, parentData);
   }
 
   const base = endpoint?.match(/https?:\/\/.*?\//)?.[0];
@@ -292,7 +292,7 @@ const StudioModal: React.FC<IStudioModalProps> = ({
       show={modalVisible}
       accept={{
         text: intl.formatMessage({ id: "actions.save" }),
-        onClick: onSave,
+        onClick: onSaveClicked,
       }}
       cancel={{ onClick: () => closeModal(), variant: "secondary" }}
       onHide={() => closeModal()}

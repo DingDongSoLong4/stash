@@ -5,9 +5,10 @@ import * as GQL from "src/core/generated-graphql";
 import { useUpdateStudio } from "../queries";
 import StudioModal from "../scenes/StudioModal";
 import { faTags } from "@fortawesome/free-solid-svg-icons";
-import { useStudioCreate } from "src/core/StashService";
+import { queryFindStudio, useStudioCreate } from "src/core/StashService";
 import { useIntl } from "react-intl";
 import { apolloError } from "src/utils";
+import { mergeStashIDs } from "src/utils/stashbox";
 
 interface IStashSearchResultProps {
   studio: GQL.SlimStudioDataFragment;
@@ -53,6 +54,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   }
 
   const handleSave = async (
+    existing: GQL.SlimStudioDataFragment,
     input: GQL.StudioCreateInput,
     parentInput?: GQL.StudioCreateInput
   ) => {
@@ -65,6 +67,18 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
       try {
         // if parent id is set, then update the existing studio
         if (input.parent_id) {
+          // handle stash ids - we want to add, not set them
+          if (parentInput.stash_ids) {
+            const findParent = await queryFindStudio(input.parent_id);
+            if (findParent.data.findStudio) {
+              const parentExisting = findParent.data.findStudio;
+              parentInput.stash_ids = mergeStashIDs(
+                parentExisting.stash_ids,
+                parentInput.stash_ids
+              );
+            }
+          }
+
           const parentUpdateData: GQL.StudioUpdateInput = {
             ...parentInput,
             id: input.parent_id,
@@ -81,6 +95,11 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
       }
     }
 
+    // handle stash ids - we want to add, not set them
+    if (input.stash_ids) {
+      input.stash_ids = mergeStashIDs(existing.stash_ids, input.stash_ids);
+    }
+
     setSaveState("Saving studio");
     const updateData: GQL.StudioUpdateInput = {
       ...input,
@@ -89,9 +108,11 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
 
     const res = await updateStudio(updateData);
 
-    if (!res?.data?.studioUpdate)
+    if (!res?.data?.studioUpdate) {
       handleSaveError(studio.name, res?.errors?.[0]?.message ?? "");
-    else onStudioTagged(studio);
+    } else {
+      onStudioTagged(studio);
+    }
     setSaveState("");
   };
 
@@ -114,7 +135,9 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
           closeModal={() => setModalStudio(undefined)}
           modalVisible={modalStudio !== undefined}
           studio={modalStudio}
-          handleStudioCreate={handleSave}
+          onSave={(input, parentInput) => {
+            handleSave(studio, input, parentInput);
+          }}
           icon={faTags}
           header="Update Studio"
           excludedStudioFields={excludedStudioFields}

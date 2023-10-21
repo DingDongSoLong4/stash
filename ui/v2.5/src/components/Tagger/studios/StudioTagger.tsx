@@ -14,6 +14,7 @@ import {
   mutateStashBoxBatchStudioTag,
   getClient,
   studioMutationImpactedQueries,
+  queryFindStudio,
   useStudioCreate,
   evictQueries,
 } from "src/core/StashService";
@@ -27,6 +28,7 @@ import StudioModal from "../scenes/StudioModal";
 import { useUpdateStudio } from "../queries";
 import { apolloError } from "src/utils";
 import { faStar, faTags } from "@fortawesome/free-solid-svg-icons";
+import { mergeStashIDs } from "src/utils/stashbox";
 
 type JobFragment = Pick<
   GQL.Job,
@@ -411,6 +413,7 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
   }
 
   const handleStudioUpdate = async (
+    existing: GQL.StudioDataFragment,
     input: GQL.StudioCreateInput,
     parentInput?: GQL.StudioCreateInput
   ) => {
@@ -421,6 +424,18 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
         try {
           // if parent id is set, then update the existing studio
           if (input.parent_id) {
+            // handle stash ids - we want to add, not set them
+            if (parentInput.stash_ids) {
+              const findParent = await queryFindStudio(input.parent_id);
+              if (findParent.data.findStudio) {
+                const parentExisting = findParent.data.findStudio;
+                parentInput.stash_ids = mergeStashIDs(
+                  parentExisting.stash_ids,
+                  parentInput.stash_ids
+                );
+              }
+            }
+
             const parentUpdateData: GQL.StudioUpdateInput = {
               ...parentInput,
               id: input.parent_id,
@@ -435,6 +450,11 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
         } catch (e) {
           handleSaveError(studioID, parentInput.name, apolloError(e));
         }
+      }
+
+      // handle stash ids - we want to add, not set them
+      if (input.stash_ids) {
+        input.stash_ids = mergeStashIDs(existing.stash_ids, input.stash_ids);
       }
 
       const updateData: GQL.StudioUpdateInput = {
@@ -598,7 +618,9 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
               closeModal={() => setModalStudio(undefined)}
               modalVisible={modalStudio.stored_id === studio.id}
               studio={modalStudio}
-              handleStudioCreate={handleStudioUpdate}
+              onSave={(input, parentInput) => {
+                handleStudioUpdate(studio, input, parentInput);
+              }}
               excludedStudioFields={config.excludedStudioFields}
               icon={faTags}
               header={intl.formatMessage({

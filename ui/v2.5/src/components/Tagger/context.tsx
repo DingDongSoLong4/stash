@@ -24,6 +24,7 @@ import { useLocalForage } from "src/hooks/LocalForage";
 import { useToast } from "src/hooks/Toast";
 import { ConfigurationContext } from "src/hooks/Config";
 import { ITaggerSource, SCRAPER_PREFIX, STASH_BOX_PREFIX } from "./constants";
+import { mergeStashIDs } from "src/utils/stashbox";
 
 export interface ITaggerContextState {
   config: ITaggerConfig;
@@ -707,6 +708,15 @@ export const TaggerContext: React.FC = ({ children }) => {
 
   async function updateExistingStudio(input: GQL.StudioUpdateInput) {
     try {
+      // handle stash ids - we want to add, not set them
+      if (input.stash_ids) {
+        const findExisting = await queryFindStudio(input.id);
+        if (findExisting.data.findStudio) {
+          const existing = findExisting.data.findStudio;
+          input.stash_ids = mergeStashIDs(existing.stash_ids, input.stash_ids);
+        }
+      }
+
       const result = await updateStudio({
         variables: {
           input: input,

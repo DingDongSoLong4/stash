@@ -39,7 +39,7 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
     setSaveState("Saving performer");
     setModalPerformer(undefined);
 
-    if (input.stash_ids?.length) {
+    if (input.stash_ids) {
       input.stash_ids = mergeStashIDs(performer.stash_ids, input.stash_ids);
     }
 

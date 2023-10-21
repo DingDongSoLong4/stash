@@ -132,7 +132,7 @@ export const SceneTaggerModals: React.FC = ({ children }) => {
           closeModal={handleStudioCancel}
           modalVisible
           studio={studioToCreate}
-          handleStudioCreate={handleStudioSave}
+          onSave={handleStudioSave}
           icon={faTags}
           header={intl.formatMessage(
             { id: "actions.create_entity" },
