@@ -5,7 +5,6 @@ import { useIntl } from "react-intl";
 
 interface ILoadingProps {
   message?: string;
-  inline?: boolean;
   small?: boolean;
   card?: boolean;
 }
@@ -15,7 +14,6 @@ const CLASSNAME_MESSAGE = `${CLASSNAME}-message`;
 
 export const LoadingIndicator: React.FC<ILoadingProps> = ({
   message,
-  inline = false,
   small = false,
   card = false,
 }) => {
@@ -24,8 +22,8 @@ export const LoadingIndicator: React.FC<ILoadingProps> = ({
   const text = intl.formatMessage({ id: "loading.generic" });
 
   return (
-    <div className={cx(CLASSNAME, { inline, small, "card-based": card })}>
-      <Spinner animation="border" role="status" size={small ? "sm" : undefined}>
+    <div className={cx(CLASSNAME, { small, "card-based": card })}>
+      <Spinner animation="border" role="status">
         <span className="sr-only">{text}</span>
       </Spinner>
       {message !== "" && (

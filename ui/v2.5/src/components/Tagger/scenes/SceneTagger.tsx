@@ -341,13 +341,13 @@ export const Tagger: React.FC<ITaggerProps> = ({ scenes, queue }) => {
     if (loadingMulti) {
       return (
         <Button
-          className="ml-1"
+          className="ml-2"
           variant="danger"
           onClick={() => {
             stopMultiScrape();
           }}
         >
-          <LoadingIndicator message="" inline small />
+          <LoadingIndicator message="" />
           <span className="ml-2">
             {intl.formatMessage({ id: "actions.stop" })}
           </span>

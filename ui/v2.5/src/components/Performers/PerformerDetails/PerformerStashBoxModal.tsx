@@ -223,8 +223,8 @@ const PerformerStashBoxModal: React.FC<IProps> = ({
           ref={inputRef}
         />
         {loading ? (
-          <div className="m-4 text-center">
-            <LoadingIndicator inline />
+          <div className="m-4">
+            <LoadingIndicator card />
           </div>
         ) : performers.length > 0 ? (
           renderResults()

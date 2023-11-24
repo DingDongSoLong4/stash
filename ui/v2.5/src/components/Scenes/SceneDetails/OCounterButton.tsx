@@ -37,7 +37,7 @@ export const OCounterButton: React.FC<IOCounterButtonProps> = (
     setLoading(false);
   }
 
-  if (loading) return <LoadingIndicator message="" inline small />;
+  if (loading) return <LoadingIndicator message="" small />;
 
   const renderButton = () => (
     <Button

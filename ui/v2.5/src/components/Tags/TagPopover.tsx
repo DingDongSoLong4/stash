@@ -18,7 +18,7 @@ export const TagPopoverCard: React.FC<ITagPopoverCardProps> = ({ id }) => {
   if (loading)
     return (
       <div className="tag-popover-card-placeholder">
-        <LoadingIndicator card={true} message={""} />
+        <LoadingIndicator card message="" />
       </div>
     );
   if (error) return <ErrorMessage error={error.message} />;

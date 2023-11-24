@@ -544,7 +544,7 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
                     disabled={!!loadingUpdate}
                   >
                     {loadingUpdate === stashID.stash_id ? (
-                      <LoadingIndicator inline small message="" />
+                      <LoadingIndicator message="" />
                     ) : (
                       <FormattedMessage id="actions.refresh" />
                     )}

@@ -224,8 +224,8 @@ export const SceneQueryModal: React.FC<IProps> = ({
         </InputGroup>
 
         {loading ? (
-          <div className="m-4 text-center">
-            <LoadingIndicator inline />
+          <div className="m-4">
+            <LoadingIndicator card />
           </div>
         ) : (
           renderResults()

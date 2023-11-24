@@ -46,9 +46,7 @@ export const OperationButton: React.FC<IOperationButton> = (props) => {
   return (
     <Button onClick={handleClick} {...withoutExtras}>
       {loading && (
-        <span className="mr-2">
-          <LoadingIndicator message="" inline small />
-        </span>
+        <LoadingIndicator message="" />
       )}
       {(!loading || !hideChildrenWhenLoading) && props.children}
     </Button>
