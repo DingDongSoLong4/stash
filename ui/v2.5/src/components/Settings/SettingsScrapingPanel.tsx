@@ -23,6 +23,7 @@ import {
   AvailableScraperPackages,
   InstalledScraperPackages,
 } from "./ScraperPackageManager";
+import { ExternalLink } from "../Shared/ExternalLink";
 
 interface IURLList {
   urls: string[];
@@ -43,14 +44,9 @@ const URLList: React.FC<IURLList> = ({ urls }) => {
       const siteURL = linkSite(sanitised!);
 
       return (
-        <a
-          href={siteURL}
-          className="link"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <ExternalLink href={siteURL}>
           {sanitised}
-        </a>
+        </ExternalLink>
       );
     }
   }

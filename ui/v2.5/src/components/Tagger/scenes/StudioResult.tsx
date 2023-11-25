@@ -11,6 +11,7 @@ import * as GQL from "src/core/generated-graphql";
 import { OptionalField } from "../IncludeButton";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { getStashboxBase } from "src/utils/stashbox";
+import { ExternalLink } from "src/components/Shared/ExternalLink";
 
 interface IStudioName {
   studio: GQL.ScrapedStudio | GQL.SlimStudioDataFragment;
@@ -21,9 +22,9 @@ interface IStudioName {
 const StudioName: React.FC<IStudioName> = ({ studio, id, baseURL }) => {
   const name =
     baseURL && id ? (
-      <a href={`${baseURL}${id}`} target="_blank" rel="noreferrer">
+      <ExternalLink href={`${baseURL}${id}`}>
         {studio.name}
-      </a>
+      </ExternalLink>
     ) : (
       studio.name
     );
