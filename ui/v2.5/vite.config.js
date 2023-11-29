@@ -8,7 +8,7 @@ const nolegacy = process.env.VITE_APP_NOLEGACY === "true";
 const sourcemap = process.env.VITE_APP_SOURCEMAPS === "true";
 
 // https://vitejs.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
   let plugins = [
     react({
       babel: {
@@ -35,6 +35,9 @@ export default defineConfig(() => {
       outDir: "build",
       sourcemap: sourcemap,
       reportCompressedSize: false,
+    },
+    define: {
+      __DEV__: mode === "development",
     },
     optimizeDeps: {
       entries: "src/index.tsx",
