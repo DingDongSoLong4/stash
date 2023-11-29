@@ -13,6 +13,7 @@ export default defineConfig(() => {
     react({
       babel: {
         compact: true,
+        plugins: [["graphql-tag", { strip: true }]],
       },
     }),
     tsconfigPaths(),
