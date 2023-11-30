@@ -1,4 +1,4 @@
-declare module "intersection-observer";
+/// <reference types="vite/client" />
 
 declare module "*.md" {
   const src: string;
