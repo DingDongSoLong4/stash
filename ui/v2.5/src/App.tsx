@@ -12,7 +12,6 @@ import cloneDeep from "lodash-es/cloneDeep";
 import mergeWith from "lodash-es/mergeWith";
 import { ToastProvider } from "src/hooks/Toast";
 import { LightboxProvider } from "src/hooks/Lightbox/context";
-import { initPolyfills } from "src/polyfills";
 
 import locales, { registerCountry } from "src/locales";
 import {
@@ -78,8 +77,6 @@ const SceneDuplicateChecker = lazyComponent(
 );
 
 const appleRendering = isPlatformUniquelyRenderedByApple();
-
-initPolyfills();
 
 MousetrapPause(Mousetrap);
 

@@ -1,3 +1,5 @@
+import "src/polyfills";
+
 import { ApolloProvider } from "@apollo/client";
 import ReactDOM from "react-dom";
 import { BrowserRouter } from "react-router-dom";

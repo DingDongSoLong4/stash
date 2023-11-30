@@ -542,8 +542,7 @@ export const StudioSelect: React.FC<
   const intl = useIntl();
 
   const { configuration } = React.useContext(ConfigurationContext);
-  const defaultCreatable =
-    !configuration?.interface.disableDropdownCreate.studio ?? true;
+  const defaultCreatable = !configuration?.interface.disableDropdownCreate.studio;
 
   const exclude = useMemo(() => props.excludeIds ?? [], [props.excludeIds]);
   const studios = useMemo(
@@ -680,8 +679,7 @@ export const MovieSelect: React.FC<IFilterProps> = (props) => {
   const intl = useIntl();
 
   const { configuration } = React.useContext(ConfigurationContext);
-  const defaultCreatable =
-    !configuration?.interface.disableDropdownCreate.movie ?? true;
+  const defaultCreatable = !configuration?.interface.disableDropdownCreate.movie;
 
   const onCreate = async (name: string) => {
     const result = await createMovie({
@@ -736,8 +734,7 @@ export const TagSelect: React.FC<
     );
 
   const { configuration } = React.useContext(ConfigurationContext);
-  const defaultCreatable =
-    !configuration?.interface.disableDropdownCreate.tag ?? true;
+  const defaultCreatable = !configuration?.interface.disableDropdownCreate.tag;
 
   const exclude = useMemo(() => props.excludeIds ?? [], [props.excludeIds]);
   const tags = useMemo(

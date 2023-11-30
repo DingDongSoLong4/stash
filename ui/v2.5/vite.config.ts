@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => {
         plugins: [["graphql-tag", { strip: true }]],
       },
     }),
+    legacy({
+      modernPolyfills: ["es.string.replace-all"],
+      renderLegacyChunks: !nolegacy,
+    }),
     tsconfigPaths(),
     viteCompression({
       algorithm: "gzip",
@@ -25,14 +29,11 @@ export default defineConfig(({ mode }) => {
     }),
   ];
 
-  if (!nolegacy) {
-    plugins = [...plugins, legacy()];
-  }
-
   return {
     base: "",
     build: {
       outDir: "build",
+      // minify: "terser",
       sourcemap: sourcemap,
       reportCompressedSize: false,
     },
