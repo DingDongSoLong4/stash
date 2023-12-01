@@ -100,6 +100,7 @@ func main() {
 
 	go handleSignals(exit)
 	desktop.Start(exit, &ui.FaviconProvider)
+	logger.Error("exit")
 
 	exitCode = <-exit
 }

@@ -16,24 +16,33 @@ import (
 	"golang.org/x/term"
 )
 
+var isDesktop bool
+
+func init() {
+	isDesktop = getIsDesktop()
+}
+
 type FaviconProvider interface {
 	GetFavicon() []byte
 	GetFaviconPng() []byte
 }
 
-// Start starts the desktop icon process. It blocks until the process exits.
 // MUST be run on the main goroutine or will have no effect on macOS
 func Start(exit chan int, faviconProvider FaviconProvider) {
-	if IsDesktop() {
-		hideConsole()
-
-		c := config.GetInstance()
-		if !c.GetNoBrowser() {
-			openURLInBrowser("")
-		}
-		writeStashIcon(faviconProvider)
-		startSystray(exit, faviconProvider)
+	if !IsDesktop() {
+		return
 	}
+
+	hideConsole()
+
+	cfg := config.GetInstance()
+	if !cfg.GetNoBrowser() {
+		openURLInBrowser("")
+	}
+
+	writeStashIcon(faviconProvider)
+
+	startSystray(exit, faviconProvider)
 }
 
 // openURLInBrowser opens a browser to the Stash UI. Path can be an empty string for main page.
@@ -58,6 +67,10 @@ func SendNotification(title string, text string) {
 }
 
 func IsDesktop() bool {
+	return isDesktop
+}
+
+func getIsDesktop() bool {
 	if isDoubleClickLaunched() {
 		return true
 	}
@@ -73,15 +86,11 @@ func IsDesktop() bool {
 	if isService() {
 		return false
 	}
-	if IsServerDockerized() {
+	if isServerDockerized() {
 		return false
 	}
 
 	return true
-}
-
-func IsServerDockerized() bool {
-	return isServerDockerized()
 }
 
 // writeStashIcon writes the current stash logo to config/icon.png

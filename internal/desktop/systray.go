@@ -1,11 +1,11 @@
-//go:build (windows || darwin) && cgo
+//go:build cgo
 
 package desktop
 
 import (
 	"strings"
 
-	"github.com/kermieisinthehouse/systray"
+	"fyne.io/systray"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -45,6 +45,7 @@ func startSystray(exit chan int, faviconProvider FaviconProvider) {
 	}()
 
 	systray.Run(func() {
+		logger.Error("onReady")
 		systrayInitialize(exit, faviconProvider)
 	}, nil)
 }

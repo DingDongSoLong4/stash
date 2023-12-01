@@ -3,6 +3,7 @@ module github.com/stashapp/stash
 go 1.19
 
 require (
+	fyne.io/systray v1.10.0
 	github.com/99designs/gqlgen v0.17.2
 	github.com/WithoutPants/sortorder v0.0.0-20230616003020-921c9ef69552
 	github.com/Yamashou/gqlgenc v0.0.6
@@ -29,7 +30,6 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/json-iterator/go v1.1.12
 	github.com/kermieisinthehouse/gosx-notifier v0.1.2
-	github.com/kermieisinthehouse/systray v1.2.4
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/natefinch/pie v0.0.0-20170715172608-9a0d72014007
@@ -71,6 +71,7 @@ require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.3.0 // indirect
+	github.com/godbus/dbus/v5 v5.0.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -99,6 +100,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tevino/abool v1.2.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/urfave/cli/v2 v2.8.1 // indirect
