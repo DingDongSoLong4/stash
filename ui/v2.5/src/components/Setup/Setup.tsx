@@ -28,6 +28,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { releaseNotes } from "src/docs/en/ReleaseNotes";
 import { ExternalLink } from "../Shared/ExternalLink";
+import { usePathUtils } from "src/hooks/paths";
 
 export const Setup: React.FC = () => {
   const { configuration, loading: configLoading } =
@@ -57,30 +58,21 @@ export const Setup: React.FC = () => {
   const { data: systemStatus, loading: statusLoading } = useSystemStatus();
   const status = systemStatus?.systemStatus;
 
-  const windows = status?.os === "windows";
-  const pathSep = windows ? "\\" : "/";
-  const homeDir = windows ? "%USERPROFILE%" : "$HOME";
-  const pwd = windows ? "%CD%" : "$PWD";
-
-  function pathJoin(...paths: string[]) {
-    return paths.join(pathSep);
-  }
-
-  // simply returns everything preceding the last path separator
-  function pathDir(path: string) {
-    const lastSep = path.lastIndexOf(pathSep);
-    if (lastSep === -1) return "";
-    return path.slice(0, lastSep);
-  }
-
-  const workingDir = status?.workingDir ?? ".";
+  const {
+    PWD,
+    WORKING_DIR,
+    HOME,
+    HOME_DIR,
+    join: pathJoin,
+    dir: pathDir,
+  } = usePathUtils();
 
   // When running Stash.app, the working directory is (usually) set to /.
   // Assume that the user doesn't want to set up in / (it's usually mounted read-only anyway),
   // so in this situation disallow setting up in the working directory.
-  const macApp = status?.os === "darwin" && workingDir === "/";
+  const macApp = status?.os === "darwin" && WORKING_DIR === "/";
 
-  const fallbackStashDir = pathJoin(homeDir, ".stash");
+  const fallbackStashDir = pathJoin(HOME, ".stash");
   const fallbackConfigPath = pathJoin(fallbackStashDir, "config.yml");
 
   const overrideConfig = status?.configPath;
@@ -200,7 +192,7 @@ export const Setup: React.FC = () => {
   }
 
   function renderWelcome() {
-    const homeDirPath = pathJoin(status?.homeDir ?? homeDir, ".stash");
+    const homeDirPath = pathJoin(HOME_DIR, ".stash");
 
     return (
       <>
@@ -264,7 +256,7 @@ export const Setup: React.FC = () => {
                     id="setup.welcome.in_the_current_working_directory_disabled"
                     values={{
                       code: (chunks: string) => <code>{chunks}</code>,
-                      path: pwd,
+                      path: PWD,
                     }}
                   />
                   <br />
@@ -284,11 +276,11 @@ export const Setup: React.FC = () => {
                     id="setup.welcome.in_the_current_working_directory"
                     values={{
                       code: (chunks: string) => <code>{chunks}</code>,
-                      path: pwd,
+                      path: PWD,
                     }}
                   />
                   <br />
-                  <code>{workingDir}</code>
+                  <code>{WORKING_DIR}</code>
                 </>
               )}
             </Button>
@@ -630,7 +622,7 @@ export const Setup: React.FC = () => {
       cfgDir = pathDir(overrideConfig);
       config = overrideConfig;
     } else {
-      cfgDir = setupInWorkDir ? pwd : fallbackStashDir;
+      cfgDir = setupInWorkDir ? PWD : fallbackStashDir;
       config = pathJoin(cfgDir, "config.yml");
     }
 
