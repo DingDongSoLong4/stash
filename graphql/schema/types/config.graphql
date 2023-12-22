@@ -540,7 +540,7 @@ type ConfigResult {
 
 "Directory structure of a path"
 type Directory {
-  path: String!
+  base: String!
   parent: String
   directories: [String!]!
 }

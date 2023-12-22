@@ -2380,7 +2380,10 @@ export const mutateMigrateBlobs = (input: GQL.MigrateBlobsInput) =>
 /// Misc
 
 export const useDirectory = (path?: string) =>
-  GQL.useDirectoryQuery({ variables: { path } });
+  GQL.useDirectoryQuery({
+    variables: { path },
+    skip: path === undefined,
+  });
 
 export const queryParseSceneFilenames = (
   filter: GQL.FindFilterType,

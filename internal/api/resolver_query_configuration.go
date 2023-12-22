@@ -3,11 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/stashapp/stash/internal/manager/config"
-	"github.com/stashapp/stash/pkg/fsutil"
 	"github.com/stashapp/stash/pkg/models"
 	"github.com/stashapp/stash/pkg/scraper/stashbox"
 	"golang.org/x/text/collate"
@@ -18,45 +16,19 @@ func (r *queryResolver) Configuration(ctx context.Context) (*ConfigResult, error
 }
 
 func (r *queryResolver) Directory(ctx context.Context, path, locale *string) (*Directory, error) {
-
-	directory := &Directory{}
-	var err error
-
 	col := newCollator(locale, collate.IgnoreCase, collate.Numeric)
 
 	var dirPath = ""
 	if path != nil {
 		dirPath = *path
 	}
-	currentDir := getDir(dirPath)
-	directories, err := listDir(col, currentDir)
-	if err != nil {
-		return directory, err
-	}
 
-	directory.Path = currentDir
-	directory.Parent = getParent(currentDir)
-	directory.Directories = directories
-
-	return directory, err
-}
-
-func getDir(path string) string {
-	if path == "" {
-		path = fsutil.GetHomeDirectory()
-	}
-
-	return path
-}
-
-func getParent(path string) *string {
-	isRoot := path == "/"
-	if isRoot {
-		return nil
-	} else {
-		parentPath := filepath.Clean(path + "/..")
-		return &parentPath
-	}
+	directories, searchDir, err := listDir(col, dirPath)
+	return &Directory{
+		Base:        searchDir,
+		Parent:      getParentDir(searchDir),
+		Directories: directories,
+	}, err
 }
 
 func makeConfigResult() *ConfigResult {

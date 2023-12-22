@@ -1,7 +1,6 @@
 package api
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,55 +8,61 @@ import (
 	"golang.org/x/text/collate"
 )
 
-type dirLister []fs.DirEntry
+// listDir gets a list of all the directories contained in the directory specified
+// by everything before the final slash in path. Everything after the final slash
+// will be used to filter the results.
+func listDir(col *collate.Collator, path string) ([]string, string, error) {
+	// filter by everything after the final slash
+	_, filterName := filepath.Split(path)
+	// don't filter by "." or "..", and leave them in dir
+	if filterName == "." || filterName == ".." {
+		filterName = ""
+	}
 
-func (s dirLister) Len() int {
-	return len(s)
-}
+	// remove the filter suffix from path
+	dir := strings.TrimSuffix(path, filterName)
 
-func (s dirLister) Swap(i, j int) {
-	s[j], s[i] = s[i], s[j]
-}
-
-func (s dirLister) Bytes(i int) []byte {
-	return []byte(s[i].Name())
-}
-
-// listDir will return the contents of a given directory path as a string slice
-func listDir(col *collate.Collator, path string) ([]string, error) {
-	var dirPaths []string
-	dirPath := path
-
-	files, err := os.ReadDir(path)
+	dir, err := filepath.Abs(dir)
 	if err != nil {
-		dirPath = filepath.Dir(path)
-		dirFiles, err := os.ReadDir(dirPath)
-		if err != nil {
-			return dirPaths, err
+		return nil, "", err
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, "", err
+	}
+
+	filterName = strings.ToLower(filterName)
+
+	// filter contents by last path fragment
+	// and exclude non-directories
+	var dirs []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
 		}
 
-		// Filter dir contents by last path fragment if the dir isn't an exact match
-		base := strings.ToLower(filepath.Base(path))
-		if base != "." && base != string(filepath.Separator) {
-			for _, file := range dirFiles {
-				if strings.HasPrefix(strings.ToLower(file.Name()), base) {
-					files = append(files, file)
-				}
-			}
-		} else {
-			files = dirFiles
+		fileName := entry.Name()
+		if strings.HasPrefix(strings.ToLower(fileName), filterName) {
+			dirs = append(dirs, fileName)
 		}
 	}
 
 	if col != nil {
-		col.Sort(dirLister(files))
+		col.SortStrings(dirs)
 	}
 
-	for _, file := range files {
-		if !file.IsDir() {
-			continue
-		}
-		dirPaths = append(dirPaths, filepath.Join(dirPath, file.Name()))
+	return dirs, dir, nil
+}
+
+func getParentDir(path string) *string {
+	path = filepath.Clean(path)
+
+	// if path ends in a slash after clean, then path is a root dir
+	if path[len(path)-1] == filepath.Separator {
+		return nil
 	}
-	return dirPaths, nil
+
+	dir := filepath.Dir(path)
+	return &dir
 }

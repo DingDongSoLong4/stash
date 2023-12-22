@@ -3,13 +3,10 @@ import { Form } from "react-bootstrap";
 import { FolderSelect } from "src/components/Shared/FolderSelect/FolderSelect";
 import { CriterionModifier } from "src/core/generated-graphql";
 import { ConfigurationContext } from "src/hooks/Config";
-import {
-  Criterion,
-  CriterionValue,
-} from "../../../models/list-filter/criteria/criterion";
+import { PathCriterion } from "src/models/list-filter/criteria/path";
 
 interface IInputFilterProps {
-  criterion: Criterion<CriterionValue>;
+  criterion: PathCriterion;
   onValueChanged: (value: string) => void;
 }
 
@@ -32,11 +29,11 @@ export const PathFilter: React.FC<IInputFilterProps> = ({
           className="btn-secondary"
           type={criterion.criterionOption.inputType}
           onChange={(v) => onValueChanged(v.target.value)}
-          value={criterion.value ? criterion.value.toString() : ""}
+          value={criterion.value}
         />
       ) : (
         <FolderSelect
-          currentDirectory={criterion.value ? criterion.value.toString() : ""}
+          currentDirectory={criterion.value}
           onChangeDirectory={onValueChanged}
           collapsible
           quotePath
