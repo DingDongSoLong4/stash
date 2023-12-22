@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { StashId } from "src/core/generated-graphql";
 import { ConfigurationContext } from "src/hooks/Config";
-import { getStashboxBase } from "src/utils/stashbox";
+import { makeStashboxUrl } from "src/utils/stashbox";
 import { ExternalLink } from "./ExternalLink";
 
 export type LinkType = "performers" | "scenes" | "studios";
@@ -11,23 +11,19 @@ export const StashIDPill: React.FC<{
   linkType: LinkType;
 }> = ({ stashID, linkType }) => {
   const { configuration } = React.useContext(ConfigurationContext);
+  const stashBoxes = configuration?.general.stashBoxes;
 
   const { endpoint, stash_id } = stashID;
 
   const endpointName = useMemo(() => {
-    return (
-      configuration?.general.stashBoxes.find((sb) => sb.endpoint === endpoint)
-        ?.name ?? endpoint
-    );
-  }, [configuration?.general.stashBoxes, endpoint]);
-
-  const base = getStashboxBase(endpoint);
-  const link = `${base}${linkType}/${stash_id}`;
+    const box = stashBoxes?.find((sb) => sb.endpoint === endpoint);
+    return box?.name ?? endpoint;
+  }, [stashBoxes, endpoint]);
 
   return (
     <span className="stash-id-pill" data-endpoint={endpointName}>
-      <span>{endpointName}</span>
-      <ExternalLink href={link}>
+      {endpointName && <span>{endpointName}</span>}
+      <ExternalLink href={makeStashboxUrl(endpoint, linkType, stash_id)}>
         {stash_id}
       </ExternalLink>
     </span>

@@ -19,6 +19,7 @@ import {
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { ExternalLink } from "../Shared/ExternalLink";
+import { makeStashboxUrl } from "src/utils/stashbox";
 
 interface IPerformerModalProps {
   performer: GQL.ScrapedScenePerformerDataFragment;
@@ -172,12 +173,12 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
   }
 
   function maybeRenderStashBoxLink() {
-    const base = endpoint?.match(/https?:\/\/.*?\//)?.[0];
-    if (!base) return;
+    const stashID = performer.remote_site_id;
+    if (!endpoint || !stashID) return;
 
     return (
       <h6 className="mt-2">
-        <ExternalLink href={`${base}performers/${performer.remote_site_id}`}>
+        <ExternalLink href={makeStashboxUrl(endpoint, "performers", stashID)}>
           <FormattedMessage id="stashbox.source" />
           <Icon icon={faExternalLinkAlt} className="ml-2" />
         </ExternalLink>

@@ -16,6 +16,7 @@ import { Button, Form } from "react-bootstrap";
 import { TruncatedText } from "src/components/Shared/TruncatedText";
 import { excludeFields } from "src/utils/data";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
+import { makeStashboxUrl } from "src/utils/stashbox";
 
 interface IStudioDetailsProps {
   studio: GQL.ScrapedSceneStudioDataFragment;
@@ -243,12 +244,6 @@ const StudioModal: React.FC<IStudioModalProps> = ({
     handleStudioCreate(studioData, parentData);
   }
 
-  const base = endpoint?.match(/https?:\/\/.*?\//)?.[0];
-  const link = base ? `${base}studios/${studio.remote_site_id}` : undefined;
-  const parentLink = base
-    ? `${base}studios/${studio.parent?.remote_site_id}`
-    : undefined;
-
   function maybeRenderParentStudio() {
     // There is no parent studio or it already has a Stash ID
     if (!studio.parent || !sendParentStudio) {
@@ -277,16 +272,26 @@ const StudioModal: React.FC<IStudioModalProps> = ({
       return;
     }
 
+    const stashID = studio.parent.remote_site_id;
+    const link = stashID
+      ? makeStashboxUrl(endpoint, "studios", stashID)
+      : undefined;
+
     return (
       <StudioDetails
         studio={studio.parent}
         excluded={parentExcluded}
         toggleField={(field) => toggleParentField(field)}
-        link={parentLink}
+        link={link}
         isNew
       />
     );
   }
+
+  const stashID = studio.remote_site_id;
+  const link = stashID
+    ? makeStashboxUrl(endpoint, "studios", stashID)
+    : undefined;
 
   return (
     <ModalComponent

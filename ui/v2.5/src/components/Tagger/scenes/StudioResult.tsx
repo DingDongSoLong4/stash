@@ -10,26 +10,33 @@ import * as GQL from "src/core/generated-graphql";
 
 import { OptionalField } from "../IncludeButton";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
-import { getStashboxBase } from "src/utils/stashbox";
+import { makeStashboxUrl } from "src/utils/stashbox";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
+import { Link } from "react-router-dom";
 
 interface IStudioName {
   studio: GQL.ScrapedStudio | GQL.SlimStudioDataFragment;
-  id: string | undefined | null;
-  baseURL: string | undefined;
+  id?: string | null;
+  endpoint?: string;
 }
 
-const StudioName: React.FC<IStudioName> = ({ studio, id, baseURL }) => {
-  const name =
-    baseURL && id ? (
-      <ExternalLink href={`${baseURL}${id}`}>
-        {studio.name}
-      </ExternalLink>
-    ) : (
-      studio.name
-    );
+const StudioName: React.FC<IStudioName> = ({ studio, id, endpoint }) => {
+  function renderName() {
+    if (id) {
+      if (endpoint === undefined) {
+        return <Link to={`/studios/${id}`}>{studio.name}</Link>;
+      } else {
+        const url = makeStashboxUrl(endpoint, "studios", id);
+        if (url) {
+          return <ExternalLink href={url}>{studio.name}</ExternalLink>;
+        }
+      }
+    }
 
-  return <span>{name}</span>;
+    return studio.name;
+  }
+
+  return <span>{renderName()}</span>;
 };
 
 interface IStudioResultProps {
@@ -59,11 +66,6 @@ const StudioResult: React.FC<IStudioResultProps> = ({
     (stashID) => stashID.endpoint === endpoint && stashID.stash_id
   );
 
-  const stashboxStudioPrefix = endpoint
-    ? `${getStashboxBase(endpoint)}studios/`
-    : undefined;
-  const studioURLPrefix = "/studios/";
-
   const handleSelect = (studios: SelectObject[]) => {
     if (studios.length) {
       setSelectedID(studios[0].id);
@@ -87,7 +89,7 @@ const StudioResult: React.FC<IStudioResultProps> = ({
             <StudioName
               studio={studio}
               id={studio.remote_site_id}
-              baseURL={stashboxStudioPrefix}
+              endpoint={endpoint ?? ""}
             />
           </b>
         </div>
@@ -106,7 +108,6 @@ const StudioResult: React.FC<IStudioResultProps> = ({
                 <StudioName
                   studio={matchedStudio}
                   id={matchedStudio.id}
-                  baseURL={studioURLPrefix}
                 />
               </b>
             </div>
@@ -141,7 +142,7 @@ const StudioResult: React.FC<IStudioResultProps> = ({
           <StudioName
             studio={studio}
             id={studio.remote_site_id}
-            baseURL={stashboxStudioPrefix}
+            endpoint={endpoint ?? ""}
           />
         </b>
       </div>

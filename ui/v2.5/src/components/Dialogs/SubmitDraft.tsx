@@ -6,7 +6,7 @@ import {
   mutateSubmitStashBoxSceneDraft,
 } from "src/core/StashService";
 import { ModalComponent } from "src/components/Shared/Modal";
-import { getStashboxBase } from "src/utils/stashbox";
+import { makeStashboxUrl } from "src/utils/stashbox";
 import { FormattedMessage, useIntl } from "react-intl";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { ExternalLink } from "../Shared/ExternalLink";
@@ -74,12 +74,11 @@ export const SubmitStashBoxDraft: React.FC<IProps> = ({
       setLoading(true);
       const responseId = await doSubmit();
 
-      const stashboxBase = getStashboxBase(selectedBox.endpoint);
       if (responseId) {
-        setReviewUrl(`${stashboxBase}drafts/${responseId}`);
+        setReviewUrl(makeStashboxUrl(selectedBox.endpoint, "drafts", responseId));
       } else {
         // if the mutation returned a null id but didn't error, then just link to the drafts page
-        setReviewUrl(`${stashboxBase}drafts`);
+        setReviewUrl(makeStashboxUrl(selectedBox.endpoint, "drafts"));
       }
     } catch (e) {
       if (e instanceof Error && e.message) {

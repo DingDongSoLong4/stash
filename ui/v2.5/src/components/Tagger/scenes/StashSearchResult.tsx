@@ -23,7 +23,7 @@ import PerformerResult from "./PerformerResult";
 import StudioResult from "./StudioResult";
 import { useInitialState } from "src/hooks/state";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { getStashboxBase } from "src/utils/stashbox";
+import { makeStashboxUrl } from "src/utils/stashbox";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
 
 const getDurationStatus = (
@@ -302,15 +302,6 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
       doResolveScene();
     }
   }, [isActive, loading, stashScene, index, resolveScene, scene]);
-
-  const stashBoxBaseURL = currentSource?.stashboxEndpoint
-    ? getStashboxBase(currentSource.stashboxEndpoint)
-    : undefined;
-  const stashBoxURL = useMemo(() => {
-    if (stashBoxBaseURL) {
-      return `${stashBoxBaseURL}scenes/${scene.remote_site_id}`;
-    }
-  }, [scene, stashBoxBaseURL]);
 
   const setExcludedField = (name: string, value: boolean) =>
     setExcludedFields({
@@ -613,16 +604,17 @@ const StashSearchResult: React.FC<IStashSearchResultProps> = ({
   };
 
   const maybeRenderStashBoxID = () => {
-    if (scene.remote_site_id && stashBoxURL) {
+    const endpoint = currentSource?.stashboxEndpoint;
+    const stashID = scene.remote_site_id;
+    if (endpoint && stashID) {
+      const url = makeStashboxUrl(endpoint, "scenes", stashID);
       return (
         <div className="scene-details">
           <OptionalField
             exclude={excludedFields[fields.stash_ids]}
             setExclude={(v) => setExcludedField(fields.stash_ids, v)}
           >
-            <ExternalLink href={stashBoxURL}>
-              {scene.remote_site_id}
-            </ExternalLink>
+            <ExternalLink href={url}>{stashID}</ExternalLink>
           </OptionalField>
         </div>
       );

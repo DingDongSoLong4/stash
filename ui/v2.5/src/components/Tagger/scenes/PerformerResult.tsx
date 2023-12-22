@@ -11,30 +11,39 @@ import {
   Performer,
   PerformerSelect,
 } from "src/components/Performers/PerformerSelect";
-import { getStashboxBase } from "src/utils/stashbox";
+import { makeStashboxUrl } from "src/utils/stashbox";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
+import { Link } from "react-router-dom";
 
 interface IPerformerName {
   performer: GQL.ScrapedPerformer | Performer;
-  id: string | undefined | null;
-  baseURL: string | undefined;
+  id?: string | null;
+  endpoint?: string;
 }
 
 const PerformerName: React.FC<IPerformerName> = ({
   performer,
   id,
-  baseURL,
+  endpoint,
 }) => {
-  const name =
-    baseURL && id ? (
-      <ExternalLink href={`${baseURL}${id}`}>{performer.name}</ExternalLink>
-    ) : (
-      performer.name
-    );
+  function renderName() {
+    if (id) {
+      if (endpoint === undefined) {
+        return <Link to={`/performers/${id}`}>{performer.name}</Link>;
+      } else {
+        const url = makeStashboxUrl(endpoint, "performers", id);
+        if (url) {
+          return <ExternalLink href={url}>{performer.name}</ExternalLink>;
+        }
+      }
+    }
+
+    return performer.name;
+  }
 
   return (
     <>
-      <span>{name}</span>
+      <span>{renderName()}</span>
       {performer.disambiguation && (
         <span className="performer-disambiguation">
           {` (${performer.disambiguation})`}
@@ -76,11 +85,6 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
 
   const [selectedPerformer, setSelectedPerformer] = useState<Performer>();
 
-  const stashboxPerformerPrefix = endpoint
-    ? `${getStashboxBase(endpoint)}performers/`
-    : undefined;
-  const performerURLPrefix = "/performers/";
-
   function selectPerformer(selected: Performer | undefined) {
     setSelectedPerformer(selected);
     setSelectedID(selected?.id);
@@ -118,7 +122,7 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
             <PerformerName
               performer={performer}
               id={performer.remote_site_id}
-              baseURL={stashboxPerformerPrefix}
+              endpoint={endpoint ?? ""}
             />
           </b>
         </div>
@@ -137,7 +141,6 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
                 <PerformerName
                   performer={matchedPerformer}
                   id={matchedPerformer.id}
-                  baseURL={performerURLPrefix}
                 />
               </b>
             </div>
@@ -172,7 +175,7 @@ const PerformerResult: React.FC<IPerformerResultProps> = ({
           <PerformerName
             performer={performer}
             id={performer.remote_site_id}
-            baseURL={stashboxPerformerPrefix}
+            endpoint={endpoint ?? ""}
           />
         </b>
       </div>

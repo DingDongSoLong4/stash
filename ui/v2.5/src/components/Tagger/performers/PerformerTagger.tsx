@@ -25,7 +25,7 @@ import { LOCAL_FORAGE_KEY, ITaggerConfig, initialConfig } from "../constants";
 import PerformerModal from "../PerformerModal";
 import { useUpdatePerformer } from "../queries";
 import { faStar, faTags } from "@fortawesome/free-solid-svg-icons";
-import { mergeStashIDs } from "src/utils/stashbox";
+import { makeStashboxUrl, mergeStashIDs } from "src/utils/stashbox";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
 
 type JobFragment = Pick<
@@ -465,21 +465,19 @@ const PerformerTaggerList: React.FC<IPerformerTaggerListProps> = ({
 
       let subContent;
       if (stashID !== undefined) {
-        const base = stashID.endpoint.match(/https?:\/\/.*?\//)?.[0];
-        const link = base ? (
-          <ExternalLink
-            className="small d-block"
-            href={`${base}performers/${stashID.stash_id}`}
-          >
-            {stashID.stash_id}
+        const { endpoint, stash_id } = stashID;
+
+        const url = makeStashboxUrl(endpoint, "performers", stash_id);
+        const link = url ? (
+          <ExternalLink className="small d-block" href={url}>
+            {stash_id}
           </ExternalLink>
         ) : (
-          <div className="small">{stashID.stash_id}</div>
+          <div className="small">{stash_id}</div>
         );
 
         const endpointIndex =
-          stashBoxes?.findIndex((box) => box.endpoint === stashID.endpoint) ??
-          -1;
+          stashBoxes?.findIndex((box) => box.endpoint === endpoint) ?? -1;
 
         subContent = (
           <div key={performer.id}>
@@ -489,11 +487,11 @@ const PerformerTaggerList: React.FC<IPerformerTaggerListProps> = ({
                 {endpointIndex !== -1 && (
                   <Button
                     onClick={() =>
-                      doBoxUpdate(performer.id, stashID.stash_id, endpointIndex)
+                      doBoxUpdate(performer.id, stash_id, endpointIndex)
                     }
                     disabled={!!loadingUpdate}
                   >
-                    {loadingUpdate === stashID.stash_id ? (
+                    {loadingUpdate === stash_id ? (
                       <LoadingIndicator inline small message="" />
                     ) : (
                       <FormattedMessage id="actions.refresh" />

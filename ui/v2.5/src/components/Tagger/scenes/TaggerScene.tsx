@@ -19,6 +19,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { objectPath, objectTitle } from "src/core/files";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
+import { makeStashboxUrl, stashIDKey } from "src/utils/stashbox";
 
 interface ITaggerSceneDetails {
   scene: GQL.SlimSceneDataFragment;
@@ -173,20 +174,22 @@ export const TaggerScene: React.FC<PropsWithChildren<ITaggerScene>> = ({
   function maybeRenderStashLinks() {
     if (scene.stash_ids.length > 0) {
       const stashLinks = scene.stash_ids.map((stashID) => {
-        const base = stashID.endpoint.match(/https?:\/\/.*?\//)?.[0];
-        const link = base ? (
+        const { endpoint, stash_id } = stashID;
+
+        const linkUrl = makeStashboxUrl(endpoint, "scenes", stash_id);
+        return linkUrl ? (
           <ExternalLink
-            key={`${stashID.endpoint}${stashID.stash_id}`}
+            key={stashIDKey(stashID)}
             className="small d-block"
-            href={`${base}scenes/${stashID.stash_id}`}
+            href={linkUrl}
           >
-            {stashID.stash_id}
+            {stash_id}
           </ExternalLink>
         ) : (
-          <div className="small">{stashID.stash_id}</div>
+          <div key={stashIDKey(stashID)} className="small">
+            {stash_id}
+          </div>
         );
-
-        return link;
       });
       return <div className="mt-2 sub-content text-right">{stashLinks}</div>;
     }

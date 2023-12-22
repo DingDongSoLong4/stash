@@ -28,6 +28,7 @@ import { useUpdateStudio } from "../queries";
 import { apolloError } from "src/utils";
 import { faStar, faTags } from "@fortawesome/free-solid-svg-icons";
 import { ExternalLink } from "src/components/Shared/ExternalLink";
+import { makeStashboxUrl } from "src/utils/stashbox";
 
 type JobFragment = Pick<
   GQL.Job,
@@ -514,21 +515,19 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
 
       let subContent;
       if (stashID !== undefined) {
-        const base = stashID.endpoint.match(/https?:\/\/.*?\//)?.[0];
-        const link = base ? (
-          <ExternalLink
-            className="small d-block"
-            href={`${base}studios/${stashID.stash_id}`}
-          >
-            {stashID.stash_id}
+        const { endpoint, stash_id } = stashID;
+
+        const url = makeStashboxUrl(endpoint, "studios", stash_id);
+        const link = url ? (
+          <ExternalLink className="small d-block" href={url}>
+            {stash_id}
           </ExternalLink>
         ) : (
-          <div className="small">{stashID.stash_id}</div>
+          <div className="small">{stash_id}</div>
         );
 
         const endpointIndex =
-          stashBoxes?.findIndex((box) => box.endpoint === stashID.endpoint) ??
-          -1;
+          stashBoxes?.findIndex((box) => box.endpoint === endpoint) ?? -1;
 
         subContent = (
           <div key={studio.id}>
@@ -538,11 +537,11 @@ const StudioTaggerList: React.FC<IStudioTaggerListProps> = ({
                 {endpointIndex !== -1 && (
                   <Button
                     onClick={() =>
-                      doBoxUpdate(studio.id, stashID.stash_id, endpointIndex)
+                      doBoxUpdate(studio.id, stash_id, endpointIndex)
                     }
                     disabled={!!loadingUpdate}
                   >
-                    {loadingUpdate === stashID.stash_id ? (
+                    {loadingUpdate === stash_id ? (
                       <LoadingIndicator inline small message="" />
                     ) : (
                       <FormattedMessage id="actions.refresh" />
