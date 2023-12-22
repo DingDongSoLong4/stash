@@ -35,30 +35,29 @@
 
     .LoadingIndicator-message {
       font-size: 1rem;
-      margin-bottom: 0;
       margin-top: 0;
+    }
+  }
+
+  &.inline {
+    display: inline;
+    flex-direction: row;
+
+    .spinner-border {
+      margin: 0;
+    }
+
+    .LoadingIndicator-message {
+      display: inline;
+      margin: 0;
+      margin-left: 0.5rem;
     }
   }
 }
 
-.btn .LoadingIndicator {
-  display: inline;
-  height: auto;
-
-  .spinner-border {
-    border-width: 0.2em;
-    height: 1rem;
-    margin: 0 0.1rem;
-    width: 1rem;
-  }
-
-  &-message {
-    display: inline;
-    font-size: inherit;
-    font-weight: inherit;
-    margin: 0;
-    margin-left: 0.5rem;
-  }
+.btn .LoadingIndicator-message {
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .details-edit {
@@ -117,7 +116,7 @@
 }
 
 .folder-item {
-  button {
+  .btn {
     padding: 0;
   }
 }
@@ -127,19 +126,23 @@
   margin: 0;
   max-height: 30vw;
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1rem;
   padding-top: 1rem;
 
   &-item {
+    padding-right: 0.3rem;
     white-space: nowrap;
+    width: max-content;
 
     .btn {
       border: none;
       color: white;
       font-weight: 400;
+      min-width: 100%;
       padding: 0;
+      padding-right: 0.5rem;
       text-align: left;
-      width: 100%;
     }
 
     &:last-child .btn span::before {
@@ -149,8 +152,12 @@
     .btn span::before {
       content: "├ \1F4C1";
       display: inline-block;
-      padding-right: 1rem;
+      padding-right: 0.8rem;
       transform: scale(1.5);
+    }
+
+    &.top-level .btn span::before {
+      content: " \1F4C1";
     }
   }
 
@@ -172,19 +179,19 @@
     padding-right: 15px;
   }
 
-  .image-selection-parent {
-    min-width: 100%;
-  }
-
   .image-selection {
+    min-width: 100%;
+
     .select-buttons {
       align-items: center;
       display: flex;
       justify-content: space-between;
-      margin-top: 1rem;
+      margin-top: 10px;
 
       .image-index {
         flex-grow: 1;
+        margin-bottom: 0.25rem;
+        margin-top: 0.25rem;
         text-align: center;
       }
     }

@@ -43,12 +43,28 @@ export const OperationButton: React.FC<IOperationButton> = (props) => {
     }
   }
 
+  function renderChildren() {
+    if (loading) {
+      if (hideChildrenWhenLoading) {
+        return <LoadingIndicator inline small message="" />;
+      } else {
+        return (
+          <>
+            <span className="mr-2">
+              <LoadingIndicator inline small message="" />
+            </span>
+            {props.children}
+          </>
+        );
+      }
+    }
+
+    return props.children;
+  }
+
   return (
     <Button onClick={handleClick} {...withoutExtras}>
-      {loading && (
-        <LoadingIndicator message="" />
-      )}
-      {(!loading || !hideChildrenWhenLoading) && props.children}
+      {renderChildren()}
     </Button>
   );
 };

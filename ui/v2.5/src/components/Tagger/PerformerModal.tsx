@@ -142,12 +142,15 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
             onLoad={() => handleLoad(imageIndex)}
             onError={handleError}
           />
-          {imageState === "loading" && (
-            <LoadingIndicator message="Loading image..." />
-          )}
+          {imageState === "loading" && <LoadingIndicator />}
           {imageState === "error" && (
             <div className="h-100 d-flex justify-content-center align-items-center">
-              <b>Error loading image.</b>
+              <b>
+                <FormattedMessage
+                  id="errors.loading_type"
+                  values={{ type: "image" }}
+                />
+              </b>
             </div>
           )}
         </div>

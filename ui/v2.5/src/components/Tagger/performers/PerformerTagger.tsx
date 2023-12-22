@@ -494,7 +494,7 @@ const PerformerTaggerList: React.FC<IPerformerTaggerListProps> = ({
                     disabled={!!loadingUpdate}
                   >
                     {loadingUpdate === stashID.stash_id ? (
-                      <LoadingIndicator message="" />
+                      <LoadingIndicator inline small message="" />
                     ) : (
                       <FormattedMessage id="actions.refresh" />
                     )}

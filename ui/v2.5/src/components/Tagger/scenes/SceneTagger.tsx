@@ -347,7 +347,7 @@ export const Tagger: React.FC<ITaggerProps> = ({ scenes, queue }) => {
             stopMultiScrape();
           }}
         >
-          <LoadingIndicator message="" />
+          <LoadingIndicator inline small message="" />
           <span className="ml-2">
             {intl.formatMessage({ id: "actions.stop" })}
           </span>
