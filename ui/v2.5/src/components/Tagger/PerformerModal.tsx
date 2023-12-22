@@ -20,6 +20,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { ExternalLink } from "../Shared/ExternalLink";
 import { makeStashboxUrl } from "src/utils/stashbox";
+import { excludeFields } from "src/utils/data";
 
 interface IPerformerModalProps {
   performer: GQL.ScrapedScenePerformerDataFragment;
@@ -160,9 +161,15 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
             <Icon icon={faArrowLeft} />
           </Button>
           <h5 className="flex-grow-1">
-            Select performer image
+            <FormattedMessage id="performer_tagger.select_performer_image" />
             <br />
-            {imageIndex + 1} of {images.length}
+            <FormattedMessage
+              id="index_of_total"
+              values={{
+                index: imageIndex + 1,
+                total: images.length,
+              }}
+            />
           </h5>
           <Button onClick={setNext} disabled={images.length === 1}>
             <Icon icon={faArrowRight} />
@@ -191,9 +198,7 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
       throw new Error("performer name must set");
     }
 
-    const performerData: GQL.PerformerCreateInput & {
-      [index: string]: unknown;
-    } = {
+    const performerData: GQL.PerformerCreateInput = {
       name: performer.name ?? "",
       disambiguation: performer.disambiguation ?? "",
       alias_list:
@@ -203,7 +208,7 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
       ethnicity: performer.ethnicity,
       eye_color: performer.eye_color,
       country: performer.country,
-      height_cm: Number.parseFloat(performer.height ?? "") ?? undefined,
+      height_cm: Number.parseFloat(performer.height ?? ""),
       measurements: performer.measurements,
       fake_tits: performer.fake_tits,
       career_length: performer.career_length,
@@ -216,15 +221,15 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
       details: performer.details,
       death_date: performer.death_date,
       hair_color: performer.hair_color,
-      weight: Number.parseFloat(performer.weight ?? "") ?? undefined,
+      weight: Number.parseFloat(performer.weight ?? ""),
     };
 
     if (Number.isNaN(performerData.weight ?? 0)) {
       performerData.weight = undefined;
     }
 
-    if (Number.isNaN(performerData.height ?? 0)) {
-      performerData.height = undefined;
+    if (Number.isNaN(performerData.height_cm ?? 0)) {
+      performerData.height_cm = undefined;
     }
 
     if (performer.tags) {
@@ -245,11 +250,7 @@ const PerformerModal: React.FC<IPerformerModalProps> = ({
     }
 
     // handle exclusions
-    Object.keys(performerData).forEach((k) => {
-      if (excluded[k] || !performerData[k]) {
-        performerData[k] = undefined;
-      }
-    });
+    excludeFields(performerData, excluded);
 
     onSave(performerData);
   }

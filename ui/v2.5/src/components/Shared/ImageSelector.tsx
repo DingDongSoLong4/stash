@@ -72,31 +72,29 @@ export const ImageSelector: React.FC<IImageSelectorProps> = ({
         </div>
       )}
 
-      <div className="performer-image">
-        {/* hidden image to handle loading */}
-        <img
-          src={images[imageIndex]}
-          className="d-none"
-          onLoad={() => handleLoad(imageIndex)}
-          onError={handleError}
-        />
-        <img
-          src={currentImage}
-          className={cx(imageClassName, { loading: imageState === "loading" })}
-          alt=""
-        />
-        {imageState === "loading" && <LoadingIndicator />}
-        {imageState === "error" && (
-          <div className="h-100 d-flex justify-content-center align-items-center">
-            <b>
-              <FormattedMessage
-                id="errors.loading_type"
-                values={{ type: "image" }}
-              />
-            </b>
-          </div>
-        )}
-      </div>
+      {/* hidden image to handle loading */}
+      <img
+        src={images[imageIndex]}
+        className="d-none"
+        onLoad={() => handleLoad(imageIndex)}
+        onError={handleError}
+      />
+      <img
+        src={currentImage}
+        className={cx(imageClassName, { loading: imageState === "loading" })}
+        alt=""
+      />
+      {imageState === "loading" && <LoadingIndicator />}
+      {imageState === "error" && (
+        <div className="h-100 d-flex justify-content-center align-items-center">
+          <b>
+            <FormattedMessage
+              id="errors.loading_type"
+              values={{ type: "image" }}
+            />
+          </b>
+        </div>
+      )}
     </div>
   );
 };

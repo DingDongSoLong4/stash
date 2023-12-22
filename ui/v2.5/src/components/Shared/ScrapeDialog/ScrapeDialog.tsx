@@ -402,14 +402,12 @@ export const ScrapedImagesRow: React.FC<IScrapedImagesRowProps> = (props) => {
         />
       )}
       renderNewField={() => (
-        <div className="image-selection-parent">
-          <ImageSelector
-            imageClassName={props.className}
-            images={props.images}
-            imageIndex={imageIndex}
-            setImageIndex={onSetImageIndex}
-          />
-        </div>
+        <ImageSelector
+          imageClassName={props.className}
+          images={props.images}
+          imageIndex={imageIndex}
+          setImageIndex={onSetImageIndex}
+        />
       )}
       onChange={props.onChange}
     />

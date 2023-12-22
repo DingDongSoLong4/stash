@@ -1155,6 +1155,7 @@
     "query_all_performers_in_the_database": "All performers in the database",
     "refresh_tagged_performers": "Refresh tagged performers",
     "refreshing_will_update_the_data": "Refreshing will update the data of any tagged performers from the stash-box instance.",
+    "select_performer_image": "Select performer image",
     "status_tagging_job_queued": "Status: Tagging job queued",
     "status_tagging_performers": "Status: Tagging performers",
     "tag_status": "Tag Status",
