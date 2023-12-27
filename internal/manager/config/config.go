@@ -392,12 +392,6 @@ func (i *Config) Write() error {
 	return i.main.WriteConfig()
 }
 
-// FileEnvSet returns true if the configuration file environment parameter
-// is set.
-func FileEnvSet() bool {
-	return os.Getenv("STASH_CONFIG_FILE") != ""
-}
-
 // GetConfigFile returns the full path to the used configuration file.
 func (i *Config) GetConfigFile() string {
 	i.RLock()
@@ -409,12 +403,6 @@ func (i *Config) GetConfigFile() string {
 // configuration file.
 func (i *Config) GetConfigPath() string {
 	return filepath.Dir(i.GetConfigFile())
-}
-
-// GetDefaultDatabaseFilePath returns the default database filename,
-// which is located in the same directory as the config file.
-func (i *Config) GetDefaultDatabaseFilePath() string {
-	return filepath.Join(i.GetConfigPath(), "stash-go.sqlite")
 }
 
 // viper returns the viper instance that should be used to get the provided
@@ -602,13 +590,6 @@ func (i *Config) GetSessionStoreKey() []byte {
 	return []byte(i.getString(SessionStoreKey))
 }
 
-func (i *Config) GetDefaultScrapersPath() string {
-	// default to the same directory as the config file
-	fn := filepath.Join(i.GetConfigPath(), "scrapers")
-
-	return fn
-}
-
 func (i *Config) GetExcludes() []string {
 	return i.getStringSlice(Exclude)
 }
@@ -722,13 +703,6 @@ func (i *Config) GetStashBoxes() []*models.StashBox {
 	}
 
 	return boxes
-}
-
-func (i *Config) GetDefaultPluginsPath() string {
-	// default to the same directory as the config file
-	fn := filepath.Join(i.GetConfigPath(), "plugins")
-
-	return fn
 }
 
 func (i *Config) GetPluginsPath() string {
@@ -1617,9 +1591,11 @@ func (i *Config) Validate() error {
 
 func (i *Config) setDefaultValues() {
 	// read data before write lock scope
-	defaultDatabaseFilePath := i.GetDefaultDatabaseFilePath()
-	defaultScrapersPath := i.GetDefaultScrapersPath()
-	defaultPluginsPath := i.GetDefaultPluginsPath()
+	configPath := i.GetConfigPath()
+
+	defaultDatabaseFilePath := filepath.Join(configPath, "stash-go.sqlite")
+	defaultScrapersPath := filepath.Join(configPath, "scrapers")
+	defaultPluginsPath := filepath.Join(configPath, "plugins")
 
 	i.Lock()
 	defer i.Unlock()

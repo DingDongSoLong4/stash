@@ -174,42 +174,25 @@ func (s *Manager) RefreshPluginSourceManager() {
 	s.PluginPackageManager = createPackageManager(s.Config.GetPluginsPath(), s.Config.GetPluginPackagePathGetter())
 }
 
-func setSetupDefaults(input *SetupInput) {
-	if input.ConfigLocation == "" {
-		input.ConfigLocation = filepath.Join(fsutil.GetHomeDirectory(), ".stash", "config.yml")
-	}
-
-	configDir := filepath.Dir(input.ConfigLocation)
-	if input.GeneratedLocation == "" {
-		input.GeneratedLocation = filepath.Join(configDir, "generated")
-	}
-	if input.CacheLocation == "" {
-		input.CacheLocation = filepath.Join(configDir, "cache")
-	}
-
-	if input.DatabaseFile == "" {
-		input.DatabaseFile = filepath.Join(configDir, "stash-go.sqlite")
-	}
-
-	if input.BlobsLocation == "" {
-		input.BlobsLocation = filepath.Join(configDir, "blobs")
-	}
-}
-
 func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
-	setSetupDefaults(&input)
 	cfg := s.Config
 
-	// create the config directory if it does not exist
-	// don't do anything if config is already set in the environment
-	if !config.FileEnvSet() {
-		configFile := input.ConfigLocation
-		configDir := filepath.Dir(configFile)
+	configFile := cfg.GetConfigFile()
+	configDir := cfg.GetConfigPath()
 
-		if exists, _ := fsutil.DirExists(configDir); !exists {
-			if err := os.MkdirAll(configDir, 0755); err != nil {
-				return fmt.Errorf("error creating config directory: %v", err)
-			}
+	// create the config directory if it does not exist
+	// don't do anything if the config file location is already set
+	// (i.e. on the command-line or from the environment)
+	if configFile == "" {
+		configFile = input.ConfigLocation
+		if configFile == "" {
+			configFile = filepath.Join(fsutil.GetHomeDirectory(), ".stash", "config.yml")
+		}
+
+		configDir = filepath.Dir(configFile)
+
+		if err := fsutil.EnsureDirAll(configDir); err != nil {
+			return fmt.Errorf("error creating config directory: %v", err)
 		}
 
 		if err := fsutil.Touch(configFile); err != nil {
@@ -225,45 +208,58 @@ func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
 
 	// create the generated directory if it does not exist
 	if !cfg.HasOverride(config.Generated) {
-		if exists, _ := fsutil.DirExists(input.GeneratedLocation); !exists {
-			if err := os.MkdirAll(input.GeneratedLocation, 0755); err != nil {
-				return fmt.Errorf("error creating generated directory: %v", err)
-			}
+		generatedLocation := input.GeneratedLocation
+		if generatedLocation == "" {
+			generatedLocation = filepath.Join(configDir, "generated")
 		}
 
-		s.Config.Set(config.Generated, input.GeneratedLocation)
+		if err := fsutil.EnsureDirAll(generatedLocation); err != nil {
+			return fmt.Errorf("error creating generated directory: %v", err)
+		}
+
+		s.Config.Set(config.Generated, generatedLocation)
 	}
 
 	// create the cache directory if it does not exist
 	if !cfg.HasOverride(config.Cache) {
-		if exists, _ := fsutil.DirExists(input.CacheLocation); !exists {
-			if err := os.MkdirAll(input.CacheLocation, 0755); err != nil {
-				return fmt.Errorf("error creating cache directory: %v", err)
-			}
+		cacheLocation := input.CacheLocation
+		if cacheLocation == "" {
+			cacheLocation = filepath.Join(configDir, "cache")
 		}
 
-		cfg.Set(config.Cache, input.CacheLocation)
+		if err := fsutil.EnsureDirAll(cacheLocation); err != nil {
+			return fmt.Errorf("error creating cache directory: %v", err)
+		}
+
+		cfg.Set(config.Cache, cacheLocation)
 	}
 
 	if input.StoreBlobsInDatabase {
 		cfg.Set(config.BlobsStorage, config.BlobStorageTypeDatabase)
 	} else {
 		if !cfg.HasOverride(config.BlobsPath) {
-			if exists, _ := fsutil.DirExists(input.BlobsLocation); !exists {
-				if err := os.MkdirAll(input.BlobsLocation, 0755); err != nil {
-					return fmt.Errorf("error creating blobs directory: %v", err)
-				}
+			blobsLocation := input.BlobsLocation
+			if blobsLocation == "" {
+				blobsLocation = filepath.Join(configDir, "blobs")
 			}
 
-			cfg.Set(config.BlobsPath, input.BlobsLocation)
+			if err := fsutil.EnsureDirAll(blobsLocation); err != nil {
+				return fmt.Errorf("error creating blobs directory: %v", err)
+			}
+
+			cfg.Set(config.BlobsPath, blobsLocation)
 		}
 
 		cfg.Set(config.BlobsStorage, config.BlobStorageTypeFilesystem)
 	}
 
-	// set the configuration
 	if !cfg.HasOverride(config.Database) {
-		cfg.Set(config.Database, input.DatabaseFile)
+		databaseFile := input.DatabaseFile
+		if databaseFile == "" {
+			databaseFile = filepath.Join(configDir, "stash-go.sqlite")
+		}
+
+		cfg.Set(config.Database, databaseFile)
 	}
 
 	cfg.Set(config.Stash, input.Stashes)
