@@ -19,23 +19,37 @@ import (
 )
 
 func GetPaths(paths []string) (string, string) {
-	var ffmpegPath, ffprobePath string
-
-	// Check if ffmpeg exists in the PATH
-	if pathBinaryHasCorrectFlags() {
-		ffmpegPath, _ = exec.LookPath("ffmpeg")
-		ffprobePath, _ = exec.LookPath("ffprobe")
+	// find ffmpeg in $PATH
+	ffmpegPath, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		ffmpegPath = ""
+	}
+	ffprobePath, err := exec.LookPath("ffprobe")
+	if err != nil {
+		ffprobePath = ""
 	}
 
-	// Check if ffmpeg exists in the config directory
-	if ffmpegPath == "" {
-		ffmpegPath = fsutil.FindInPaths(paths, getFFMpegFilename())
-	}
-	if ffprobePath == "" {
-		ffprobePath = fsutil.FindInPaths(paths, getFFProbeFilename())
+	if ffmpegPath != "" && ffprobePath != "" {
+		if verifyFFMpegFlags(ffmpegPath) {
+			return ffmpegPath, ffprobePath
+		}
 	}
 
-	return ffmpegPath, ffprobePath
+	// find ffmpeg in the given paths
+	ffmpegPath = fsutil.FindInPaths(paths, getFFMpegFilename())
+	ffprobePath = fsutil.FindInPaths(paths, getFFProbeFilename())
+
+	if ffmpegPath != "" && ffprobePath != "" {
+		// return absolute paths (exec.LookPath already does this)
+		ffmpegPath, _ = filepath.Abs(ffmpegPath)
+		ffprobePath, _ = filepath.Abs(ffprobePath)
+
+		if verifyFFMpegFlags(ffmpegPath) {
+			return ffmpegPath, ffprobePath
+		}
+	}
+
+	return "", ""
 }
 
 func Download(ctx context.Context, configDirectory string) error {
@@ -209,21 +223,31 @@ func getFFProbeFilename() string {
 	return "ffprobe"
 }
 
-// Checks if ffmpeg in the path has the correct flags
-func pathBinaryHasCorrectFlags() bool {
-	ffmpegPath, err := exec.LookPath("ffmpeg")
+// Checks if the specified ffmpeg binary was compiled with the correct flags
+func verifyFFMpegFlags(ffmpegPath string) bool {
+	if ffmpegPath == "" {
+		return false
+	}
+
+	cmd := stashExec.Command(ffmpegPath, "-version")
+	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return false
 	}
-	cmd := stashExec.Command(ffmpegPath)
-	bytes, _ := cmd.CombinedOutput()
+
 	output := string(bytes)
 	hasOpus := strings.Contains(output, "--enable-libopus")
 	hasVpx := strings.Contains(output, "--enable-libvpx")
 	hasX264 := strings.Contains(output, "--enable-libx264")
 	hasX265 := strings.Contains(output, "--enable-libx265")
 	hasWebp := strings.Contains(output, "--enable-libwebp")
-	return hasOpus && hasVpx && hasX264 && hasX265 && hasWebp
+
+	if hasOpus && hasVpx && hasX264 && hasX265 && hasWebp {
+		return true
+	} else {
+		logger.Debugf("found incompatible ffmpeg at %s", ffmpegPath)
+		return false
+	}
 }
 
 func unzip(src, configDirectory string) error {

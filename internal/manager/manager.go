@@ -203,12 +203,7 @@ func (s *Manager) Setup(ctx context.Context, input SetupInput) error {
 	// create the config directory if it does not exist
 	// don't do anything if config is already set in the environment
 	if !config.FileEnvSet() {
-		// #3304 - if config path is relative, it breaks the ffmpeg/ffprobe
-		// paths since they must not be relative. The config file property is
-		// resolved to an absolute path when stash is run normally, so convert
-		// relative paths to absolute paths during setup.
-		configFile, _ := filepath.Abs(input.ConfigLocation)
-
+		configFile := input.ConfigLocation
 		configDir := filepath.Dir(configFile)
 
 		if exists, _ := fsutil.DirExists(configDir); !exists {
