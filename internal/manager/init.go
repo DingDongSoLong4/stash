@@ -258,7 +258,7 @@ func (s *Manager) writeStashIcon() {
 }
 
 func (s *Manager) initFFmpeg(ctx context.Context) error {
-	// use same directory as config path
+	// search in config dir and in $HOME/.stash
 	configDirectory := s.Config.GetConfigPath()
 	paths := []string{
 		configDirectory,
@@ -268,7 +268,14 @@ func (s *Manager) initFFmpeg(ctx context.Context) error {
 
 	if ffmpegPath == "" || ffprobePath == "" {
 		logger.Infof("couldn't find FFmpeg, attempting to download it")
-		if err := ffmpeg.Download(ctx, configDirectory); err != nil {
+		err := ffmpeg.Download(ctx, configDirectory)
+		if err == nil {
+			// if download was successful, try to get paths again
+			ffmpegPath, ffprobePath = ffmpeg.GetPaths(paths)
+		}
+
+		// error if the download failed or if we still can't find ffmpeg
+		if err != nil || ffmpegPath == "" || ffprobePath == "" {
 			path, absErr := filepath.Abs(configDirectory)
 			if absErr != nil {
 				path = configDirectory
@@ -281,9 +288,6 @@ The ffmpeg and ffprobe binaries should be placed in %s.
 `
 			logger.Errorf(msg, path)
 			return err
-		} else {
-			// After download get new paths for ffmpeg and ffprobe
-			ffmpegPath, ffprobePath = ffmpeg.GetPaths(paths)
 		}
 	}
 

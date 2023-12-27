@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -52,22 +51,19 @@ func GetPaths(paths []string) (string, string) {
 	return "", ""
 }
 
-func Download(ctx context.Context, configDirectory string) error {
-	for _, url := range getFFmpegURL() {
-		err := downloadSingle(ctx, configDirectory, url)
+func Download(ctx context.Context, destDir string) error {
+	urls := getFFmpegURLs()
+	if urls == nil {
+		return fmt.Errorf("ffmpeg auto-download is unsupported on this platform")
+	}
+
+	for _, url := range urls {
+		err := downloadSingle(ctx, destDir, url)
 		if err != nil {
 			return err
 		}
 	}
 
-	// validate that the urls contained what we needed
-	executables := []string{getFFMpegFilename(), getFFProbeFilename()}
-	for _, executable := range executables {
-		_, err := os.Stat(filepath.Join(configDirectory, executable))
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -94,21 +90,7 @@ func (r *progressReader) Read(p []byte) (int, error) {
 	return read, err
 }
 
-func downloadSingle(ctx context.Context, configDirectory, url string) error {
-	if url == "" {
-		return fmt.Errorf("no ffmpeg url for this platform")
-	}
-
-	// Configure where we want to download the archive
-	urlBase := path.Base(url)
-	archivePath := filepath.Join(configDirectory, urlBase)
-	_ = os.Remove(archivePath) // remove archive if it already exists
-	out, err := os.Create(archivePath)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
+func downloadSingle(ctx context.Context, destDir string, url string) error {
 	logger.Infof("Downloading %s...", url)
 
 	// Make the HTTP request
@@ -139,6 +121,13 @@ func downloadSingle(ctx context.Context, configDirectory, url string) error {
 		total:  resp.ContentLength,
 	}
 
+	out, err := os.CreateTemp(destDir, ".ffmpeg-download-*.zip")
+	if err != nil {
+		return err
+	}
+	outName := out.Name()
+	defer os.Remove(outName)
+
 	// Write the response to the archive file location
 	_, err = io.Copy(out, reader)
 	if err != nil {
@@ -154,23 +143,23 @@ func downloadSingle(ctx context.Context, configDirectory, url string) error {
 	}
 
 	if mime == "application/zip" {
-		logger.Infof("Unzipping %s...", archivePath)
-		if err := unzip(archivePath, configDirectory); err != nil {
+		logger.Infof("Unzipping %s...", outName)
+		if err := unzip(outName, destDir); err != nil {
 			return err
 		}
 
-		// On OSX or Linux set downloaded files permissions
-		if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
-			_, err = os.Stat(filepath.Join(configDirectory, "ffmpeg"))
-			if !os.IsNotExist(err) {
-				if err = os.Chmod(filepath.Join(configDirectory, "ffmpeg"), 0755); err != nil {
+		// On non-windows platforms set file permissions
+		if runtime.GOOS != "windows" {
+			ffmpegPath := filepath.Join(destDir, getFFMpegFilename())
+			if exists, _ := fsutil.FileExists(ffmpegPath); exists {
+				if err := os.Chmod(ffmpegPath, 0755); err != nil {
 					return err
 				}
 			}
 
-			_, err = os.Stat(filepath.Join(configDirectory, "ffprobe"))
-			if !os.IsNotExist(err) {
-				if err := os.Chmod(filepath.Join(configDirectory, "ffprobe"), 0755); err != nil {
+			ffprobePath := filepath.Join(destDir, getFFProbeFilename())
+			if exists, _ := fsutil.FileExists(ffprobePath); exists {
+				if err := os.Chmod(ffprobePath, 0755); err != nil {
 					return err
 				}
 			}
@@ -179,34 +168,30 @@ func downloadSingle(ctx context.Context, configDirectory, url string) error {
 			// TODO: this however may not be required.
 			// xattr -c /path/to/binary -- xattr.Remove(path, "com.apple.quarantine")
 		}
-
 	} else {
-		return fmt.Errorf("ffmpeg was downloaded to %s", archivePath)
+		return fmt.Errorf("downloaded file is not a zip file")
 	}
 
 	return nil
 }
 
-func getFFmpegURL() []string {
-	var urls []string
+func getFFmpegURLs() []string {
 	switch runtime.GOOS {
 	case "darwin":
-		urls = []string{"https://evermeet.cx/ffmpeg/getrelease/zip", "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"}
+		return []string{"https://evermeet.cx/ffmpeg/getrelease/zip", "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip"}
 	case "linux":
 		switch runtime.GOARCH {
 		case "amd64":
-			urls = []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-64.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-64.zip"}
+			return []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-64.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-64.zip"}
 		case "arm":
-			urls = []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-armhf-32.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-armhf-32.zip"}
+			return []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-armhf-32.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-armhf-32.zip"}
 		case "arm64":
-			urls = []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-arm-64.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-arm-64.zip"}
+			return []string{"https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-linux-arm-64.zip", "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-arm-64.zip"}
 		}
 	case "windows":
-		urls = []string{"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"}
-	default:
-		urls = []string{""}
+		return []string{"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"}
 	}
-	return urls
+	return nil
 }
 
 func getFFMpegFilename() string {
@@ -250,8 +235,8 @@ func verifyFFMpegFlags(ffmpegPath string) bool {
 	}
 }
 
-func unzip(src, configDirectory string) error {
-	zipReader, err := zip.OpenReader(src)
+func unzip(zipFile string, destDir string) error {
+	zipReader, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return err
 	}
@@ -262,7 +247,7 @@ func unzip(src, configDirectory string) error {
 			continue
 		}
 		filename := f.FileInfo().Name()
-		if filename != "ffprobe" && filename != "ffmpeg" && filename != "ffprobe.exe" && filename != "ffmpeg.exe" {
+		if filename != getFFMpegFilename() && filename != getFFProbeFilename() {
 			continue
 		}
 
@@ -270,19 +255,16 @@ func unzip(src, configDirectory string) error {
 		if err != nil {
 			return err
 		}
+		defer rc.Close()
 
-		unzippedPath := filepath.Join(configDirectory, filename)
-		unzippedOutput, err := os.Create(unzippedPath)
+		out, err := os.Create(filepath.Join(destDir, filename))
 		if err != nil {
 			return err
 		}
+		defer out.Close()
 
-		_, err = io.Copy(unzippedOutput, rc)
+		_, err = io.Copy(out, rc)
 		if err != nil {
-			return err
-		}
-
-		if err := unzippedOutput.Close(); err != nil {
 			return err
 		}
 	}
