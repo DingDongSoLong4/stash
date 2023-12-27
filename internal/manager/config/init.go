@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -108,47 +107,50 @@ func (i *Config) initOverrides() {
 func (i *Config) initConfig() error {
 	v := i.main
 
-	// The config file is called config.  Leave off the file extension.
-	v.SetConfigName("config")
-
-	v.AddConfigPath(".")                                // Look for config in the working directory
-	v.AddConfigPath(filepath.FromSlash("$HOME/.stash")) // Look for the config in the home directory
+	v.SetConfigType("yml")
 
 	configFile := ""
 	envConfigFile := os.Getenv("STASH_CONFIG_FILE")
 
-	if flags.configFilePath != "" {
+	switch {
+	case flags.configFilePath != "":
 		configFile = flags.configFilePath
-	} else if envConfigFile != "" {
+	case envConfigFile != "":
 		configFile = envConfigFile
-	}
+	default:
+		// Look for config in the working directory and in $HOME/.stash
+		paths := []string{
+			".",
+			filepath.Join(fsutil.GetHomeDirectory(), ".stash"),
+		}
+		configFile = fsutil.FindInPaths(paths, "config.yml")
 
-	if configFile != "" {
-		v.SetConfigFile(configFile)
-
-		// if file does not exist, assume it is a new system
-		if exists, _ := fsutil.FileExists(configFile); !exists {
+		// if we haven't found a config file, we have a new system
+		if configFile == "" {
 			i.isNewSystem = true
-
-			// ensure we can write to the file
-			if err := fsutil.Touch(configFile); err != nil {
-				return fmt.Errorf(`could not write to provided config path "%s": %v`, configFile, err)
-			} else {
-				// remove the file
-				os.Remove(configFile)
-			}
-
 			return nil
 		}
 	}
 
-	err := v.ReadInConfig() // Find and read the config file
-	// if not found, assume its a new system
-	var notFoundErr viper.ConfigFileNotFoundError
-	if errors.As(err, &notFoundErr) {
+	v.SetConfigFile(configFile)
+
+	// if the config file does not exist, we also have a new system
+	if exists, _ := fsutil.FileExists(configFile); !exists {
 		i.isNewSystem = true
+
+		// ensure we can write to the file
+		if err := fsutil.Touch(configFile); err != nil {
+			return fmt.Errorf(`could not write to provided config path "%s": %v`, configFile, err)
+		} else {
+			// remove the file
+			os.Remove(configFile)
+		}
+
 		return nil
-	} else if err != nil {
+	}
+
+	err := v.ReadInConfig()
+	if err != nil {
 		return err
 	}
 
