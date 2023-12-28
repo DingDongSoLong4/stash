@@ -2,7 +2,6 @@
   align-items: center;
   display: flex;
   flex-direction: column;
-  height: 70vh;
   justify-content: center;
   width: 100%;
 
@@ -12,40 +11,68 @@
     margin-top: 0.5rem;
   }
 
+  &-page {
+    height: 70vh;
+  }
+
+  // .spinner-border {
+  //   line-height: 1;
+  // }
+
   &-message {
-    margin-bottom: 0;
-    margin-top: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
   }
 
-  .spinner-border {
-    height: 3rem;
-    width: 3rem;
+  &-lg {
+    .spinner-border {
+      height: 3rem;
+      width: 3rem;
+    }
+
+    .LoadingIndicator-message {
+      font-size: 1.5rem;
+      margin-top: 1rem;
+    }
   }
 
-  &.small {
-    height: auto;
-    width: max-content;
+  &-md {
+    .spinner-border {
+      height: 2rem;
+      width: 2rem;
+    }
+
+    .LoadingIndicator-message {
+      font-size: 1.25rem;
+      margin-top: 0.75rem;
+    }
+  }
+
+  &-sm {
+    // padding: 0.625rem;
+    // width: max-content;
 
     .spinner-border {
       border-width: 0.2em;
       height: 1rem;
-      margin: 0.625rem;
       width: 1rem;
     }
 
     .LoadingIndicator-message {
       font-size: 1rem;
-      margin-top: 0;
+      margin-top: 0.5rem;
     }
   }
 
-  &.inline {
+  &-inline {
     display: inline;
-    flex-direction: row;
+    // flex-direction: row;
 
-    .spinner-border {
-      margin: 0;
-    }
+    // .spinner-border {
+    //   margin: 0;
+    // }
+
+    // padding: 0.375rem 0.75rem;
 
     .LoadingIndicator-message {
       display: inline;
@@ -55,9 +82,14 @@
   }
 }
 
-.btn .LoadingIndicator-message {
-  font-size: inherit;
-  font-weight: inherit;
+.btn .LoadingIndicator {
+  padding: 0;
+
+  &-message {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
 }
 
 .details-edit {

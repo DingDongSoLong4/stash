@@ -52,7 +52,7 @@ const FrontPage: React.FC = () => {
   }
 
   if (loading || saving) {
-    return <LoadingIndicator />;
+    return <LoadingIndicator page />;
   }
 
   if (isEditing) {

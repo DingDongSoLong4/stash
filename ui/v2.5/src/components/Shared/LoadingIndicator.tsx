@@ -7,29 +7,32 @@ interface ILoadingProps {
   message?: string;
   inline?: boolean;
   small?: boolean;
-  card?: boolean;
+  size?: "sm" | "md" | "lg";
+  page?: boolean;
 }
-
-const CLASSNAME = "LoadingIndicator";
-const CLASSNAME_MESSAGE = `${CLASSNAME}-message`;
 
 export const LoadingIndicator: React.FC<ILoadingProps> = ({
   message,
   inline = false,
-  small = false,
-  card = false,
+  size = "lg",
+  page = false,
 }) => {
   const intl = useIntl();
 
   const text = intl.formatMessage({ id: "loading.generic" });
 
   return (
-    <div className={cx(CLASSNAME, { inline, small, "card-based": card })}>
+    <div
+      className={cx("LoadingIndicator", `LoadingIndicator-${size}`, {
+        "LoadingIndicator-page": page,
+        inline,
+      })}
+    >
       <Spinner animation="border" role="status">
         <span className="sr-only">{text}</span>
       </Spinner>
       {message !== "" && (
-        <h4 className={CLASSNAME_MESSAGE}>{message ?? text}</h4>
+        <span className="LoadingIndicator-message">{message ?? text}</span>
       )}
     </div>
   );

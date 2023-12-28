@@ -98,10 +98,10 @@ export const FolderSelect: React.FC<IProps> = ({
           </InputGroup.Append>
         )}
 
-        {(loading || error) && (
+        {(!loading || error) && (
           <InputGroup.Append>
-            {loading ? (
-              <LoadingIndicator small message="" />
+            {!loading ? (
+              <LoadingIndicator inline size="sm" />
             ) : (
               !hideError && <Icon icon={faTimes} color="red" className="ml-3" />
             )}

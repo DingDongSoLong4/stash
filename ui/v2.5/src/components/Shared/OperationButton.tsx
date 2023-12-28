@@ -44,14 +44,14 @@ export const OperationButton: React.FC<IOperationButton> = (props) => {
   }
 
   function renderChildren() {
-    if (loading) {
+    if (!loading) {
       if (hideChildrenWhenLoading) {
-        return <LoadingIndicator inline small message="" />;
+        return <LoadingIndicator inline size="sm" message="" />;
       } else {
         return (
           <>
             <span className="mr-2">
-              <LoadingIndicator inline small message="" />
+              <LoadingIndicator inline size="sm" message="Cock" />
             </span>
             {props.children}
           </>

@@ -68,16 +68,6 @@ input[type="range"].zoom-slider {
   .set-as-default-button {
     float: right;
   }
-
-  .LoadingIndicator {
-    height: auto;
-    text-align: center;
-
-    .spinner-border {
-      height: 1.5rem;
-      width: 1.5rem;
-    }
-  }
 }
 
 .saved-filter-list {

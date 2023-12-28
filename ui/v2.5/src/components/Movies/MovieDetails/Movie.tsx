@@ -401,8 +401,9 @@ const MoviePage: React.FC<IProps> = ({ movie }) => {
         <div className="detail-container">
           <div className="detail-header-image">
             <div className="logo w-100">
-              {encodingImage ? (
+              {!encodingImage ? (
                 <LoadingIndicator
+                  size="lg"
                   message={intl.formatMessage({ id: "actions.encoding_image" })}
                 />
               ) : (

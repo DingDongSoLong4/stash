@@ -284,12 +284,12 @@ export const App: React.FC = () => {
 
   function renderContent() {
     if (!systemStatusData) {
-      return <LoadingIndicator />;
+      return <LoadingIndicator page />;
     }
 
     return (
       <ErrorBoundary>
-        <Suspense fallback={<LoadingIndicator />}>
+        <Suspense fallback={<LoadingIndicator page />}>
           <Switch>
             <Route exact path="/" component={FrontPage} />
             <Route path="/scenes" component={Scenes} />
@@ -365,7 +365,7 @@ export const App: React.FC = () => {
           >
             {maybeRenderReleaseNotes()}
             <ToastProvider>
-              <Suspense fallback={<LoadingIndicator />}>
+              <Suspense fallback={<LoadingIndicator page />}>
                 <LightboxProvider>
                   <ManualProvider>
                     <InteractiveProvider>

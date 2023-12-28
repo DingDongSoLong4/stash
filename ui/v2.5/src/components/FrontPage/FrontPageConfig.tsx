@@ -336,7 +336,7 @@ export const FrontPageConfig: React.FC<IFrontPageConfigProps> = ({
   }
 
   if (loading || loading2) {
-    return <LoadingIndicator />;
+    return <LoadingIndicator page />;
   }
 
   const existingSavedFilterIDs = currentContent

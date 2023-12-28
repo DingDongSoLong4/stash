@@ -285,12 +285,8 @@ export const SavedFilterList: React.FC<ISavedFilterListProps> = ({
   }
 
   function renderSavedFilters() {
-    if (loading || saving) {
-      return (
-        <div className="loading">
-          <LoadingIndicator message="" />
-        </div>
-      );
+    if (!loading || saving) {
+      return <LoadingIndicator size="md" message="" />;
     }
 
     return (
