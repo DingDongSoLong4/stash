@@ -40,6 +40,12 @@ GO_BUILD_FLAGS := $(GO_BUILD_FLAGS)
 GO_BUILD_TAGS := $(GO_BUILD_TAGS)
 GO_BUILD_TAGS += sqlite_stat4 sqlite_math_functions
 
+# set STASH_BROTLI environment variable or uncomment to enable brotli compression
+# STASH_BROTLI := true
+ifdef STASH_BROTLI
+  GO_BUILD_TAGS += brotli
+endif
+
 # set STASH_NOLEGACY environment variable or uncomment to disable legacy browser support
 # STASH_NOLEGACY := true
 
@@ -337,6 +343,9 @@ ui-env: build-info
 	$(eval export VITE_APP_DATE := $(BUILD_DATE))
 	$(eval export VITE_APP_GITHASH := $(GITHASH))
 	$(eval export VITE_APP_STASH_VERSION := $(STASH_VERSION))
+ifdef STASH_BROTLI
+	$(eval export VITE_APP_BROTLI := true)
+endif
 ifdef STASH_NOLEGACY
 	$(eval export VITE_APP_NOLEGACY := true)
 endif

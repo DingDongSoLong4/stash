@@ -26,7 +26,6 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog"
 	"github.com/gorilla/websocket"
-	"github.com/vearutop/statigz"
 
 	"github.com/stashapp/stash/internal/api/loaders"
 	"github.com/stashapp/stash/internal/build"
@@ -196,15 +195,13 @@ func Initialize() (*Server, error) {
 	r.HandleFunc("/javascript", javascriptHandler(cfg))
 	r.HandleFunc("/customlocales", customLocalesHandler(cfg))
 
-	staticLoginUI := statigz.FileServer(ui.LoginUIBox.(fs.ReadDirFS))
-
 	r.Get(loginEndpoint, handleLogin())
 	r.Post(loginEndpoint, handleLoginPost())
 	r.Get(logoutEndpoint, handleLogout())
 	r.HandleFunc(loginEndpoint+"/*", func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, loginEndpoint)
 		w.Header().Set("Cache-Control", "no-cache")
-		staticLoginUI.ServeHTTP(w, r)
+		ui.LoginUIServer.ServeHTTP(w, r)
 	})
 
 	// Serve static folders
@@ -214,7 +211,6 @@ func Initialize() (*Server, error) {
 	}
 
 	customUILocation := cfg.GetCustomUILocation()
-	staticUI := statigz.FileServer(ui.UIBox.(fs.ReadDirFS))
 
 	// Serve the web app
 	r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
@@ -253,7 +249,7 @@ func Initialize() (*Server, error) {
 				w.Header().Set("Cache-Control", "no-cache")
 			}
 
-			staticUI.ServeHTTP(w, r)
+			ui.UIServer.ServeHTTP(w, r)
 		}
 	})
 
